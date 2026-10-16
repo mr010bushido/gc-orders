@@ -40,7 +40,7 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 1.16 **Desserts** [Conflict]: the PRD pricing line includes "desserts if ordered separately" (K30 each, min 30 per type); the prototype sends them to in-store/WhatsApp. **Q6**
 
 ### 2. Pricing & payments
-2.1 **Pricing engine** [PRD]: base × Σ tier multipliers + 20% rush on cake only + add-ons + delivery; deposit 50%. Implemented in `src/gc_orders/pricing.py`.
+2.1 **Pricing engine** [PRD]: base × Σ tier multipliers + 20% rush on cake only + add-ons + delivery; deposit 50%. Implemented in `lib/pricing.ts`.
 2.2 **Editable pricing config** [PRD]: the owner edits multipliers (and, by extension, prices and fees) without a developer. Today they are hard-coded.
 2.3 **Rush rule anchor** [Conflict]: the PRD measures 48h from *order confirmation*, but confirmation happens after POP verification, so the price can't be known at booking. Proposed: measure from submission, then re-check at verification. **Q3**
 2.4 **Rounding** [Gap]: whole Kwacha, half-up (current). **Q2**

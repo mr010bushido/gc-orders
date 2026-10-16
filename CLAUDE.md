@@ -14,18 +14,22 @@ Online cake booking for Giuseppe's Cakes (Lusaka, prices in ZMW, shown as `K1,30
 
 `docs/PBS.md` is the product breakdown structure. Its **grilling queue** lists decisions that are still open. Don't assume an answer to an open question; ask, or check whether an OpenSpec spec has settled it.
 
-**Stack: Next.js + TypeScript on Vercel (PBS Q1, decided).** The uv/Python scaffold is to be replaced; don't add Python code.
+**Stack: Next.js + TypeScript + pnpm on Vercel (PBS Q1, decided).** Don't add Python code.
 
 ## Commands
 
 ```sh
-uv sync                                  # install
-uv run pytest                            # all tests
-uv run pytest tests/test_pricing.py::test_rush_fee_applies_to_cake_only   # one test
-uv run ruff check . && uv run ruff format .
+pnpm install --frozen-lockfile            # install with Node.js 24
+pnpm dev                                 # local development
+pnpm lint                                # ESLint
+pnpm typecheck                           # generate Next types, then tsc --noEmit
+pnpm test                                # all Vitest tests
+pnpm test lib/pricing.test.ts             # pricing tests
+pnpm build                               # production build
+openspec validate scaffold-nextjs-app --strict
 ```
 
-CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and `pytest` on every PR and on pushes to `main`, `develop`, `release/**` and `hotfix/**`.
+CI (`.github/workflows/ci.yml`) installs with the frozen pnpm lockfile, then runs lint, typecheck, Vitest and the Next.js build on every PR and on pushes to `main`, `develop`, `release/**` and `hotfix/**`.
 
 ## Git workflow (git-flow)
 
@@ -39,6 +43,8 @@ CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and `py
 
 Rules (follow them even where GitHub doesn't enforce them yet):
 
+Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` starts from the committed `docs/prd-design-system` branch, not `develop`, because the first spec and design sources have not merged into `develop`. Documentation PR #1 stays unchanged. This exception does not include the parent's uncommitted `verify-git-flow` change and does not change the normal feature PR base of `develop`.
+
 - **No direct commits or pushes to `main` or `develop`.** Every change lands through a PR. Never force-push either branch.
 - **Only `release/*` and `hotfix/*` merge into `main`.** Feature branches never target `main`.
 - **CI must be green before merging** any PR.
@@ -50,12 +56,14 @@ Rules (follow them even where GitHub doesn't enforce them yet):
 
 ## Code
 
-`src/gc_orders/pricing.py` is the pricing engine:
+`lib/pricing.ts` is the pure pricing engine, called as `quote(input, now)` and covered by `lib/pricing.test.ts`:
 
 - cake = flavour base × the sum of the tier-size multipliers (8"=0.80 … 16"=1.73, 1–3 tiers)
 - a 20% rush fee on the **cake only** when the event is less than 48h away
 - add-ons and the flat K150 delivery fee
 - a 50% deposit, all rounded to whole Kwacha half-up
+
+`eventDate` is a `YYYY-MM-DD` calendar date. The earliest date is tomorrow in Africa/Lusaka, and the rush window ends at 00:00 UTC+2 on the event date regardless of the server timezone. Amounts use integer hundredths internally, and the deposit uses the unrounded total.
 
 The PRD requires the prices and multipliers to become owner-editable config, so the module-level constants are temporary.
 
