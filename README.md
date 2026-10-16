@@ -5,7 +5,7 @@
 Online cake booking and order management for Giuseppe's Cakes.
 
 - Scope: [`docs/PBS.md`](docs/PBS.md) (product breakdown structure + open questions)
-- PRD prototype: [`docs/prototype/cake-booking-prototype.html`](docs/prototype/cake-booking-prototype.html)
+- PRD: [`docs/PRD.md`](docs/PRD.md) · design system: [`design/DESIGN.md`](design/DESIGN.md) · flow prototype: [`docs/prototype/`](docs/prototype/cake-booking-prototype.html)
 
 ## Develop
 
