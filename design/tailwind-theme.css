@@ -1,0 +1,47 @@
+/* Tailwind CSS v4 — import after tokens.css in app/globals.css */
+@import "tailwindcss";
+@import "./tokens.css";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme=dark], [data-theme=dark] *));
+
+@theme inline {
+  --color-bg: var(--gc-bg);
+  --color-surface: var(--gc-surface);
+  --color-selected: var(--gc-selected);
+  --color-ink: var(--gc-ink);
+  --color-ink-soft: var(--gc-ink-soft);
+  --color-ink-mute: var(--gc-ink-mute);
+  --color-brand: var(--gc-brand);
+  --color-brand-hover: var(--gc-brand-hover);
+  --color-on-brand: var(--gc-on-brand);
+  --color-brand-ink: var(--gc-brand-ink);
+  --color-brand-ink-hover: var(--gc-brand-ink-hover);
+  --color-gold: var(--gc-gold);
+  --color-gold-wash: var(--gc-gold-wash);
+  --color-gold-ink: var(--gc-gold-ink);
+  --color-line: var(--gc-line);
+  --color-line-strong: var(--gc-line-strong);
+  --color-disabled-bg: var(--gc-disabled-bg);
+  --color-disabled-ink: var(--gc-disabled-ink);
+  --color-ok-bg: var(--gc-ok-bg);
+  --color-ok-ink: var(--gc-ok-ink);
+  --color-ok-dot: var(--gc-ok-dot);
+  --color-warn-bg: var(--gc-warn-bg);
+  --color-warn-ink: var(--gc-warn-ink);
+  --color-warn-dot: var(--gc-warn-dot);
+  --color-err-bg: var(--gc-err-bg);
+  --color-err-ink: var(--gc-err-ink);
+  --color-err-dot: var(--gc-err-dot);
+  --color-info-bg: var(--gc-info-bg);
+  --color-info-ink: var(--gc-info-ink);
+  --color-past: var(--gc-past);
+  --color-scrim: var(--gc-scrim);
+  --font-display: var(--gc-font-display);
+  --font-sans: var(--gc-font-sans);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --shadow-float: var(--gc-shadow-float);
+}
+
+/* Usage: bg-bg text-ink border-line bg-brand hover:bg-brand-hover text-on-brand text-brand-ink bg-ok-bg text-ok-ink font-display */
