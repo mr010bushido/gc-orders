@@ -148,10 +148,14 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 | Q39 | Images | Up to 3 per order, 5 MB each (JPEG/PNG/HEIC/WebP), resized on upload. |
 | Q40 | Retention | Images deleted 90 days after the event; orders anonymised after 2 years; privacy note on the form. |
 
-### Defaults assumed (not grilled; say if any are wrong)
-- The owner gets SMS + email on a new booking, a new quote request and a POP submission. The customer gets SMS + email when a quote is sent.
-- The order detail screen has tap-to-call and WhatsApp links to the customer.
-- Each status change stores a timestamp; there is no separate audit log.
-- Tooling: pnpm, Vitest, Drizzle, Tailwind v4 with the design tokens as shipped.
+### Final round (D1–D4)
+| # | Question | Decision |
+|---|----------|----------|
+| D1 | Owner alerts | SMS + email on a new booking, a new quote request and a POP submission. |
+| D2 | Quote notice | The customer gets SMS + email when a quote is sent, with the deposit link. |
+| D3 | Contact | Order detail has tap-to-call (`tel:`) and WhatsApp (`wa.me`) buttons. |
+| D4 | History | Each status change stores a timestamp and its actor (owner or system), shown as a timeline on the order. No field-level audit log. |
+
+Tooling (not a product decision): pnpm, Vitest, Drizzle, Tailwind v4 with the design tokens as shipped.
 
 The prototype's mock-order totals (e.g. Black Forest 12" delivery K1,860 vs K1,830 by the rules) are treated as illustrative. The PRD's App. B rules win.
