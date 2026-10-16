@@ -14,7 +14,7 @@ Online cake booking for Giuseppe's Cakes (Lusaka, prices in ZMW, shown as `K1,30
 
 `docs/PBS.md` is the product breakdown structure. Its **grilling queue** lists decisions that are still open. Don't assume an answer to an open question; ask, or check whether an OpenSpec spec has settled it.
 
-**The stack is undecided (PBS Q1).** The PRD and design system assume Next.js on Vercel. The repo is currently a uv/Python project. Don't scaffold a framework until Q1 is settled.
+**Stack: Next.js + TypeScript on Vercel (PBS Q1, decided).** The uv/Python scaffold is to be replaced; don't add Python code.
 
 ## Commands
 

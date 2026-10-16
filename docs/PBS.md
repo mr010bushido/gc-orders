@@ -100,25 +100,25 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 - Phase 2 [PRD]: reporting on upcoming orders this week/month.
 - Phase 3 [PRD]: customer order history, automated pricing for "varies" items and wedding cakes.
 
-## Grilling queue
+## Decisions (grilling round 1, 2026-10-16)
 
-| # | Question | Ref |
-|---|----------|-----|
-| Q1 | Stack: Next.js on Vercel (per PRD + DS) or Python (uv)? | 7.1 |
-| Q2 | Rounding: whole Kwacha half-up? | 2.4 |
-| Q3 | Rush: 48h or 5 days? Measured from submission or confirmation? | 1.7.1, 2.3 |
-| Q4 | One flavour per cake or per tier? | 1.3.2 |
-| Q5 | How does the customer get back to their booking to paste POP? | 1.12 |
-| Q6 | Desserts: bookable in the app in v1, or in-store/WhatsApp only? | 1.16 |
-| Q7 | Flagged orders: exempt from 24h expiry? | 3.6 |
-| Q8 | Manual date blocking (days off)? | 3.9 |
-| Q9 | Status names and the New vs Awaiting POP distinction | 4.1 |
-| Q10 | Notify the customer on expiry? | 5.5 |
-| Q11 | Balance payment and cancellation policy | 2.5, 2.6 |
-| Q12 | Max tiers = 3? | 1.4.1 |
-| Q13 | Show servings per size? | 1.4.2 |
-| Q14 | "Varies" add-ons, character and wedding cakes: hidden or "request a quote"? | 1.5.3 |
-| Q15 | Delivery/pickup time slot needed? | 1.6.1 |
-| Q16 | Domain name | 7.8 |
+| # | Question | Decision | Ref |
+|---|----------|----------|-----|
+| Q1 | Stack | **Next.js + TypeScript on Vercel**. Drop uv/Python; port pricing to TS. | 7.1 |
+| Q2 | Rounding | Whole Kwacha, half-up. | 2.4 |
+| Q3 | Rush rule | 20% on cake when submission is under **48h** before 00:00 of event day. Price locked at submission. The date picker warns for those days only (not 5 days). | 1.7.1, 2.3 |
+| Q4 | Tier flavour | One flavour + one frosting per cake. | 1.3.2 |
+| Q5 | Return to booking | Private unguessable link (SMS + email), plus a "find my booking" form (reference + phone). | 1.12 |
+| Q6 | Desserts | **In v1, including standalone dessert orders.** | 1.16 |
+| Q7 | Flagging | "Flagged" badge + owner note; status stays Awaiting verification. | 3.6 |
+| Q8 | Manual blocking | Owner can block/unblock any date (same table as capacity). | 3.9 |
+| Q9 | Statuses | Awaiting payment → Awaiting verification → Confirmed → Completed; Expired. "New" = unseen-by-owner highlight. | 4.1 |
+| Q10 | Expiry notice | SMS only. | 5.5 |
+| Q11 | Balance | **Tracked in the app.** Cancellation/refund handled by the owner outside the app. | 2.5, 2.6 |
+| Q12 | Max tiers | Owner-configurable setting. | 1.4.1 |
+| Q13 | Servings | Sizes only. | 1.4.2 |
+| Q14 | Unpriced items | **In-app "request a quote" flow.** | 1.5.3 |
+| Q15 | Time slot | Time window (morning / afternoon / evening). | 1.6.1 |
+| Q16 | Domain | Launch on `*.vercel.app`; buy a domain before go-live. | 7.8 |
 
 The prototype's mock-order totals (e.g. Black Forest 12" delivery K1,860 vs K1,830 by the rules) are treated as illustrative. The PRD's App. B rules win.
