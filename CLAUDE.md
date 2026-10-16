@@ -37,9 +37,16 @@ CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and `py
 | `release/<x.y.z>` | `develop` | `main` + back into `develop` | Stabilise a release; only fixes and version bumps. Tag `v<x.y.z>` on `main`. |
 | `hotfix/<x.y.z>` | `main` | `main` + back into `develop` | Urgent production fix. Tag on `main`. |
 
-- Open PRs with an explicit base: `gh pr create --base develop` for features. `main` is GitHub's default branch, so a bare `gh pr create` targets `main`, which is wrong for features.
-- The PR title starts with the Linear key (`JMS-162: …`), which links the PR to the issue.
-- After a feature merges, run `/opsx:archive` for its change.
+Rules (follow them even where GitHub doesn't enforce them yet):
+
+- **No direct commits or pushes to `main` or `develop`.** Every change lands through a PR. Never force-push either branch.
+- **Only `release/*` and `hotfix/*` merge into `main`.** Feature branches never target `main`.
+- **CI must be green before merging** any PR.
+- **Merge back after every release or hotfix:** after merging into `main` and tagging `v<x.y.z>`, merge the same branch into `develop` so the two don't drift.
+- **Open PRs with an explicit base.** Use `gh pr create --base develop` for features. `main` is GitHub's default branch, so a bare `gh pr create` targets `main`, which is wrong for features.
+- **Branch names and PR titles carry the Linear key.** Branch: `feature/jms-162-<openspec-change>`. PR title: `JMS-162: …`. The key links both to the issue.
+- **Link to files on `develop` or `main`,** never on a feature branch, in Linear issues and docs. Feature branches are deleted after merge, which breaks the links.
+- **Delete the branch after merging,** then run `/opsx:archive` for its change.
 
 ## Code
 
