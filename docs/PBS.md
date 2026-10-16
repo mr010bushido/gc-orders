@@ -121,4 +121,37 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 | Q15 | Time slot | Time window (morning / afternoon / evening). | 1.6.1 |
 | Q16 | Domain | Launch on `*.vercel.app`; buy a domain before go-live. | 7.8 |
 
+## Decisions (grilling rounds 2–4, 2026-10-16)
+
+| # | Question | Decision |
+|---|----------|----------|
+| Q17 | Order shape | One basket: optional cake + any dessert lines (at least one item); one reference, deposit, delivery fee, status. |
+| Q18 | Dessert minimum | 30+ per dessert type, flavours mixed freely. |
+| Q19 | Dessert rules | 50% deposit; no 48h rush; **5-day minimum lead time**. |
+| Q20 | Capacity | Every confirmed order counts toward the 10/day suggestion. |
+| Q21 | Quote flow | Request (details + photos) → **Awaiting quote** → owner prices → SMS/email link → Awaiting payment (24h clock starts when the quote is sent). The pill reuses the gold-wash style. |
+| Q22 | Quote mix | The basket keeps priced items; the owner adds a priced quote line. |
+| Q23 | Balance | Order shows "Balance due"; the owner taps "Balance paid" (method + optional note). Completed is allowed with a warning if unpaid. |
+| Q24 | Time windows | Morning / Afternoon / Evening; the owner sets the hours. Rush and lead time are measured to 00:00 of the event day. |
+| Q25 | Backend | **Supabase** (Postgres, Storage, Auth, pg_cron) + Drizzle ORM. Neon + Blob was chosen first, then reversed at Q29. |
+| Q26 | Owner login | Owner only, magic link. |
+| Q27 | Settings | Full catalogue: prices, multipliers, fees, rates, max tiers, window hours, payment numbers; add/hide flavours, frostings, add-ons, desserts + flavours. |
+| Q28 | Price lock | Each order snapshots its line prices at booking. |
+| Q29/Q35 | Expiry | pg_cron every 15 min calls a secret-protected app endpoint (marks Expired, sends SMS); reads treat unpaid >24h as expired immediately. |
+| Q30 | Email | Resend (also the SMTP for Supabase Auth). |
+| Q31 | Cake earliest date | Tomorrow; tomorrow and the day after carry the 20% rush. |
+| Q32/Q33 | Short-notice desserts | Dessert-only orders under 5 days are refused. With a cake in the basket, desserts under 5 days are allowed at **+20% of the dessert subtotal** (owner-editable). The cake's own 48h rush applies separately. |
+| Q34 | Auth | Supabase Auth magic link, one allowed owner email. |
+| Q36 | Python | Port pricing + tests to TS, then delete the uv/Python scaffold; CI moves to pnpm + Vitest. |
+| Q37 | Phones | Zambian numbers only, normalised to +260. |
+| Q38 | Reference | `CAKE-YYYY-NNNN` for every order type; one sequence, resets yearly. |
+| Q39 | Images | Up to 3 per order, 5 MB each (JPEG/PNG/HEIC/WebP), resized on upload. |
+| Q40 | Retention | Images deleted 90 days after the event; orders anonymised after 2 years; privacy note on the form. |
+
+### Defaults assumed (not grilled; say if any are wrong)
+- The owner gets SMS + email on a new booking, a new quote request and a POP submission. The customer gets SMS + email when a quote is sent.
+- The order detail screen has tap-to-call and WhatsApp links to the customer.
+- Each status change stores a timestamp; there is no separate audit log.
+- Tooling: pnpm, Vitest, Drizzle, Tailwind v4 with the design tokens as shipped.
+
 The prototype's mock-order totals (e.g. Black Forest 12" delivery K1,860 vs K1,830 by the rules) are treated as illustrative. The PRD's App. B rules win.
