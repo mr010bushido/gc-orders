@@ -19,9 +19,9 @@
 
 ## 4. Verify
 
-- [ ] 4.1 CI is green on the PR
+- [x] 4.1 CI is green on the PR
 - [x] 4.2 `openspec validate scaffold-nextjs-app` passes
 
 Local verification: a fresh copy without dependencies or generated Next files passes `pnpm install --frozen-lockfile`, lint, typecheck, 36 Vitest tests in both UTC and America/Los_Angeles, production build and strict OpenSpec validation. Light/dark themes, saved theme reload, fonts, logo, mobile sizing, touch targets and the placeholder action were checked in the browser. The shipped `design/` sources are unchanged.
 
-Task 4.1 remains pending until hosted CI passes on the feature PR against `develop`. The user authorized proceeding with this task after local implementation. Documentation PR #1 remains unchanged; no merge, tag, release or deployment is authorized.
+Hosted verification: PR #2 against `develop` passed CI on implementation commit `814d92785bdb5e6c30df5d33b243c95a086ffbbc`, Actions run `38965780904`, on October 16, 2026. Documentation PR #1 remains unchanged; no merge, tag, release or deployment is authorized.
