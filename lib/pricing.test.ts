@@ -67,6 +67,15 @@ describe("cake pricing", () => {
     expect(quote({ ...input, tierSizes: [8, 10, 12] }, now).cake).toBe(3900);
   });
 
+  it("rejects sparse tier arrays, including partially filled arrays", () => {
+    const emptyTiers = new Array<8>(1);
+    const partialTiers: 8[] = [8];
+    partialTiers.length = 2;
+    for (const tierSizes of [emptyTiers, partialTiers]) {
+      expect(() => quote({ ...input, tierSizes }, now)).toThrow("tier size");
+    }
+  });
+
   it("charges every add-on once, like the Python set", () => {
     expect(quote({ ...input, addons: ["edible_print", "gloss_print", "message_topper", "edible_print"] }, now).addons).toBe(275);
   });
@@ -94,6 +103,7 @@ describe("cake pricing", () => {
     ['{"tierSizes":[9]}', "tier size"],
     ['{"tierSizes":["8"]}', "tier size"],
     ['{"addons":["toString"]}', "add-on"],
+    ['{"addons":[["gloss_print"],["gloss_print"]]}', "add-on"],
     ['{"delivery":"false"}', "delivery"],
   ])("rejects invalid catalogue or delivery JSON: %s", (payload, message) => {
     expect(() => quote({ ...input, ...JSON.parse(payload) }, now)).toThrow(message);

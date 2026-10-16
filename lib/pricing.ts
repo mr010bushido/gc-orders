@@ -30,10 +30,10 @@ export function quote(input: QuoteInput, now: Date): Quote {
   if (!Object.hasOwn(FLAVOUR_PRICE, input.flavourGroup)) {
     throw new RangeError("unknown flavour group");
   }
-  if (input.tierSizes.some((size) => typeof size !== "number" || !Object.hasOwn(SIZE_MULTIPLIER, size))) {
+  if ([...input.tierSizes].some((size) => typeof size !== "number" || !Object.hasOwn(SIZE_MULTIPLIER, size))) {
     throw new RangeError("unknown tier size");
   }
-  if (!Array.isArray(input.addons) || input.addons.some((addon) => !Object.hasOwn(ADDON_PRICE, addon))) {
+  if (!Array.isArray(input.addons) || input.addons.some((addon) => typeof addon !== "string" || !Object.hasOwn(ADDON_PRICE, addon))) {
     throw new RangeError("unknown add-on");
   }
   if (typeof input.delivery !== "boolean") {
