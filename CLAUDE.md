@@ -25,7 +25,21 @@ uv run pytest tests/test_pricing.py::test_rush_fee_applies_to_cake_only   # one 
 uv run ruff check . && uv run ruff format .
 ```
 
-CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and `pytest` on PRs and on pushes to `main`. `main` is the default branch. Work on a branch and open a PR.
+CI (`.github/workflows/ci.yml`) runs `ruff check`, `ruff format --check` and `pytest` on every PR and on pushes to `main`, `develop`, `release/**` and `hotfix/**`.
+
+## Git workflow (git-flow)
+
+| Branch | From | Merges into | Purpose |
+|---|---|---|---|
+| `main` | | | Production. Every commit is a tagged release (`v0.1.0`). Never commit directly. |
+| `develop` | `main` | | Integration branch. All feature PRs target it. |
+| `feature/jms-<n>-<openspec-change>` | `develop` | `develop` (PR) | One Linear issue = one OpenSpec change = one branch. |
+| `release/<x.y.z>` | `develop` | `main` + back into `develop` | Stabilise a release; only fixes and version bumps. Tag `v<x.y.z>` on `main`. |
+| `hotfix/<x.y.z>` | `main` | `main` + back into `develop` | Urgent production fix. Tag on `main`. |
+
+- Open PRs with an explicit base: `gh pr create --base develop` for features. `main` is GitHub's default branch, so a bare `gh pr create` targets `main`, which is wrong for features.
+- The PR title starts with the Linear key (`JMS-162: …`), which links the PR to the issue.
+- After a feature merges, run `/opsx:archive` for its change.
 
 ## Code
 
@@ -60,4 +74,4 @@ Manage every spec through the OpenSpec family (`openspec` CLI + `.claude/skills/
 
 ## Tracking: Linear
 
-Work is tracked in the Linear project **Giuseppe's Cakes Orders** (team Jmsarchy, key `JMS`): https://linear.app/jmsarchy/project/giuseppes-cakes-orders-c1b6dadf4659. Each OpenSpec change gets Linear issue(s) in this project. Reference the issue key (`JMS-123`) in branch names and PR titles.
+Work is tracked in the Linear project **Giuseppe's Cakes Orders** (team Jmsarchy, key `JMS`): https://linear.app/jmsarchy/project/giuseppes-cakes-orders-c1b6dadf4659. Each OpenSpec change gets Linear issue(s) in this project. Reference the issue key (`JMS-123`) in branch names and PR titles (see Git workflow).
