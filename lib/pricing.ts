@@ -18,6 +18,7 @@ export type PricingLine = {
   quantity: number;
   unitAmount: number;
   amount: number;
+  amountHundredths: number;
 };
 
 export type Quote = {
@@ -70,16 +71,16 @@ export function quote(input: QuoteInput, now: Date): Quote {
   const cake = Math.floor((cakeHundredths + 50) / 100);
   const rushFee = Math.floor((rushHundredths + 50) / 100);
   const lines: PricingLine[] = [
-    { kind: "cake", label: "Cake", quantity: 1, unitAmount: cake, amount: cake },
+    { kind: "cake", label: "Cake", quantity: 1, unitAmount: cake, amount: cake, amountHundredths: cakeHundredths },
   ];
   if (rushFee > 0) {
-    lines.push({ kind: "rush", label: "Cake rush", quantity: 1, unitAmount: rushFee, amount: rushFee });
+    lines.push({ kind: "rush", label: "Cake rush", quantity: 1, unitAmount: rushFee, amount: rushFee, amountHundredths: rushHundredths });
   }
   for (const addon of new Set(selectedAddons)) {
-    lines.push({ kind: "addon", label: addon.replaceAll("_", " "), quantity: 1, unitAmount: ADDON_PRICE[addon], amount: ADDON_PRICE[addon] });
+    lines.push({ kind: "addon", label: addon.replaceAll("_", " "), quantity: 1, unitAmount: ADDON_PRICE[addon], amount: ADDON_PRICE[addon], amountHundredths: ADDON_PRICE[addon] * 100 });
   }
   if (delivery > 0) {
-    lines.push({ kind: "delivery", label: "Delivery", quantity: 1, unitAmount: delivery, amount: delivery });
+    lines.push({ kind: "delivery", label: "Delivery", quantity: 1, unitAmount: delivery, amount: delivery, amountHundredths: delivery * 100 });
   }
 
   return {

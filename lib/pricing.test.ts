@@ -34,11 +34,11 @@ describe("cake pricing", () => {
   it("orders cake, rush, unique add-ons and delivery lines", () => {
     const result = quote({ ...input, addons: ["gloss_print", "edible_print", "gloss_print"], delivery: true, eventDate: "2026-09-16" }, now);
     expect(result.lines).toEqual([
-      { kind: "cake", label: "Cake", quantity: 1, unitAmount: 1040, amount: 1040 },
-      { kind: "rush", label: "Cake rush", quantity: 1, unitAmount: 208, amount: 208 },
-      { kind: "addon", label: "gloss print", quantity: 1, unitAmount: 75, amount: 75 },
-      { kind: "addon", label: "edible print", quantity: 1, unitAmount: 100, amount: 100 },
-      { kind: "delivery", label: "Delivery", quantity: 1, unitAmount: 150, amount: 150 },
+      { kind: "cake", label: "Cake", quantity: 1, unitAmount: 1040, amount: 1040, amountHundredths: 104000 },
+      { kind: "rush", label: "Cake rush", quantity: 1, unitAmount: 208, amount: 208, amountHundredths: 20800 },
+      { kind: "addon", label: "gloss print", quantity: 1, unitAmount: 75, amount: 75, amountHundredths: 7500 },
+      { kind: "addon", label: "edible print", quantity: 1, unitAmount: 100, amount: 100, amountHundredths: 10000 },
+      { kind: "delivery", label: "Delivery", quantity: 1, unitAmount: 150, amount: 150, amountHundredths: 15000 },
     ]);
   });
 
