@@ -1,6 +1,6 @@
 ## 1. Dependencies and client
 
-- [ ] 1.1 Add `drizzle-orm`, `postgres`, `drizzle-kit` and `@electric-sql/pglite`; confirm a fresh `pnpm install --frozen-lockfile` works for the agent's environment
+- [x] 1.1 Add `drizzle-orm`, `postgres`, `drizzle-kit` and `@electric-sql/pglite`; allow esbuild's required install scripts. Gate: `CI=true pnpm install --frozen-lockfile --force --store-dir <empty temporary store>` passed, 448 downloaded, 0 reused.
 - [ ] 1.2 `lib/db/index.ts`: lazy `getDb()` from `DATABASE_URL` (`prepare: false`, pool size from `DATABASE_POOL_MAX`, default 1), the shared `Db` type, and a clear error when the variable is missing
 - [ ] 1.3 `drizzle.config.ts`, scripts `db:generate` and `db:migrate` (uses `DATABASE_MIGRATION_URL`, then `DATABASE_URL`), baseline migration, `compose.yaml`, `.env.example` entries
 
