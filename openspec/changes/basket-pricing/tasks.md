@@ -12,4 +12,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `openspec validate basket-pricing --strict` passes
+- [x] 3.1 Run all project gates and portability checks. — gate: pnpm lint → passed; pnpm typecheck → passed; pnpm test → 174 passed across 9 files, no todos; pnpm build → passed; pnpm check:portability → passed; openspec validate basket-pricing --strict → passed; git diff --check → passed
