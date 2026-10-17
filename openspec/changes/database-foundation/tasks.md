@@ -7,7 +7,7 @@
 ## 2. Tests
 
 - [x] 2.1 `lib/db/test-db.ts`: create a fresh PGlite database with committed migrations applied, for later changes. Gate: `pnpm test lib/db/test-db.test.ts` 1 passed; `pnpm typecheck` passed; isolated databases and shared `Db` assignment checked.
-- [ ] 2.2 Schema check tests: RLS enabled on every `public` table, no `auth.`/`storage.` references in migrations, column conventions (no `timestamp` without time zone, no enum types, no `serial`)
+- [x] 2.2 Schema check tests: RLS on every `public` table, no policies/platform schema references, column and UUID primary-key conventions. Gate: `pnpm test lib/db/schema.test.ts` 8 passed, including deliberately invalid schema fixtures; `pnpm typecheck`, `pnpm lint` passed.
 - [ ] 2.3 Migration idempotency test: applying twice changes nothing
 
 ## 3. Health and CI
