@@ -16,7 +16,7 @@
 - [x] 3.2 `job_heartbeats` table and database `HeartbeatStore`, replacing memory and integrating job callers. Gate: generated migration; `pnpm test lib/platform/heartbeat.test.ts app/api/jobs/[name]/route.test.ts lib/db/schema.test.ts` 19 passed, including new store instance, latest timestamp, never-run and route scenarios; `pnpm typecheck`, `pnpm lint` passed.
 - [x] 3.3 `rate_limit_hits` and Postgres `RateLimiter`, hashed keys, expired-hit cleanup and per-key transaction locks. Gate: `pnpm test lib/platform/rate-limit.test.ts lib/db/schema.test.ts lib/db/migrations.test.ts` 14 passed; `pnpm typecheck`, `pnpm lint` passed. Local Postgres 17 migrations and schema/integration tests passed 9 tests, including 20 concurrent requests capped at 3.
 - [x] 3.4 CI job `migrate-postgres`: Postgres 17, migrations twice, schema and concurrency/persistence checks; standalone health expects sanitized 503 without database configuration. Gate: CI YAML parsed; exact migration commands on a fresh local Postgres 17 database passed 9 tests; standalone build and extracted CI health script passed; `pnpm check:portability`, `pnpm lint` passed. CI itself has not run. Quoted the forbidden-schema test fixture so the portability scanner does not mistake test SQL for application code.
-- [ ] 3.5 Document migration steps (pooler vs direct URL, human-run migrations) in `README.md`
+- [x] 3.5 Document migration steps, pooler/direct URL, human-run migrations, local credentials, schema conventions, testing and missing-database behavior in `README.md`. Gate: manually checked documented commands against the successful local migration/PGlite/Postgres/standalone runs; `pnpm lint`, `git diff --check`, `openspec validate database-foundation --strict` passed.
 
 ## 4. Verify
 
