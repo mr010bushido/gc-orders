@@ -53,6 +53,9 @@ const createOrderInput = z.object({
 /** A `priceBasket` result with each line's `meta` attached, plus the customer's booking details. */
 export type CreateOrderInput = z.input<typeof createOrderInput>;
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isOrderId = (id: unknown): id is string => typeof id === "string" && UUID.test(id);
+
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 export async function paymentExpiryHours(db: Db): Promise<number> {
@@ -112,6 +115,7 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
 
 /** Reads an order with its line snapshot and latest POP, or null. Never touches the catalogue. */
 export async function getOrder(db: Db, id: string): Promise<OrderDetail | null> {
+  if (!isOrderId(id)) return null;
   const [order] = await db.select().from(orders).where(eq(orders.id, id));
   if (!order) return null;
   const [lines, [pop]] = await Promise.all([
