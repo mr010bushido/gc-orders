@@ -3,7 +3,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../db";
 import { orderLines, orders, orderStatusEvents, popSubmissions, settings } from "../db/schema";
-import { FULFILMENTS, LINE_KINDS, TIME_WINDOWS } from "../db/schema/orders";
+import { FULFILMENTS, LINE_KINDS, ORDER_STATUSES, TIME_WINDOWS, type OrderStatus } from "../db/schema/orders";
 import { resolveSettings } from "../catalogue/settings";
 import { normaliseZambianMobile } from "../phone";
 import { parseLineMeta } from "./line-meta";
@@ -128,4 +128,24 @@ export async function getOrder(db: Db, id: string): Promise<OrderDetail | null> 
     lines: lines.map(line => ({ ...line, meta: parseLineMeta(line.kind, line.meta) })),
     currentPop: pop ?? null,
   };
+}
+
+/** Looks an order up by the customer's link token. Only the SHA-256 is stored, so the database compares hashes, never the token. */
+export async function findOrderByToken(db: Db, token: string): Promise<OrderDetail | null> {
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const [row] = await db.select({ id: orders.id }).from(orders).where(eq(orders.accessTokenHash, hashToken(token)));
+  return row ? getOrder(db, row.id) : null;
+}
+
+/** The status to show: an unpaid order past its deadline reads as expired before the expiry job has run. */
+export function effectiveStatus(order: Pick<Order, "status" | "paymentDueAt">, now: Date): OrderStatus {
+  return order.status === "awaiting_payment" && order.paymentDueAt && order.paymentDueAt <= now ? "expired" : order.status;
+}
+
+/** Status events in time order; same-instant events follow the lifecycle, whose transitions only move forward in `ORDER_STATUSES`. */
+export async function getTimeline(db: Db, orderId: string): Promise<(typeof orderStatusEvents.$inferSelect)[]> {
+  if (!isOrderId(orderId)) return [];
+  const events = await db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, orderId)).orderBy(asc(orderStatusEvents.at));
+  const rank = (status: OrderStatus) => ORDER_STATUSES.indexOf(status);
+  return events.sort((a, b) => a.at.getTime() - b.at.getTime() || rank(a.toStatus) - rank(b.toStatus));
 }
