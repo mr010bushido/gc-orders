@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RULES, PricingError, priceBasket, type BasketInput } from "./basket-pricing";
+import { DEFAULT_RULES, PricingError, earliestEventDate, isCakeRushDate, priceBasket, type BasketInput } from "./basket-pricing";
 
 const now = new Date("2026-09-10T12:00:00+02:00");
 const cake = { flavourGroup: "classic", tierSizes: [8], addons: [] } as const;
@@ -163,7 +163,54 @@ describe("basket pricing", () => {
     expect(error.code).toBe("EMPTY_BASKET");
   });
 
-  it.todo("Cake earliest date near midnight UTC");
-  it.todo("Dessert-only earliest date");
-  it.todo("Rush date");
+  it("returns the cake earliest date near midnight UTC", () => {
+    const instant = new Date("2026-09-14T23:30:00Z");
+    expect(earliestEventDate(true, instant)).toBe("2026-09-16");
+    expect(priceBasket({ ...input, cake, desserts: [], eventDate: earliestEventDate(true, instant) }, instant).total).toBe(1248);
+  });
+
+  it("returns the dessert-only earliest date", () => {
+    expect(earliestEventDate(false, now)).toBe("2026-09-16");
+    expect(priceBasket({ ...input, eventDate: earliestEventDate(false, now) }, now).total).toBe(900);
+  });
+
+  it("identifies rush dates separately from dessert notice", () => {
+    expect(isCakeRushDate("2026-09-11", now)).toBe(true);
+    expect(isCakeRushDate("2026-09-12", now)).toBe(true);
+    expect(isCakeRushDate("2026-09-13", now)).toBe(false);
+  });
+
+  it.each([
+    ["2026-09-10T21:59:59.999Z", "2026-09-11", "2026-09-16"],
+    ["2026-09-10T22:00:00.000Z", "2026-09-12", "2026-09-16"],
+    ["2026-09-10T22:00:00.001Z", "2026-09-12", "2026-09-17"],
+    ["2026-12-31T23:30:00Z", "2027-01-02", "2027-01-07"],
+    ["2028-02-28T23:30:00Z", "2028-03-01", "2028-03-06"],
+  ])("handles date rollover at %s", (instant, cakeDate, dessertDate) => {
+    const clock = new Date(instant);
+    expect(earliestEventDate(true, clock)).toBe(cakeDate);
+    expect(earliestEventDate(false, clock)).toBe(dessertDate);
+    expect(priceBasket({ ...input, eventDate: dessertDate }, clock).total).toBe(900);
+    const previousDate = new Date(Date.parse(`${dessertDate}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+    expect(() => priceBasket({ ...input, eventDate: previousDate }, clock)).toThrow(expect.objectContaining({ code: "DESSERT_LEAD_TIME" }));
+  });
+
+  it.each([
+    ["2026-09-10T21:59:59.999Z", false],
+    ["2026-09-10T22:00:00.000Z", false],
+    ["2026-09-10T22:00:00.001Z", true],
+  ])("uses a strict 48-hour rush boundary at %s", (instant, rush) => {
+    const clock = new Date(instant);
+    expect(isCakeRushDate("2026-09-13", clock)).toBe(rush);
+    const result = priceBasket({ ...input, cake, desserts: [], eventDate: "2026-09-13" }, clock);
+    expect(result.lines.some(line => line.kind === "rush")).toBe(rush);
+  });
+
+  it("rejects invalid dates and clocks in the date helpers", () => {
+    expect(() => earliestEventDate(true, new Date("invalid"))).toThrow(expect.objectContaining({ code: "INVALID_DATE" }));
+    expect(() => isCakeRushDate("2026-09-16", new Date("invalid"))).toThrow(expect.objectContaining({ code: "INVALID_DATE" }));
+    for (const date of ["2026-02-30", "2026-9-16", "2026-09-10", "2026-09-09"]) {
+      expect(() => isCakeRushDate(date, now)).toThrow(expect.objectContaining({ code: "INVALID_DATE" }));
+    }
+  });
 });

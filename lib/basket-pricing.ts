@@ -49,19 +49,45 @@ export const DEFAULT_RULES: Readonly<PricingRules> = Object.freeze({
   deliveryFee: 150,
 });
 
-function eventMidnight(date: string, now: Date): number {
+function nowInstant(now: Date): number {
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
     throw new PricingError("INVALID_DATE", "now must be a valid instant");
   }
+  return now.getTime();
+}
+
+function eventMidnight(date: string, now: Date): number {
+  const instant = nowInstant(now);
   const eventUtc = Date.parse(`${date}T00:00:00Z`);
   if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(eventUtc) || new Date(eventUtc).toISOString().slice(0, 10) !== date) {
     throw new PricingError("INVALID_DATE", "event date must be a valid YYYY-MM-DD calendar date");
   }
-  const today = new Date(now.getTime() + LUSAKA_OFFSET).toISOString().slice(0, 10);
+  const today = new Date(instant + LUSAKA_OFFSET).toISOString().slice(0, 10);
   if (date <= today) {
     throw new PricingError("INVALID_DATE", "event date must be in the future in Lusaka");
   }
   return eventUtc - LUSAKA_OFFSET;
+}
+
+export function earliestEventDate(hasCake: boolean, now: Date): string {
+  if (typeof hasCake !== "boolean") {
+    throw new TypeError("hasCake must be a boolean");
+  }
+  const localInstant = nowInstant(now) + LUSAKA_OFFSET;
+  const firstDay = hasCake
+    ? Math.floor(localInstant / DAY) + 1
+    : Math.ceil((localInstant + DEFAULT_RULES.dessertLeadTimeDays * DAY) / DAY);
+  const firstDate = new Date(firstDay * DAY);
+  if (!Number.isFinite(firstDate.getTime())) {
+    throw new PricingError("INVALID_DATE", "earliest event date is outside the calendar range");
+  }
+  const date = firstDate.toISOString().slice(0, 10);
+  eventMidnight(date, now);
+  return date;
+}
+
+export function isCakeRushDate(date: string, now: Date): boolean {
+  return eventMidnight(date, now) - now.getTime() < 2 * DAY;
 }
 
 function safeHundredths(amount: number): number {
