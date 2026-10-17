@@ -1,0 +1,63 @@
+// PRD Appendix A (price list) and Appendix B (size multipliers, in hundredths). Feeds `pnpm db:seed` and the tests.
+type Diet = "standard" | "vegan" | "diabetic";
+
+export const DEFAULT_CATALOGUE = {
+  flavourGroups: [
+    { key: "classic", name: "Classic", basePrice: 1300 },
+    { key: "signature", name: "Signature", basePrice: 1400 },
+    { key: "fruit", name: "Fruit", basePrice: 2000 },
+    { key: "vegan_diabetic", name: "Vegan and diabetic", basePrice: 1700 },
+  ],
+  flavours: [
+    { key: "vanilla", name: "Vanilla", group: "classic", diet: "standard" },
+    { key: "chocolate", name: "Chocolate", group: "classic", diet: "standard" },
+    { key: "chocolate_mint", name: "Chocolate Mint", group: "classic", diet: "standard" },
+    { key: "lemon", name: "Lemon", group: "classic", diet: "standard" },
+    { key: "banana_cinnamon", name: "Banana Cinnamon", group: "classic", diet: "standard" },
+    { key: "vanilla_caramel", name: "Vanilla Caramel", group: "signature", diet: "standard" },
+    { key: "lemon_blueberry", name: "Lemon Blueberry", group: "signature", diet: "standard" },
+    { key: "cookies_and_cream", name: "Cookies & Cream", group: "signature", diet: "standard" },
+    { key: "carrot_cake", name: "Carrot Cake", group: "signature", diet: "standard" },
+    { key: "blueberry_and_orange", name: "Blueberry & Orange", group: "signature", diet: "standard" },
+    { key: "apple_spice", name: "Apple Spice", group: "signature", diet: "standard" },
+    { key: "black_forest", name: "Black Forest", group: "signature", diet: "standard" },
+    { key: "traditional_fruit_cake", name: "Traditional Fruit Cake", group: "fruit", diet: "standard" },
+    { key: "vegan_vanilla", name: "Vegan Vanilla", group: "vegan_diabetic", diet: "vegan" },
+    { key: "vegan_chocolate", name: "Vegan Chocolate", group: "vegan_diabetic", diet: "vegan" },
+    { key: "vegan_carrot", name: "Vegan Carrot", group: "vegan_diabetic", diet: "vegan" },
+    { key: "diabetic_lemon", name: "Diabetic Lemon", group: "vegan_diabetic", diet: "diabetic" },
+    { key: "diabetic_carrot_banana", name: "Diabetic Carrot Banana", group: "vegan_diabetic", diet: "diabetic" },
+    { key: "diabetic_traditional_fruit_cake", name: "Diabetic Traditional Fruit Cake", group: "vegan_diabetic", diet: "diabetic" },
+  ] satisfies { key: string; name: string; group: string; diet: Diet }[],
+  frostings: [
+    { key: "american_buttercream", name: "American buttercream" },
+    { key: "swiss_meringue_buttercream", name: "Swiss Meringue buttercream" },
+    { key: "fino_whip", name: "Fino Whip" },
+  ],
+  sizes: [
+    { size: 8, multiplier: 80 },
+    { size: 10, multiplier: 100 },
+    { size: 12, multiplier: 120 },
+    { size: 14, multiplier: 144 },
+    { size: 16, multiplier: 173 },
+  ],
+  addons: [
+    { key: "chocolate_drip", name: "Chocolate drip", price: 0 },
+    { key: "edible_print", name: "Edible print", price: 100 },
+    { key: "gloss_print", name: "Gloss print", price: 75 },
+    { key: "message_topper", name: "Message topper", price: 100 },
+  ],
+  dessertTypes: [
+    { key: "cupcakes", name: "Assorted cupcakes", price: 30, flavourSuggestions: ["Vanilla", "Chocolate", "Red Velvet", "Lemon Poppy", "Carrot", "Cookies n Cream", "Mint-Choc", "Lemon-Blueberry"] },
+    { key: "brownies", name: "Brownies", price: 30, flavourSuggestions: [] },
+    { key: "lemon_bars", name: "Lemon bars", price: 30, flavourSuggestions: [] },
+    { key: "cake_cups", name: "Cake cups", price: 30, flavourSuggestions: [] },
+    { key: "cheesecake_cups", name: "Cheesecake cups", price: 30, flavourSuggestions: ["Lemon", "Oreo", "Nutella"] },
+    { key: "chocolate_mousse", name: "Chocolate mousse", price: 30, flavourSuggestions: [] },
+    { key: "trifle_in_a_cup", name: "Trifle in a cup", price: 30, flavourSuggestions: [] },
+    { key: "coconut_balls", name: "Coconut balls", price: 30, flavourSuggestions: [] },
+    { key: "milk_tart", name: "Milk tart", price: 30, flavourSuggestions: [] },
+    { key: "apple_crumble", name: "Apple crumble", price: 30, flavourSuggestions: [] },
+    { key: "cake_pops", name: "Cake pops", price: 30, flavourSuggestions: [] },
+  ],
+} as const;

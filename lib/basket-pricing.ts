@@ -1,6 +1,7 @@
-import { quote, type PricingLine, type QuoteInput } from "./pricing";
+import { DEFAULT_CAKE_RULES, quote, type CakeRules, type PricingLine, type QuoteInput } from "./pricing";
 
-const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 const LUSAKA_OFFSET = 2 * 60 * 60 * 1000;
 const DESSERTS = {
   cupcakes: "Assorted cupcakes",
@@ -16,7 +17,7 @@ const DESSERTS = {
   cake_pops: "Cake pops",
 };
 
-type PricingErrorCode = "EMPTY_BASKET" | "INVALID_CAKE" | "UNKNOWN_DESSERT" | "DESSERT_MIN_QUANTITY" | "DESSERT_LEAD_TIME" | "INVALID_QUOTE_LINE" | "INVALID_DATE";
+type PricingErrorCode = "EMPTY_BASKET" | "INVALID_CAKE" | "UNKNOWN_DESSERT" | "DESSERT_MIN_QUANTITY" | "DESSERT_LEAD_TIME" | "INVALID_QUOTE_LINE" | "INVALID_DATE" | "INVALID_RULES" | "AMOUNT_OUT_OF_RANGE";
 
 export class PricingError extends RangeError {
   constructor(public readonly code: PricingErrorCode, message: string) {
@@ -39,7 +40,13 @@ export type PricingRules = {
   dessertLeadTimeDays: number;
   dessertSurchargeBasisPoints: number;
   deliveryFee: number;
+  /** Catalogue dessert types; when set they replace the built-in list and `dessertUnitPrice`. */
+  dessertTypes?: Readonly<Record<string, { readonly name: string; readonly price: number }>>;
+  /** Cake price tables for `quote()`; defaults to its built-in rules. */
+  cake?: CakeRules;
 };
+
+type NumericRule = Exclude<keyof PricingRules, "dessertTypes" | "cake">;
 
 export const DEFAULT_RULES: Readonly<PricingRules> = Object.freeze({
   dessertUnitPrice: 30,
@@ -69,14 +76,21 @@ function eventMidnight(date: string, now: Date): number {
   return eventUtc - LUSAKA_OFFSET;
 }
 
-export function earliestEventDate(hasCake: boolean, now: Date): string {
+function checkLeadTime(rules: PricingRules): number {
+  if (!rules || !Number.isSafeInteger(rules.dessertLeadTimeDays) || rules.dessertLeadTimeDays < 0 || !Number.isSafeInteger(rules.dessertLeadTimeDays * DAY)) {
+    throw new PricingError("INVALID_RULES", "dessert lead time must be a nonnegative safe integer of days");
+  }
+  return rules.dessertLeadTimeDays * DAY;
+}
+
+export function earliestEventDate(hasCake: boolean, now: Date, rules: PricingRules = DEFAULT_RULES): string {
   if (typeof hasCake !== "boolean") {
     throw new TypeError("hasCake must be a boolean");
   }
   const localInstant = nowInstant(now) + LUSAKA_OFFSET;
   const firstDay = hasCake
     ? Math.floor(localInstant / DAY) + 1
-    : Math.ceil((localInstant + DEFAULT_RULES.dessertLeadTimeDays * DAY) / DAY);
+    : Math.ceil((localInstant + checkLeadTime(rules)) / DAY);
   const firstDate = new Date(firstDay * DAY);
   if (!Number.isFinite(firstDate.getTime())) {
     throw new PricingError("INVALID_DATE", "earliest event date is outside the calendar range");
@@ -86,13 +100,17 @@ export function earliestEventDate(hasCake: boolean, now: Date): string {
   return date;
 }
 
-export function isCakeRushDate(date: string, now: Date): boolean {
-  return eventMidnight(date, now) - now.getTime() < 2 * DAY;
+export function isCakeRushDate(date: string, now: Date, rules: PricingRules = DEFAULT_RULES): boolean {
+  const hours = (rules?.cake ?? DEFAULT_CAKE_RULES).rushWindowHours;
+  if (!Number.isSafeInteger(hours) || hours < 0 || !Number.isSafeInteger(hours * HOUR)) {
+    throw new PricingError("INVALID_RULES", "rush window must be a nonnegative safe integer of hours");
+  }
+  return eventMidnight(date, now) - now.getTime() < hours * HOUR;
 }
 
 function safeHundredths(amount: number): number {
   if (!Number.isSafeInteger(amount) || amount < 0 || amount > Number.MAX_SAFE_INTEGER - 100) {
-    throw new RangeError("amount exceeds safe integer hundredths");
+    throw new PricingError("AMOUNT_OUT_OF_RANGE", "amount exceeds safe integer hundredths");
   }
   return amount;
 }
@@ -113,11 +131,15 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
   if (!input || typeof input !== "object" || typeof input.delivery !== "boolean") {
     throw new TypeError("basket must be an object with a boolean delivery choice");
   }
-  if (!rules || Object.keys(DEFAULT_RULES).some(key => !Number.isSafeInteger(rules[key as keyof PricingRules]) || rules[key as keyof PricingRules] < 0) || !(rules.dessertUnitPrice > 0) || !(rules.minimumDessertQuantity > 0)) {
-    throw new RangeError("pricing rules must contain nonnegative safe integers and positive dessert price and minimum");
+  if (!rules || Object.keys(DEFAULT_RULES).some(key => !Number.isSafeInteger(rules[key as NumericRule]) || rules[key as NumericRule] < 0) || !(rules.dessertUnitPrice > 0) || !(rules.minimumDessertQuantity > 0)) {
+    throw new PricingError("INVALID_RULES", "pricing rules must contain nonnegative safe integers and positive dessert price and minimum");
   }
   safeHundredths(rules.deliveryFee * 100);
-  safeHundredths(rules.dessertLeadTimeDays * DAY);
+  checkLeadTime(rules);
+  const dessertTypes = rules.dessertTypes ?? Object.fromEntries(Object.entries(DESSERTS).map(([key, name]) => [key, { name, price: rules.dessertUnitPrice }]));
+  if (!dessertTypes || typeof dessertTypes !== "object" || Object.values(dessertTypes).some(type => !type || typeof type.name !== "string" || !Number.isSafeInteger(type.price) || type.price <= 0)) {
+    throw new PricingError("INVALID_RULES", "dessert types need a name and a positive safe integer price");
+  }
   const desserts = input.desserts === undefined ? [] : input.desserts;
   const quoteLines = input.quoteLines === undefined ? [] : input.quoteLines;
   if (!Array.isArray(desserts)) {
@@ -137,7 +159,7 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
       if (!input.cake || typeof input.cake !== "object") {
         throw new TypeError("cake must be an object");
       }
-      const cakeQuote = quote({ ...input.cake, eventDate: input.eventDate, delivery: false }, now);
+      const cakeQuote = quote({ ...input.cake, eventDate: input.eventDate, delivery: false }, now, rules.cake);
       lines.push(...cakeQuote.lines);
       eventInstant = Date.parse(`${input.eventDate}T00:00:00+02:00`);
     } catch (error) {
@@ -149,18 +171,19 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
 
   let dessertHundredths = 0;
   for (const dessert of desserts) {
-    if (!dessert || typeof dessert.type !== "string" || !Object.hasOwn(DESSERTS, dessert.type)) {
+    if (!dessert || typeof dessert.type !== "string" || !Object.hasOwn(dessertTypes, dessert.type)) {
       throw new PricingError("UNKNOWN_DESSERT", "unknown dessert type");
     }
-    if (!Number.isSafeInteger(dessert.quantity) || dessert.quantity < rules.minimumDessertQuantity || !Number.isSafeInteger(dessert.quantity * rules.dessertUnitPrice * 100)) {
+    const { name, price } = dessertTypes[dessert.type];
+    if (!Number.isSafeInteger(dessert.quantity) || dessert.quantity < rules.minimumDessertQuantity || !Number.isSafeInteger(dessert.quantity * price * 100)) {
       throw new PricingError("DESSERT_MIN_QUANTITY", "dessert quantity must meet the minimum and produce a safe whole-piece amount");
     }
     if (dessert.note !== undefined && typeof dessert.note !== "string") {
       throw new TypeError("dessert note must be text");
     }
-    const amountHundredths = safeHundredths(dessert.quantity * rules.dessertUnitPrice * 100);
+    const amountHundredths = safeHundredths(dessert.quantity * price * 100);
     dessertHundredths = safeHundredths(dessertHundredths + amountHundredths);
-    lines.push(line("dessert", DESSERTS[dessert.type as keyof typeof DESSERTS], amountHundredths, dessert.quantity));
+    lines.push(line("dessert", name, amountHundredths, dessert.quantity));
   }
   if (desserts.length > 0 && eventInstant - now.getTime() < rules.dessertLeadTimeDays * DAY) {
     if (input.cake === undefined) {

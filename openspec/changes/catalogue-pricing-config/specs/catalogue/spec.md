@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Catalogue is stored in the database
-The system SHALL store flavour groups with base prices, flavours with their group and diet, frostings, size multipliers in hundredths, add-ons with prices, dessert types with prices and flavour suggestions, and settings. Each item except settings SHALL have an `active` flag and a sort order.
+The system SHALL store flavour groups with base prices, flavours with their group and diet, frostings, size multipliers in hundredths, add-ons with prices, dessert types with prices and flavour suggestions, and settings. Each item except settings SHALL have an `active` flag and a sort order. Flavour group, size multiplier and dessert type prices SHALL be positive; an add-on price MAY be K0. Toppings and fruit toppings, which the PRD prices as "Varies", SHALL NOT be catalogue items: the customer requests them in a note and the owner prices them as a quote line.
+
+#### Scenario: Free add-on
+- **WHEN** a cake is quoted with the K0 Chocolate drip add-on
+- **THEN** the quote has a K0 "Chocolate drip" line and the same total and deposit as without it
 
 #### Scenario: Hidden flavour
 - **WHEN** a flavour is set to inactive
@@ -12,7 +16,7 @@ The system SHALL store flavour groups with base prices, flavours with their grou
 
 #### Scenario: Fresh seed
 - **WHEN** the seed runs on a migrated empty database
-- **THEN** there are 13 standard flavours, 6 special-diet flavours, 3 frostings, 5 sizes, 3 add-ons and 11 dessert types, priced as in the PRD
+- **THEN** there are 13 standard flavours, 6 special-diet flavours, 3 frostings, 5 sizes, 4 add-ons (Chocolate drip at K0, Edible print K100, Gloss print K75, Message topper K100) and 11 dessert types, priced as in the PRD
 
 #### Scenario: Seed after owner edits
 - **WHEN** the owner has changed the classic price to K1,350 and the seed runs again
