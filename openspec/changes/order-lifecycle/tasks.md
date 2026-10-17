@@ -1,7 +1,7 @@
 ## 1. Phone and reference helpers
 
 - [x] 1.1 `lib/phone.ts` `normaliseZambianMobile` with tests from the `phone-numbers` scenarios — gate: pnpm test lib/phone.test.ts → 13 passed
-- [ ] 1.2 Schema and migration for `orders`, `order_lines`, `pop_submissions`, `order_status_events`, `reference_counters` (RLS on; check constraints for status, fulfilment, time window, actor, and nullable PII columns allowed only when `anonymised_at` is set)
+- [x] 1.2 Schema (`lib/db/schema/orders.ts`) and migration `drizzle/0004_orders.sql` for `orders`, `order_lines`, `pop_submissions`, `order_status_events`, `reference_counters` (RLS on; check constraints for status, fulfilment, time window, actor, and nullable PII columns allowed only when `anonymised_at` is set). Reading recorded: as the spec says, all six PII columns (name, phone, email, address, design notes, topper) are NOT NULL until anonymised, so absent optional text (pickup address, no notes, no topper) is stored as `''`; a delivery order also needs a non-blank address. Extra defensive checks: normalised phone format, deposit ≤ total, deadline present while `awaiting_payment`, flag only while `awaiting_verification`, balance time and method set together. `reference_counters` has a uuid `id` plus a unique `year` to meet the data-layer PK convention — gate: pnpm test lib/db/orders.test.ts lib/db/schema.test.ts lib/db/migrations.test.ts → 23 passed; pnpm typecheck, pnpm lint, pnpm check:portability → pass
 - [ ] 1.3 `lib/orders/reference.ts` allocating references in the caller's transaction; PGlite tests for first of year, Lusaka year boundary, concurrency, rollback and five-digit numbers
 
 ## 2. Creation
