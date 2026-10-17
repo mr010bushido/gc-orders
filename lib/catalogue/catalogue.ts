@@ -2,6 +2,7 @@ import { asc } from "drizzle-orm";
 import { cache } from "react";
 import type { Db } from "../db";
 import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, sizeMultipliers } from "../db/schema";
+import { DEFAULT_CATALOGUE } from "./defaults";
 import { resolveSettings, type Settings } from "./settings";
 
 type Item = { readonly key: string; readonly name: string; readonly active: boolean };
@@ -37,6 +38,20 @@ export function buildCatalogue(catalogue: Catalogue, includeInactive: boolean): 
     dessertTypes: catalogue.dessertTypes.filter(d => d.active),
     settings: catalogue.settings,
   });
+}
+
+/** The seeded catalogue without a database, for tests and pricing checks. */
+export function defaultCatalogue(): Catalogue {
+  const active = <T>(items: readonly T[]) => items.map(item => ({ ...item, active: true }));
+  return buildCatalogue({
+    flavourGroups: active(DEFAULT_CATALOGUE.flavourGroups),
+    flavours: active(DEFAULT_CATALOGUE.flavours),
+    frostings: active(DEFAULT_CATALOGUE.frostings),
+    sizes: active(DEFAULT_CATALOGUE.sizes),
+    addons: active(DEFAULT_CATALOGUE.addons),
+    dessertTypes: active(DEFAULT_CATALOGUE.dessertTypes),
+    settings: resolveSettings([]),
+  }, true);
 }
 
 // Per-request memo only (React `cache`); nothing is cached across requests, so owner edits apply to the next booking.

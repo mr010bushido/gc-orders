@@ -7,7 +7,7 @@
 ## 2. Read model
 
 - [x] 2.1 `getCatalogue(db, { includeInactive })` returning an immutable typed catalogue, wrapped in React `cache` per request in `lib/catalogue/catalogue.ts`. The orderable catalogue also drops flavours whose group is inactive; the full catalogue keeps `active` flags so lookups can tell inactive from unknown — gate: `pnpm test lib/catalogue` → 11 passed; `pnpm lint`, `pnpm typecheck`, `pnpm build` → passed.
-- [ ] 2.2 `resolveFlavour` and the other lookups with error codes (`UNKNOWN_FLAVOUR`, `INACTIVE_ITEM`, …) and tests
+- [x] 2.2 `resolveFlavour` and the other lookups with error codes (`UNKNOWN_FLAVOUR`, `INACTIVE_ITEM`, …) and tests in `lib/catalogue/lookup.ts`: `resolveFlavour`, `resolveFrosting`, `resolveSize`, `resolveAddon`, `resolveDessertType` return `{ ok, value } | { ok: false, code }` with `UNKNOWN_FLAVOUR`/`UNKNOWN_FROSTING`/`UNKNOWN_SIZE`/`UNKNOWN_ADDON`/`UNKNOWN_DESSERT`/`INACTIVE_ITEM` (callers pass the full catalogue to distinguish hidden from unknown). Added `defaultCatalogue()` so tests price the defaults without a database — gate: `pnpm test lib/catalogue` → 15 passed; `pnpm lint`, `pnpm typecheck` → passed.
 
 ## 3. Pricing from the catalogue
 
