@@ -21,7 +21,7 @@ export function OrderCard({
   const body = (
     <>
       <span className="flex items-center justify-between gap-3">
-        <span className="text-xs text-ink-soft tabular-nums">{reference} · {date}</span>
+        <span className="min-w-0 truncate text-xs text-ink-soft tabular-nums">{reference} · {date}</span>
         <StatusPill status={status} size="sm" />
       </span>
       <span className="mt-1.5 block truncate text-base font-semibold text-ink">{customer} · {summary}</span>

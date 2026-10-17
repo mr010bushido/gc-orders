@@ -43,7 +43,9 @@ describe('Button', () => {
     const link = screen.getByRole('link', { name: 'Book' });
     expect(link.tagName).toBe('A');
     expect(link.getAttribute('href')).toBe('/book');
-    expect(link.className).toBe(screen.getByRole('button', { name: 'Book' }).className);
+    expect(link.className).toContain(screen.getByRole('button', { name: 'Book' }).className);
+    // tokens.css colours every `a` outside a layer, so the link restates its text colour.
+    expect(link.className).toContain('text-on-brand!');
   });
 });
 

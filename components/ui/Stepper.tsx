@@ -30,9 +30,8 @@ export function Stepper({ steps, current, className }: StepperProps) {
           <li
             key={label}
             aria-current={i === current ? 'step' : undefined}
-            className={cn('flex items-center gap-2', i > 0 && 'flex-1')}
+            className={cn('flex items-center gap-2', i < steps.length - 1 && 'flex-1')}
           >
-            {i > 0 && <span aria-hidden="true" className={cn('mx-3 h-px flex-1', i <= current ? 'bg-brand' : 'bg-line')} />}
             <span
               className={cn(
                 'flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums',
@@ -45,6 +44,9 @@ export function Stepper({ steps, current, className }: StepperProps) {
               {label}
               {i < current && <span className="sr-only"> (done)</span>}
             </span>
+            {i < steps.length - 1 && (
+              <span aria-hidden="true" className={cn('mx-1 h-px flex-1', i < current ? 'bg-brand' : 'bg-line')} />
+            )}
           </li>
         ))}
       </ol>

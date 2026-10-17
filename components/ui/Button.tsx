@@ -19,6 +19,13 @@ const variants: Record<Variant, string> = {
     'border border-ink bg-transparent text-ink hover:bg-selected disabled:border-line disabled:text-disabled-ink disabled:cursor-not-allowed',
 };
 
+// design/tokens.css colours every `a` outside a layer, which beats Tailwind utilities,
+// so a link-form button restates its text colour as important.
+const anchorText: Record<Variant, string> = {
+  primary: 'text-on-brand! hover:text-on-brand!',
+  ghost: 'text-ink! hover:text-ink!',
+};
+
 export function buttonClasses({ variant = 'primary', block = false }: Options = {}, className?: string) {
   return cn(base, block ? 'w-full' : 'w-full sm:w-auto', variants[variant], className);
 }
@@ -26,7 +33,7 @@ export function buttonClasses({ variant = 'primary', block = false }: Options = 
 export function Button(props: ButtonProps) {
   if (props.href !== undefined) {
     const { variant, block, className, ...rest } = props;
-    return <a className={buttonClasses({ variant, block }, className)} {...rest} />;
+    return <a className={buttonClasses({ variant, block }, cn(anchorText[variant ?? 'primary'], className))} {...rest} />;
   }
   const { variant, block, className, type = 'button', ...rest } = props;
   return <button type={type} className={buttonClasses({ variant, block }, className)} {...rest} />;
