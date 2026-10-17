@@ -14,11 +14,14 @@
 ## Decisions
 
 - **Compose, don't rewrite.** The cake part calls `quote()` with a no-delivery input, then `priceBasket` adds delivery once. The cake rush and cake validation stay in one place. `quote()` returning `lines` is the only change to it.
+  Each line retains its integer `amountHundredths` alongside its rounded `amount`, so basket composition preserves the unrounded deposit basis without duplicating the cake rush calculation.
 - **Rates and limits are parameters with defaults.** `priceBasket(input, now, rules = DEFAULT_RULES)` where `DEFAULT_RULES` holds dessert unit price 30, minimum quantity 30, lead time 5 days, surcharge 20%, delivery 150. `catalogue-pricing-config` will pass values from the database.
+  The surcharge rate is an integer number of basis points, with 2000 meaning 20% and 2006 meaning 20.06%; surcharge calculations round to integer hundredths before whole-Kwacha display rounding.
 - **Lead time is a duration to local midnight.** `eventMidnightLusaka - now >= 5 * 24h`. This matches how the 48-hour rush is measured (PBS Q24) and avoids counting calendar days, which would disagree across the day boundary.
 - **Flavour mix is a note.** A dessert line is `{ type, quantity, note? }`. The quantity is the only priced field. Splitting 30 cupcakes into flavours is the customer's free-text note, which the owner reads.
 - **Errors carry a code.** `PricingError extends RangeError` with `code` in `EMPTY_BASKET`, `INVALID_CAKE`, `UNKNOWN_DESSERT`, `DESSERT_MIN_QUANTITY`, `DESSERT_LEAD_TIME`, `INVALID_QUOTE_LINE`, `INVALID_DATE`. Server actions map codes to user messages without parsing strings. Messages from `quote()` are wrapped as `INVALID_CAKE`.
 - **Surcharge on the unrounded subtotal.** Dessert subtotal is an integer; the surcharge is computed in hundredths and rounded half-up like every other amount. The deposit uses the unrounded total, as in `cake-pricing`.
+  The basket total is the sum of individually half-up-rounded line amounts, while the deposit is half of the sum of unrounded line amounts in hundredths, rounded half-up once, with no rounding difference allocated to a line.
 
 ## Risks / Trade-offs
 

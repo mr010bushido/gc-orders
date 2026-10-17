@@ -12,6 +12,15 @@ export type QuoteInput = {
   eventDate: string;
 };
 
+export type PricingLine = {
+  kind: "cake" | "rush" | "addon" | "dessert" | "dessert_surcharge" | "delivery" | "quote";
+  label: string;
+  quantity: number;
+  unitAmount: number;
+  amount: number;
+  amountHundredths: number;
+};
+
 export type Quote = {
   cake: number;
   rushFee: number;
@@ -19,6 +28,7 @@ export type Quote = {
   delivery: number;
   total: number;
   deposit: number;
+  lines: PricingLine[];
 };
 
 export function quote(input: QuoteInput, now: Date): Quote {
@@ -58,13 +68,28 @@ export function quote(input: QuoteInput, now: Date): Quote {
   const addons = [...new Set(selectedAddons)].reduce((sum, addon) => sum + ADDON_PRICE[addon], 0);
   const delivery = input.delivery ? 150 : 0;
   const totalHundredths = cakeHundredths + rushHundredths + (addons + delivery) * 100;
+  const cake = Math.floor((cakeHundredths + 50) / 100);
+  const rushFee = Math.floor((rushHundredths + 50) / 100);
+  const lines: PricingLine[] = [
+    { kind: "cake", label: "Cake", quantity: 1, unitAmount: cake, amount: cake, amountHundredths: cakeHundredths },
+  ];
+  if (rushFee > 0) {
+    lines.push({ kind: "rush", label: "Cake rush", quantity: 1, unitAmount: rushFee, amount: rushFee, amountHundredths: rushHundredths });
+  }
+  for (const addon of new Set(selectedAddons)) {
+    lines.push({ kind: "addon", label: addon.replaceAll("_", " "), quantity: 1, unitAmount: ADDON_PRICE[addon], amount: ADDON_PRICE[addon], amountHundredths: ADDON_PRICE[addon] * 100 });
+  }
+  if (delivery > 0) {
+    lines.push({ kind: "delivery", label: "Delivery", quantity: 1, unitAmount: delivery, amount: delivery, amountHundredths: delivery * 100 });
+  }
 
   return {
-    cake: Math.floor((cakeHundredths + 50) / 100),
-    rushFee: Math.floor((rushHundredths + 50) / 100),
+    cake,
+    rushFee,
     addons,
     delivery,
     total: Math.floor((totalHundredths + 50) / 100),
     deposit: Math.floor((totalHundredths + 100) / 200),
+    lines,
   };
 }
