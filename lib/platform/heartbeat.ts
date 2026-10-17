@@ -1,19 +1,27 @@
+import { eq, sql } from "drizzle-orm";
+import { getDb, type Db } from "../db";
+import { jobHeartbeats } from "../db/schema";
+
 export interface HeartbeatStore {
   record(job: string, at: Date): Promise<void>;
   last(job: string): Promise<Date | null>;
 }
 
-// Replace this in-memory store with a database implementation when the data layer lands.
-export class MemoryHeartbeatStore implements HeartbeatStore {
-  private readonly times = new Map<string, Date>();
+export class DatabaseHeartbeatStore implements HeartbeatStore {
+  constructor(private readonly database: () => Db = getDb) {}
 
   async record(job: string, at: Date) {
-    this.times.set(job, at);
+    await this.database().insert(jobHeartbeats).values({ job, at }).onConflictDoUpdate({
+      target: jobHeartbeats.job,
+      set: { at: sql`greatest(${jobHeartbeats.at}, excluded.at)` },
+    });
   }
 
   async last(job: string) {
-    return this.times.get(job) ?? null;
+    const [heartbeat] = await this.database().select({ at: jobHeartbeats.at })
+      .from(jobHeartbeats).where(eq(jobHeartbeats.job, job));
+    return heartbeat?.at ?? null;
   }
 }
 
-export const heartbeatStore: HeartbeatStore = new MemoryHeartbeatStore();
+export const heartbeatStore: HeartbeatStore = new DatabaseHeartbeatStore();
