@@ -1,0 +1,23 @@
+## 1. Dependencies and client
+
+- [ ] 1.1 Add `drizzle-orm`, `postgres`, `drizzle-kit` and `@electric-sql/pglite`; confirm a fresh `pnpm install --frozen-lockfile` works for the agent's environment
+- [ ] 1.2 `lib/db/index.ts`: lazy `getDb()` from `DATABASE_URL` (`prepare: false`, pool size from `DATABASE_POOL_MAX`, default 1), the shared `Db` type, and a clear error when the variable is missing
+- [ ] 1.3 `drizzle.config.ts`, scripts `db:generate` and `db:migrate` (uses `DATABASE_MIGRATION_URL`, then `DATABASE_URL`), baseline migration, `compose.yaml`, `.env.example` entries
+
+## 2. Tests
+
+- [ ] 2.1 `lib/db/test-db.ts`: create a fresh PGlite database with the committed migrations applied, for use by later changes
+- [ ] 2.2 Schema check tests: RLS enabled on every `public` table, no `auth.`/`storage.` references in migrations, column conventions (no `timestamp` without time zone, no enum types, no `serial`)
+- [ ] 2.3 Migration idempotency test: applying twice changes nothing
+
+## 3. Health and CI
+
+- [ ] 3.1 Register the `database` health check (2 s timeout, no driver text in the response) with tests for success, failure and timeout
+- [ ] 3.2 `job_heartbeats` table and database `HeartbeatStore` passing the heartbeat scenarios; swap it in for the in-memory store
+- [ ] 3.3 `rate_limit_hits` table and Postgres `RateLimiter` (hashed keys, self-cleaning) with window and limit tests
+- [ ] 3.4 CI job `migrate-postgres`: Postgres 17 service, apply migrations, run the schema checks against it
+- [ ] 3.5 Document migration steps (pooler vs direct URL, human-run migrations) in `README.md`
+
+## 4. Verify
+
+- [ ] 4.1 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass with no database configured; `openspec validate database-foundation --strict` passes
