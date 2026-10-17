@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RULES, priceBasket, type BasketInput } from "../basket-pricing";
+import { DEFAULT_RULES, PricingError, earliestEventDate, isCakeRushDate, priceBasket, type BasketInput } from "../basket-pricing";
 import { DEFAULT_CAKE_RULES, quote, type QuoteInput } from "../pricing";
 import { buildCatalogue, defaultCatalogue, type Catalogue } from "./catalogue";
 import { resolveFlavour } from "./lookup";
@@ -8,6 +8,8 @@ import { resolveSettings } from "./settings";
 
 const catalogue = defaultCatalogue();
 const rules = toPricingRules(catalogue);
+// The original engine with the catalogue's add-on display names; every price and rate is the built-in default.
+const original = { ...DEFAULT_CAKE_RULES, addonNames: { edible_print: "Edible print", gloss_print: "Gloss print", message_topper: "Message topper" } };
 
 // Captures either the result or the thrown error so rejections are compared too.
 function outcome(price: () => unknown) {
@@ -20,7 +22,7 @@ function outcome(price: () => unknown) {
 
 describe("toPricingRules on the seeded catalogue", () => {
   it("matches the original engine's tables and rates", () => {
-    expect(rules.cake).toEqual(DEFAULT_CAKE_RULES);
+    expect(rules.cake).toEqual(original);
     const { dessertTypes, cake, ...numbers } = rules;
     expect(cake).toBeDefined();
     expect(numbers).toEqual(DEFAULT_RULES);
@@ -44,7 +46,7 @@ describe("toPricingRules on the seeded catalogue", () => {
       ["fractional rush", { tierSizes: [16], eventDate: "2026-09-16" }],
     ])("%s", (_, overrides, clock = now) => {
       const input = { ...base, ...overrides };
-      expect(outcome(() => quote(input, clock, rules.cake))).toEqual(outcome(() => quote(input, clock)));
+      expect(outcome(() => quote(input, clock, rules.cake))).toEqual(outcome(() => quote(input, clock, original)));
     });
 
     it("matches on every flavour group, tier combination, add-on set, delivery choice and date", () => {
@@ -58,7 +60,7 @@ describe("toPricingRules on the seeded catalogue", () => {
             for (const delivery of [false, true]) {
               for (const eventDate of ["2026-09-15", "2026-09-16", "2026-09-17"]) {
                 const input = { flavourGroup, tierSizes, addons, delivery, eventDate };
-                expect(quote(input, now, rules.cake)).toEqual(quote(input, now));
+                expect(quote(input, now, rules.cake)).toEqual(quote(input, now, original));
                 compared++;
               }
             }
@@ -165,5 +167,60 @@ describe("toPricingRules after owner edits", () => {
     const desserts = { desserts: [{ type: "cupcakes", quantity: 12 }], delivery: true, eventDate: "2026-09-18" };
     expect(priceBasket(desserts, now, edited).total).toBe(560);
     expect(priceBasket({ ...desserts, cake: { flavourGroup: "classic", tierSizes: [10], addons: [] }, eventDate: "2026-09-16" }, now, edited).lines.find(l => l.kind === "dessert_surcharge")?.amount).toBe(36);
+  });
+});
+
+describe("review fixes", () => {
+  const now = new Date("2026-09-14T12:00:00+02:00");
+  const edit = (changes: Partial<Catalogue>) => toPricingRules(buildCatalogue({ ...catalogue, ...changes }, true));
+  const withSettings = (values: Record<string, unknown>) => edit({ settings: resolveSettings(Object.entries(values).map(([key, value]) => ({ key, value }))) });
+  const classicAt = (basePrice: number, rushRatePercent: number) => edit({
+    flavourGroups: catalogue.flavourGroups.map(g => g.key === "classic" ? { ...g, basePrice } : g),
+    settings: resolveSettings([{ key: "rush_rate_percent", value: rushRatePercent }]),
+  });
+  const rushCake = { cake: { flavourGroup: "classic", tierSizes: [16], addons: [] }, delivery: false, eventDate: "2026-09-16" };
+
+  it.each([
+    [1350, 15, 35033, 2686, 1343],
+    [1301, 20, 45015, 2701, 1350],
+  ])("rounds the rush fee to whole hundredths for K%i at %i%%", (basePrice, rate, rushHundredths, total, deposit) => {
+    const result = priceBasket(rushCake, now, classicAt(basePrice, rate));
+    expect(result.lines.find(l => l.kind === "rush")?.amountHundredths).toBe(rushHundredths);
+    expect(result.lines.every(l => Number.isSafeInteger(l.amountHundredths))).toBe(true);
+    expect(result).toMatchObject({ total, deposit });
+  });
+
+  it("reports an out-of-range amount as a PricingError", () => {
+    const huge = edit({ dessertTypes: catalogue.dessertTypes.map(d => ({ ...d, price: 1_000_000_000 })), settings: resolveSettings([{ key: "dessert_surcharge_percent", value: 200 }]) });
+    const basket = { ...rushCake, desserts: [{ type: "cupcakes", quantity: 30 }] };
+    expect(() => priceBasket(basket, now, huge)).toThrow(PricingError);
+    expect(() => priceBasket(basket, now, huge)).toThrow(expect.objectContaining({ code: "AMOUNT_OUT_OF_RANGE" }));
+  });
+
+  it("uses the configured dessert lead time in earliestEventDate, agreeing with priceBasket", () => {
+    const lead7 = withSettings({ dessert_lead_days: 7 });
+    const earliest = earliestEventDate(false, now, lead7);
+    expect(earliest).toBe("2026-09-22");
+    expect(earliestEventDate(false, now)).toBe("2026-09-20");
+    const desserts = { desserts: [{ type: "cupcakes", quantity: 30 }], delivery: false };
+    expect(priceBasket({ ...desserts, eventDate: earliest }, now, lead7).total).toBe(900);
+    expect(() => priceBasket({ ...desserts, eventDate: "2026-09-21" }, now, lead7)).toThrow(expect.objectContaining({ code: "DESSERT_LEAD_TIME" }));
+  });
+
+  it("uses the configured rush window in isCakeRushDate, agreeing with priceBasket", () => {
+    const window72 = withSettings({ rush_window_hours: 72 });
+    for (const eventDate of ["2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19"]) {
+      const rushed = priceBasket({ ...rushCake, eventDate }, now, window72).lines.some(l => l.kind === "rush");
+      expect(isCakeRushDate(eventDate, now, window72)).toBe(rushed);
+    }
+    expect(isCakeRushDate("2026-09-17", now, window72)).toBe(true);
+    expect(isCakeRushDate("2026-09-17", now)).toBe(false);
+  });
+
+  it("labels add-on lines with the catalogue name", () => {
+    const renamed = edit({ addons: catalogue.addons.map(a => a.key === "gloss_print" ? { ...a, name: "Gloss photo print" } : a) });
+    const lines = quote({ flavourGroup: "classic", tierSizes: [10], addons: ["gloss_print", "edible_print"], delivery: false, eventDate: "2026-09-22" }, now, renamed.cake).lines;
+    expect(lines.filter(l => l.kind === "addon").map(l => l.label)).toEqual(["Gloss photo print", "Edible print"]);
+    expect(quote({ flavourGroup: "classic", tierSizes: [10], addons: ["gloss_print"], delivery: false, eventDate: "2026-09-22" }, now).lines[1].label).toBe("gloss print");
   });
 });

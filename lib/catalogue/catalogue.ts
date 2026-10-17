@@ -7,7 +7,7 @@ import { resolveSettings, type Settings } from "./settings";
 
 type Item = { readonly key: string; readonly name: string; readonly active: boolean };
 
-export type Catalogue = {
+type CatalogueData = {
   readonly flavourGroups: readonly (Item & { readonly basePrice: number })[];
   readonly flavours: readonly (Item & { readonly group: string; readonly diet: "standard" | "vegan" | "diabetic" })[];
   readonly frostings: readonly Item[];
@@ -16,6 +16,11 @@ export type Catalogue = {
   readonly dessertTypes: readonly (Item & { readonly price: number; readonly flavourSuggestions: readonly string[] })[];
   readonly settings: Settings;
 };
+
+/** `orderable` holds active items only; `full` keeps hidden items flagged, which lookups need to report `INACTIVE_ITEM`. */
+export type Catalogue = CatalogueData & { readonly scope: "orderable" | "full" };
+export type FullCatalogue = CatalogueData & { readonly scope: "full" };
+export type OrderableCatalogue = CatalogueData & { readonly scope: "orderable" };
 
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
@@ -26,8 +31,10 @@ function deepFreeze<T>(value: T): T {
 }
 
 /** Freezes a catalogue and, unless `includeInactive`, keeps only orderable items (a flavour also needs an active group). */
-export function buildCatalogue(catalogue: Catalogue, includeInactive: boolean): Catalogue {
-  if (includeInactive) return deepFreeze(catalogue);
+export function buildCatalogue(catalogue: CatalogueData, includeInactive: true): FullCatalogue;
+export function buildCatalogue(catalogue: CatalogueData, includeInactive: false): OrderableCatalogue;
+export function buildCatalogue(catalogue: CatalogueData, includeInactive: boolean): Catalogue {
+  if (includeInactive) return deepFreeze({ ...catalogue, scope: "full" });
   const activeGroups = new Set(catalogue.flavourGroups.filter(g => g.active).map(g => g.key));
   return deepFreeze({
     flavourGroups: catalogue.flavourGroups.filter(g => g.active),
@@ -37,11 +44,12 @@ export function buildCatalogue(catalogue: Catalogue, includeInactive: boolean): 
     addons: catalogue.addons.filter(a => a.active),
     dessertTypes: catalogue.dessertTypes.filter(d => d.active),
     settings: catalogue.settings,
+    scope: "orderable",
   });
 }
 
 /** The seeded catalogue without a database, for tests and pricing checks. */
-export function defaultCatalogue(): Catalogue {
+export function defaultCatalogue(): FullCatalogue {
   const active = <T>(items: readonly T[]) => items.map(item => ({ ...item, active: true }));
   return buildCatalogue({
     flavourGroups: active(DEFAULT_CATALOGUE.flavourGroups),
@@ -74,9 +82,11 @@ const loadCatalogue = cache(async (db: Db, includeInactive: boolean): Promise<Ca
     addons: addonRows.map(({ key, name, price, active }) => ({ key, name, price, active })),
     dessertTypes: dessertRows.map(({ key, name, price, flavourSuggestions, active }) => ({ key, name, price, flavourSuggestions, active })),
     settings: resolveSettings(settingRows),
-  }, includeInactive);
+  }, includeInactive as false);
 });
 
+export function getCatalogue(db: Db, options: { includeInactive: true }): Promise<FullCatalogue>;
+export function getCatalogue(db: Db, options?: { includeInactive?: false }): Promise<OrderableCatalogue>;
 export function getCatalogue(db: Db, { includeInactive = false }: { includeInactive?: boolean } = {}): Promise<Catalogue> {
   return loadCatalogue(db, includeInactive);
 }

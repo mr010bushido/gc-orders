@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { flavourGroups, flavours, settings } from "../db/schema";
+import { flavourGroups, flavours, frostings, settings } from "../db/schema";
 import { createTestDb } from "../db/test-db";
-import { getCatalogue } from "./catalogue";
+import { getCatalogue, type Catalogue } from "./catalogue";
+import { resolveFrosting } from "./lookup";
 import { seedCatalogue } from "./seed";
 
 let database: Awaited<ReturnType<typeof createTestDb>>;
@@ -28,7 +29,7 @@ it("hides inactive items from the orderable catalogue only", async () => {
   await database.db.update(flavourGroups).set({ active: false }).where(eq(flavourGroups.key, "fruit"));
   const orderable = await getCatalogue(database.db);
   const full = await getCatalogue(database.db, { includeInactive: true });
-  const keys = (c: typeof full) => c.flavours.map(f => f.key);
+  const keys = (c: Catalogue) => c.flavours.map(f => f.key);
   expect(keys(orderable)).not.toContain("banana_cinnamon");
   expect(keys(orderable)).not.toContain("traditional_fruit_cake");
   expect(orderable.flavourGroups.map(g => g.key)).not.toContain("fruit");
@@ -42,4 +43,14 @@ it("reads edits on the next call instead of caching across requests", async () =
   const catalogue = await getCatalogue(database.db);
   expect(catalogue.flavourGroups.find(g => g.key === "classic")?.basePrice).toBe(1500);
   expect(catalogue.settings.max_tiers).toBe(4);
+});
+
+it("reports a hidden frosting as INACTIVE_ITEM through the full catalogue", async () => {
+  await database.db.update(frostings).set({ active: false }).where(eq(frostings.key, "fino_whip"));
+  const full = await getCatalogue(database.db, { includeInactive: true });
+  expect(resolveFrosting(full, "fino_whip")).toEqual({ ok: false, code: "INACTIVE_ITEM" });
+  expect(resolveFrosting(full, "ganache")).toEqual({ ok: false, code: "UNKNOWN_FROSTING" });
+  const orderable = await getCatalogue(database.db);
+  // @ts-expect-error lookups need the full catalogue so hidden items are not reported as unknown
+  expect(() => resolveFrosting(orderable, "fino_whip")).toThrow("full catalogue");
 });

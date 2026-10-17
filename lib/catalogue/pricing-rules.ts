@@ -10,6 +10,7 @@ export function toPricingRules(catalogue: Catalogue): PricingRules & { cake: Cak
     flavourPrices: Object.fromEntries(active.flavourGroups.map(g => [g.key, g.basePrice])),
     sizeMultipliers: Object.fromEntries(active.sizes.map(size => [size.size, size.multiplier])),
     addonPrices: Object.fromEntries(active.addons.map(a => [a.key, a.price])),
+    addonNames: Object.fromEntries(active.addons.map(a => [a.key, a.name])),
     deliveryFee: s.delivery_fee,
     rushRatePercent: s.rush_rate_percent,
     rushWindowHours: s.rush_window_hours,

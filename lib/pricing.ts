@@ -6,6 +6,8 @@ export type CakeRules = {
   flavourPrices: Readonly<Record<string, number>>;
   sizeMultipliers: Readonly<Record<number, number>>;
   addonPrices: Readonly<Record<string, number>>;
+  /** Display names for add-on lines; a missing name falls back to the key with spaces. */
+  addonNames?: Readonly<Record<string, string>>;
   deliveryFee: number;
   rushRatePercent: number;
   rushWindowHours: number;
@@ -35,7 +37,8 @@ function checkRules(rules: CakeRules) {
   const table = (value: unknown) => !!value && typeof value === "object" && Object.values(value).every(price => amount(price, 1));
   if (!rules || !table(rules.flavourPrices) || !table(rules.sizeMultipliers) || !table(rules.addonPrices)
     || !amount(rules.deliveryFee, 0) || !amount(rules.rushRatePercent, 0) || !amount(rules.rushWindowHours, 0) || !amount(rules.maxTiers, 1)
-    || !Number.isSafeInteger(rules.rushWindowHours * HOUR)) {
+    || !Number.isSafeInteger(rules.rushWindowHours * HOUR)
+    || (rules.addonNames !== undefined && (!rules.addonNames || typeof rules.addonNames !== "object" || Object.values(rules.addonNames).some(name => typeof name !== "string")))) {
     throw new RangeError("pricing rules need positive safe integer prices and nonnegative safe integer rates");
   }
 }
@@ -95,11 +98,12 @@ export function quote(input: QuoteInput, now: Date, rules: CakeRules = DEFAULT_C
   const multiplier = tierSizes.reduce((sum, size) => sum + sizeMultipliers[size], 0);
   const cakeHundredths = flavourPrices[input.flavourGroup] * multiplier;
   const isRush = eventUtc - LUSAKA_OFFSET - now.getTime() < rules.rushWindowHours * HOUR;
-  const rushHundredths = isRush ? cakeHundredths * rules.rushRatePercent / 100 : 0;
+  // Whole hundredths, half-up, so edited prices and rates never produce fractional line amounts.
+  const rushHundredths = isRush ? Math.floor((cakeHundredths * rules.rushRatePercent + 50) / 100) : 0;
   const addons = [...new Set(selectedAddons)].reduce((sum, addon) => sum + addonPrices[addon], 0);
   const delivery = input.delivery ? rules.deliveryFee : 0;
   const totalHundredths = cakeHundredths + rushHundredths + (addons + delivery) * 100;
-  if (!Number.isSafeInteger(Math.ceil(totalHundredths) + 100)) {
+  if (!Number.isSafeInteger(cakeHundredths * rules.rushRatePercent + 50) || !Number.isSafeInteger(totalHundredths + 100)) {
     throw new RangeError("quote exceeds safe integer hundredths");
   }
   const cake = Math.floor((cakeHundredths + 50) / 100);
@@ -111,7 +115,8 @@ export function quote(input: QuoteInput, now: Date, rules: CakeRules = DEFAULT_C
     lines.push({ kind: "rush", label: "Cake rush", quantity: 1, unitAmount: rushFee, amount: rushFee, amountHundredths: rushHundredths });
   }
   for (const addon of new Set(selectedAddons)) {
-    lines.push({ kind: "addon", label: addon.replaceAll("_", " "), quantity: 1, unitAmount: addonPrices[addon], amount: addonPrices[addon], amountHundredths: addonPrices[addon] * 100 });
+    const label = rules.addonNames && Object.hasOwn(rules.addonNames, addon) ? rules.addonNames[addon] : addon.replaceAll("_", " ");
+    lines.push({ kind: "addon", label, quantity: 1, unitAmount: addonPrices[addon], amount: addonPrices[addon], amountHundredths: addonPrices[addon] * 100 });
   }
   if (delivery > 0) {
     lines.push({ kind: "delivery", label: "Delivery", quantity: 1, unitAmount: delivery, amount: delivery, amountHundredths: delivery * 100 });

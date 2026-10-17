@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildCatalogue, defaultCatalogue, type Catalogue } from "./catalogue";
+import { buildCatalogue, defaultCatalogue, type FullCatalogue } from "./catalogue";
 import { resolveAddon, resolveDessertType, resolveFlavour, resolveFrosting, resolveSize } from "./lookup";
 
-function hide(catalogue: Catalogue, list: "flavourGroups" | "flavours" | "frostings" | "addons" | "dessertTypes", key: string): Catalogue {
+function hide(catalogue: FullCatalogue, list: "flavourGroups" | "flavours" | "frostings" | "addons" | "dessertTypes", key: string): FullCatalogue {
   return buildCatalogue({ ...catalogue, [list]: catalogue[list].map(item => item.key === key ? { ...item, active: false } : item) }, true);
 }
 
