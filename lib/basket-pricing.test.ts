@@ -213,4 +213,54 @@ describe("basket pricing", () => {
       expect(() => isCakeRushDate(date, now)).toThrow(expect.objectContaining({ code: "INVALID_DATE" }));
     }
   });
+
+  it("preserves line totals and unrounded deposit bases across generated baskets", () => {
+    const cakes: { input?: BasketInput["cake"]; hundredths: number; addonHundredths: number }[] = [
+      { hundredths: 0, addonHundredths: 0 },
+      { input: cake, hundredths: 104000, addonHundredths: 0 },
+      { input: { ...cake, tierSizes: [16] }, hundredths: 224900, addonHundredths: 0 },
+      { input: { ...cake, flavourGroup: "signature", tierSizes: [8, 10], addons: ["gloss_print"] }, hundredths: 252000, addonHundredths: 7500 },
+      { input: { ...cake, flavourGroup: "fruit", tierSizes: [8, 10, 16], addons: ["edible_print", "message_topper", "edible_print"] }, hundredths: 706000, addonHundredths: 20000 },
+      { input: { ...cake, flavourGroup: "vegan_diabetic", tierSizes: [14] }, hundredths: 244800, addonHundredths: 0 },
+    ];
+    let checked = 0;
+    for (const selectedCake of cakes) {
+      for (const eventDay of [11, 12, 13, 15, 16, 17]) {
+        const eventDate = `2026-09-${eventDay}`;
+        const notice = Date.parse(`${eventDate}T00:00:00+02:00`) - now.getTime();
+        for (const quantity of [0, 30, 31]) {
+          if (!selectedCake.input && quantity > 0 && notice < 5 * 86400000) continue;
+          for (const rate of [0, 2000, 2001, 2006]) {
+            for (const delivery of [false, true]) {
+              for (const quoteAmount of [0, 501]) {
+                if (!selectedCake.input && quantity === 0 && quoteAmount === 0) continue;
+                const desserts = quantity > 0 ? [{ type: "cupcakes", quantity }, { type: "brownies", quantity: 30 }] : [];
+                const generated: BasketInput = {
+                  cake: selectedCake.input,
+                  desserts,
+                  quoteLines: quoteAmount > 0 ? [{ label: "Decoration", amount: quoteAmount }] : [],
+                  eventDate,
+                  delivery,
+                };
+                const result = priceBasket(generated, now, { ...DEFAULT_RULES, dessertSurchargeBasisPoints: rate });
+                const cakeRush = selectedCake.input && notice < 2 * 86400000 ? selectedCake.hundredths / 5 : 0;
+                const dessertSubtotal = quantity > 0 ? (quantity + 30) * 3000 : 0;
+                const dessertSurcharge = selectedCake.input && notice < 5 * 86400000 ? Math.round(dessertSubtotal * rate / 10000) : 0;
+                const unroundedHundredths = selectedCake.hundredths + selectedCake.addonHundredths + cakeRush + dessertSubtotal + dessertSurcharge + (delivery ? 15000 : 0) + quoteAmount * 100;
+                expect(result.lines.reduce((sum, item) => sum + item.amount, 0)).toBe(result.total);
+                expect(result.lines.reduce((sum, item) => sum + item.amountHundredths, 0)).toBe(unroundedHundredths);
+                expect(result.deposit).toBe(Math.round(unroundedHundredths / 200));
+                for (const item of result.lines) {
+                  expect(item.amount).toBe(Math.round(item.amountHundredths / 100));
+                  expect(Number.isSafeInteger(item.amountHundredths)).toBe(true);
+                }
+                checked += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(checked).toBe(1552);
+  });
 });
