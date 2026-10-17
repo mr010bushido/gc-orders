@@ -32,7 +32,7 @@ it("committed migrations never reference platform schemas", async () => {
   }
 });
 
-it.each(["select auth.uid()", 'select * from "auth"."users"', 'select * from "storage" . objects', "select * from STORAGE.objects"])("detects forbidden reference %s", (migration) => {
+it.each(['select "auth".uid()', 'select * from "auth"."users"', 'select * from "storage" . objects', "select * from STORAGE.objects"])("detects forbidden reference %s", (migration) => {
   expect(hasPlatformSchemaReference(migration)).toBe(true);
 });
 

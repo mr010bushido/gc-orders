@@ -40,7 +40,42 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid"; wait "$server_pid" 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
-            if curl -fsS "http://127.0.0.1:$port/api/health"; then exit 0; fi
+            status=$(curl -sS -o /tmp/health.json -w '%{http_code}' "http://127.0.0.1:$port/api/health" || true)
+            if [ "$status" = 503 ]; then
+              node -e 'require("node:assert/strict").deepEqual(JSON.parse(require("node:fs").readFileSync("/tmp/health.json", "utf8")), { status: "fail", checks: { database: "fail" } })'
+              exit 0
+            fi
             sleep 1
           done
           exit 1
+
+  migrate-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: cakes
+          POSTGRES_PASSWORD: local-cakes-only
+          POSTGRES_DB: cakes_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cakes -d cakes_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_MIGRATION_URL: postgres://cakes:local-cakes-only@127.0.0.1:5432/cakes_test
+      TEST_DATABASE_URL: postgres://cakes:local-cakes-only@127.0.0.1:5432/cakes_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:migrate
+      - run: pnpm test lib/db/schema.test.ts lib/db/postgres.test.ts

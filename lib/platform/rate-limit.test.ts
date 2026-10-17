@@ -49,4 +49,3 @@ it("rejects invalid input before asking for a database", async () => {
     await expect(unavailable.hit(key, limit, window)).rejects.toThrow("Rate limit requires");
   }
 });
- 
