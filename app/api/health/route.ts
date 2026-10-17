@@ -1,3 +1,4 @@
+import "../../../lib/db/health";
 import { runHealthChecks } from "../../../lib/platform/health";
 
 export async function GET() {
