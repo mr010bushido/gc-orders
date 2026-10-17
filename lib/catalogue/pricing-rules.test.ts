@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULES, priceBasket, type BasketInput } from "../basket-pricing";
 import { DEFAULT_CAKE_RULES, quote, type QuoteInput } from "../pricing";
-import { defaultCatalogue } from "./catalogue";
+import { buildCatalogue, defaultCatalogue, type Catalogue } from "./catalogue";
 import { resolveFlavour } from "./lookup";
 import { toPricingRules } from "./pricing-rules";
+import { resolveSettings } from "./settings";
 
 const catalogue = defaultCatalogue();
 const rules = toPricingRules(catalogue);
@@ -116,5 +117,53 @@ describe("toPricingRules on the seeded catalogue", () => {
     expect(rules.cake.addonPrices).toEqual({ edible_print: 100, gloss_print: 75, message_topper: 100 });
     expect(Object.fromEntries(Object.entries(rules.dessertTypes!).map(([key, d]) => [key, d.price]))).toEqual(Object.fromEntries(catalogue.dessertTypes.map(d => [d.key, 30])));
     expect(rules.minimumDessertQuantity).toBe(30);
+  });
+});
+
+describe("toPricingRules after owner edits", () => {
+  const now = new Date("2026-09-14T12:00:00+02:00");
+  const cake = { flavourGroup: "classic", tierSizes: [10], addons: [], delivery: false, eventDate: "2026-09-22" };
+  const edit = (changes: Partial<Catalogue>) => buildCatalogue({ ...catalogue, ...changes }, true);
+
+  it("prices a classic 10-inch cake at a changed K1,500 base", () => {
+    const edited = edit({ flavourGroups: catalogue.flavourGroups.map(g => g.key === "classic" ? { ...g, basePrice: 1500 } : g) });
+    expect(quote(cake, now, toPricingRules(edited).cake).cake).toBe(1500);
+  });
+
+  it("takes the tier limit from the setting", () => {
+    const fourTiers = toPricingRules(edit({ settings: resolveSettings([{ key: "max_tiers", value: 4 }]) })).cake;
+    expect(quote({ ...cake, tierSizes: [8, 10, 12, 14] }, now, fourTiers).cake).toBe(5772);
+    expect(() => quote({ ...cake, tierSizes: [8, 10, 12, 14, 16] }, now, fourTiers)).toThrow("1-4 tiers");
+    expect(() => quote({ ...cake, tierSizes: [8, 10, 12, 14] }, now, rules.cake)).toThrow("1-3 tiers");
+  });
+
+  it("excludes inactive items", () => {
+    const hidden = toPricingRules(edit({
+      flavourGroups: catalogue.flavourGroups.map(g => g.key === "fruit" ? { ...g, active: false } : g),
+      sizes: catalogue.sizes.map(s => s.size === 16 ? { ...s, active: false } : s),
+      addons: catalogue.addons.map(a => a.key === "gloss_print" ? { ...a, active: false } : a),
+      dessertTypes: catalogue.dessertTypes.map(d => d.key === "brownies" ? { ...d, active: false } : d),
+    }));
+    expect(Object.keys(hidden.cake.flavourPrices)).not.toContain("fruit");
+    expect(() => quote({ ...cake, flavourGroup: "fruit" }, now, hidden.cake)).toThrow("flavour");
+    expect(() => quote({ ...cake, tierSizes: [16] }, now, hidden.cake)).toThrow("tier size");
+    expect(() => quote({ ...cake, addons: ["gloss_print"] }, now, hidden.cake)).toThrow("add-on");
+    const brownies = { desserts: [{ type: "brownies", quantity: 30 }], delivery: false, eventDate: "2026-09-22" };
+    expect(() => priceBasket(brownies, now, hidden)).toThrow(expect.objectContaining({ code: "UNKNOWN_DESSERT" }));
+    expect(() => priceBasket({ ...brownies, cake: { flavourGroup: "fruit", tierSizes: [10], addons: [] }, desserts: [] }, now, hidden)).toThrow(expect.objectContaining({ code: "INVALID_CAKE" }));
+    expect(priceBasket({ ...brownies, desserts: [{ type: "cupcakes", quantity: 30 }] }, now, hidden).total).toBe(900);
+  });
+
+  it("uses edited fees and rates from settings", () => {
+    const edited = toPricingRules(edit({ settings: resolveSettings([
+      { key: "delivery_fee", value: 200 }, { key: "rush_rate_percent", value: 25 }, { key: "rush_window_hours", value: 24 },
+      { key: "dessert_surcharge_percent", value: 10 }, { key: "dessert_min_quantity", value: 12 }, { key: "dessert_lead_days", value: 3 },
+    ]) }));
+    expect(quote({ ...cake, delivery: true }, now, edited.cake)).toMatchObject({ delivery: 200, rushFee: 0 });
+    expect(quote({ ...cake, eventDate: "2026-09-15" }, now, edited.cake).rushFee).toBe(325);
+    expect(quote({ ...cake, eventDate: "2026-09-16" }, now, edited.cake).rushFee).toBe(0);
+    const desserts = { desserts: [{ type: "cupcakes", quantity: 12 }], delivery: true, eventDate: "2026-09-18" };
+    expect(priceBasket(desserts, now, edited).total).toBe(560);
+    expect(priceBasket({ ...desserts, cake: { flavourGroup: "classic", tierSizes: [10], addons: [] }, eventDate: "2026-09-16" }, now, edited).lines.find(l => l.kind === "dessert_surcharge")?.amount).toBe(36);
   });
 });
