@@ -159,3 +159,29 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 Tooling (not a product decision): pnpm, Vitest, Drizzle, Tailwind v4 with the design tokens as shipped.
 
 The prototype's mock-order totals (e.g. Black Forest 12" delivery K1,860 vs K1,830 by the rules) are treated as illustrative. The PRD's App. B rules win.
+
+## OpenSpec change map (proposed in JMS-166)
+
+Each change is one Linear issue and one branch, created when its implementer is delegated. "Needs" lists changes that must be merged first. Platform work (`platform-portability`, JMS-165) must land before any backend change. `scaffold-nextjs-app` must be archived before `basket-pricing`.
+
+| # | Change | Covers | Owner | Needs |
+|---|---|---|---|---|
+| 1 | `design-system-components` | 6.4, 6.5 | Claude | none |
+| 2 | `basket-pricing` | 1.16, 2.1, Q17–19, Q32–33 | Codex | none |
+| 3 | `database-foundation` | 7.2 | Codex | JMS-165 |
+| 4 | `catalogue-pricing-config` | 2.2, Q12, Q27, Q28 | Codex | 2, 3 |
+| 5 | `order-lifecycle` | 4.x, 1.10, Q9, Q23, Q37, Q38, D4 | Codex | 4 |
+| 6 | `date-availability` | 1.7, 3.8, 3.9 (data), Q20, Q31 | Codex | 5 |
+| 7 | `notifications` | 5.x, D1, D2, Q10 | Codex | 5 |
+| 8 | `booking-flow` | 1.1–1.11, 1.15, Q15, Q24 | both | 1, 5, 6, 7 |
+| 9 | `order-tracking` | 1.12–1.14, Q5 | both | 5, 7, 8 |
+| 10 | `owner-auth` | 3.1, Q26, Q34 | both | JMS-165, 1 |
+| 11 | `owner-orders` | 3.2–3.7, 3.10, D3, Q7 | both | 1, 5, 7, 10 |
+| 12 | `owner-availability` | 3.8, 3.9 (screen) | both | 6, 10, 11 |
+| 13 | `owner-settings` | 3.11, Q27 | both | 4, 10 |
+| 14 | `image-uploads` | 1.5.1, Q39 | both | JMS-165, 8, 11 |
+| 15 | `order-expiry` | 4.2, Q29, Q35 | Codex | 5, 7, JMS-165 |
+| 16 | `quote-requests` | 1.5.3, Q14, Q21, Q22 | both | 8, 9, 11, 14 |
+| 17 | `data-retention` | 7.9, Q40 | both | 14, 15, 16 |
+
+Not a change: connecting Vercel, splitting environment variables, buying the domain (7.6 to 7.8). A human does these.

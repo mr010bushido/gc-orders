@@ -1,0 +1,19 @@
+## 1. Write functions (Codex)
+
+- [ ] 1.1 `lib/catalogue/admin.ts`: update prices and multipliers with validation and `updated_at`; tests for bounds and hundredths conversion
+- [ ] 1.2 Add, rename, reprice, hide for flavours, frostings, add-ons and dessert types; duplicate-name and `LAST_ACTIVE_ITEM` rules; tests
+- [ ] 1.3 Settings writes for fees and rules, time windows (order and overlap checks), payment numbers (normalised), map link (https) and alert phone; tests
+- [ ] 1.4 Server actions per section with `requireOwner()`, field-error result types and a test that an existing order is unchanged after edits
+
+## 2. Screens (Claude)
+
+- [ ] 2.1 `/owner/settings` section navigation and the "applies to new bookings" notice
+- [ ] 2.2 Prices and Sizes sections (grouped flavour list, hide toggle, add form, multipliers as decimals)
+- [ ] 2.3 Fees and rules, Time windows, Payment and contact sections with inline errors and a previous-value comparison before saving prices
+- [ ] 2.4 Add the Settings item to the owner nav; component tests
+
+## 3. Integration (Claude owns this check)
+
+- [ ] 3.1 Test: change a base price in settings, load the booking form data and the quote, and confirm both use it while an existing order keeps its price
+- [ ] 3.2 Check at 375px and 1280px in light and dark and note the result on this line
+- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-settings --strict` passes
