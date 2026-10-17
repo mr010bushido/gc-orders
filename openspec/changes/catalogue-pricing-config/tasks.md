@@ -1,6 +1,6 @@
 ## 1. Model
 
-- [ ] 1.1 Drizzle schema and migration for `flavour_groups`, `flavours`, `frostings`, `size_multipliers`, `addons`, `dessert_types`, `settings` (RLS enabled, conventions from `data-layer`)
+- [x] 1.1 Drizzle schema and migration for `flavour_groups`, `flavours`, `frostings`, `size_multipliers`, `addons`, `dessert_types`, `settings` (RLS enabled, conventions from `data-layer`) — gate: `pnpm test lib/db/catalogue.test.ts lib/db/schema.test.ts lib/db/migrations.test.ts` → 11 passed; `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm check:portability`, `openspec validate catalogue-pricing-config --strict`, `git diff --check` → passed. Full-suite check: `pnpm test` twice timed out in `lib/db/test-db.test.ts` at its 5-second limit; `pnpm test --maxWorkers=2` → 286 passed, 1 skipped. Default-concurrency failure is not claimed as pre-existing or passed; no timeout/configuration changes made.
 - [ ] 1.2 `lib/catalogue/settings.ts` registry with types, defaults and bounds, and tests for bound checks
 - [ ] 1.3 `lib/catalogue/defaults.ts` from PRD Appendix A/B and `pnpm db:seed` (idempotent, never overwrites), with a PGlite test for fresh and repeated seeds
 
