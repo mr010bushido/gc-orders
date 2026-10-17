@@ -19,7 +19,7 @@
 
 ## 4. Owner components
 
-- [ ] 4.1 `OrderCard` using the existing `StatusPill`, with tests
+- [x] 4.1 `OrderCard` using the existing `StatusPill`, with tests (renders a `<button>` with `aria-current` when given `onSelect`, otherwise a plain block) — gate: pnpm test components/ui/OrderCard → 3 passed; pnpm lint, pnpm typecheck → pass
 - [ ] 4.2 `Sheet` on native `<dialog>` with bottom-sheet and side-panel layouts, focus return, with tests
 
 ## 5. Gallery and checks
