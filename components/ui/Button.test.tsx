@@ -46,3 +46,12 @@ describe('Button', () => {
     expect(link.className).toBe(screen.getByRole('button', { name: 'Book' }).className);
   });
 });
+
+describe('Button block', () => {
+  it('stays full width at every size', () => {
+    render(<Button block>Confirm</Button>);
+    const button = screen.getByRole('button', { name: 'Confirm' });
+    expect(button.className).toContain('w-full');
+    expect(button.className).not.toContain('sm:w-auto');
+  });
+});

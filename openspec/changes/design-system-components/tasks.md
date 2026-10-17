@@ -20,7 +20,7 @@
 ## 4. Owner components
 
 - [x] 4.1 `OrderCard` using the existing `StatusPill`, with tests (renders a `<button>` with `aria-current` when given `onSelect`, otherwise a plain block) — gate: pnpm test components/ui/OrderCard → 3 passed; pnpm lint, pnpm typecheck → pass
-- [ ] 4.2 `Sheet` on native `<dialog>` with bottom-sheet and side-panel layouts, focus return, with tests
+- [x] 4.2 `Sheet` on native `<dialog>` with bottom-sheet and side-panel layouts, focus return, with tests (jsdom has no `showModal`, so `vitest.setup.ts` mirrors the browser: showModal/close, the `close` event and Escape → `cancel`; scroll lock is one CSS rule in `app/globals.css`; `Button` gained a `block` prop so the 1fr/2fr action bar stays full width) — gate: pnpm test components/ui → 65 passed; pnpm lint, pnpm typecheck → pass
 
 ## 5. Gallery and checks
 

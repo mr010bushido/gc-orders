@@ -10,3 +10,8 @@
   outline-offset: 2px;
   box-shadow: var(--gc-focus-ring);
 }
+
+/* Keep the page still behind an open Sheet. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
