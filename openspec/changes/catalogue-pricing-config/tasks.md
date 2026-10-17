@@ -11,7 +11,7 @@
 
 ## 3. Pricing from the catalogue
 
-- [ ] 3.1 Add a rules parameter to `quote()` (default = current constants), loosen key types to strings with runtime checks, take the tier limit from rules; existing tests unchanged
+- [x] 3.1 Add a rules parameter to `quote()` (default = current constants), loosen key types to strings with runtime checks, take the tier limit from rules; existing tests unchanged. `quote(input, now, rules = DEFAULT_CAKE_RULES)` takes a `CakeRules` object (flavour, size and add-on tables plus delivery fee, rush rate percent, rush window hours and max tiers), validates it as safe integers and guards the total against unsafe hundredths; the tier error reads `1-<maxTiers> tiers` — gate: `pnpm test lib/pricing.test.ts lib/basket-pricing.test.ts` → 132 passed with both test files unchanged; `pnpm lint`, `pnpm typecheck` → passed.
 - [ ] 3.2 `toPricingRules(catalogue)` and tests: the seeded catalogue reproduces every `cake-pricing` and `basket-pricing` scenario, and every PRD Appendix A price
 - [ ] 3.3 Tests for changed base price, raised tier limit and inactive items excluded
 
