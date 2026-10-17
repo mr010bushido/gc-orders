@@ -1,0 +1,135 @@
+/* Giuseppe's Cakes — design tokens v1.1
+   Light is the default. Dark applies with class="dark" (or data-theme="dark") on <html>,
+   or automatically from the OS unless data-theme="light" is set. */
+:root {
+  --gc-bg: #F7F0E1;
+  --gc-surface: #FFFDF8;
+  --gc-selected: #FBF6EC;
+  --gc-ink: #33404A;
+  --gc-ink-soft: #5E6C76;
+  --gc-ink-mute: #71808A;
+  --gc-brand: #9E2B2E;
+  --gc-brand-hover: #7C2124;
+  --gc-on-brand: #FFFDF8;
+  --gc-brand-ink: #9E2B2E;
+  --gc-brand-ink-hover: #7C2124;
+  --gc-gold: #B8925A;
+  --gc-gold-wash: #F6EEDD;
+  --gc-gold-ink: #7A5C2E;
+  --gc-line: #E6DCC7;
+  --gc-line-strong: #D3C5A8;
+  --gc-disabled-bg: #F2EADA;
+  --gc-disabled-ink: #8A7F6C;
+  --gc-ok-bg: #EEF3E7;
+  --gc-ok-ink: #55663F;
+  --gc-ok-dot: #748365;
+  --gc-warn-bg: #FBEFE3;
+  --gc-warn-ink: #8A5A22;
+  --gc-warn-dot: #C98A45;
+  --gc-err-bg: #F7E7E5;
+  --gc-err-ink: #9A4A3D;
+  --gc-err-dot: #B8695B;
+  --gc-info-bg: #ECEEEF;
+  --gc-info-ink: #4A5660;
+  --gc-past: #B7AE9D;
+  --gc-scrim: rgba(51, 64, 74, 0.38);
+  --gc-logo-blend: multiply;
+  --gc-shadow-float: 0 12px 32px -12px rgba(51, 64, 74, 0.22);
+  --gc-focus-ring: 0 0 0 3px rgba(158, 43, 46, 0.14);
+
+  --gc-font-display: 'Cormorant Garamond', Georgia, serif;
+  --gc-font-sans: 'Inter', system-ui, sans-serif;
+
+  --gc-radius-sm: 4px;   /* inputs, checkboxes */
+  --gc-radius-md: 8px;   /* buttons, cards, banners */
+  --gc-radius-lg: 16px;  /* bottom-sheet top corners */
+  --gc-radius-pill: 999px;
+
+  --gc-space-1: 4px; --gc-space-2: 8px; --gc-space-3: 12px; --gc-space-4: 16px;
+  --gc-space-5: 20px; --gc-space-6: 24px; --gc-space-8: 32px; --gc-space-12: 48px; --gc-space-16: 64px;
+
+  --gc-touch: 44px; --gc-btn-h: 52px; --gc-input-h: 48px;
+  color-scheme: light;
+}
+
+:root.dark, :root[data-theme="dark"] {
+  --gc-bg: #1B1714;
+  --gc-surface: #24201C;
+  --gc-selected: #2B241F;
+  --gc-ink: #F2E9DA;
+  --gc-ink-soft: #B5AA99;
+  --gc-ink-mute: #8C8274;
+  --gc-brand: #A93A3C;
+  --gc-brand-hover: #BC4547;
+  --gc-on-brand: #FFF8EE;
+  --gc-brand-ink: #E88A82;
+  --gc-brand-ink-hover: #F2A59E;
+  --gc-gold: #C9A46A;
+  --gc-gold-wash: #2E271D;
+  --gc-gold-ink: #D9B97F;
+  --gc-line: #37302A;
+  --gc-line-strong: #4A4138;
+  --gc-disabled-bg: #2C2723;
+  --gc-disabled-ink: #7F7568;
+  --gc-ok-bg: #212A1C;
+  --gc-ok-ink: #A9BD90;
+  --gc-ok-dot: #8DA076;
+  --gc-warn-bg: #33261A;
+  --gc-warn-ink: #E7B47B;
+  --gc-warn-dot: #C98A45;
+  --gc-err-bg: #36201C;
+  --gc-err-ink: #EA9C8E;
+  --gc-err-dot: #C27768;
+  --gc-info-bg: #252B30;
+  --gc-info-ink: #B9C4CC;
+  --gc-past: #5C5348;
+  --gc-scrim: rgba(0, 0, 0, 0.55);
+  --gc-logo-blend: normal;
+  --gc-shadow-float: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+  --gc-focus-ring: 0 0 0 3px rgba(232, 138, 130, 0.25);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not([data-theme="light"]):not(.dark):not([data-theme="dark"]) {
+    --gc-bg: #1B1714;
+    --gc-surface: #24201C;
+    --gc-selected: #2B241F;
+    --gc-ink: #F2E9DA;
+    --gc-ink-soft: #B5AA99;
+    --gc-ink-mute: #8C8274;
+    --gc-brand: #A93A3C;
+    --gc-brand-hover: #BC4547;
+    --gc-on-brand: #FFF8EE;
+    --gc-brand-ink: #E88A82;
+    --gc-brand-ink-hover: #F2A59E;
+    --gc-gold: #C9A46A;
+    --gc-gold-wash: #2E271D;
+    --gc-gold-ink: #D9B97F;
+    --gc-line: #37302A;
+    --gc-line-strong: #4A4138;
+    --gc-disabled-bg: #2C2723;
+    --gc-disabled-ink: #7F7568;
+    --gc-ok-bg: #212A1C;
+    --gc-ok-ink: #A9BD90;
+    --gc-ok-dot: #8DA076;
+    --gc-warn-bg: #33261A;
+    --gc-warn-ink: #E7B47B;
+    --gc-warn-dot: #C98A45;
+    --gc-err-bg: #36201C;
+    --gc-err-ink: #EA9C8E;
+    --gc-err-dot: #C27768;
+    --gc-info-bg: #252B30;
+    --gc-info-ink: #B9C4CC;
+    --gc-past: #5C5348;
+    --gc-scrim: rgba(0, 0, 0, 0.55);
+    --gc-logo-blend: normal;
+    --gc-shadow-float: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+    --gc-focus-ring: 0 0 0 3px rgba(232, 138, 130, 0.25);
+    color-scheme: dark;
+  }
+}
+
+body { background: var(--gc-bg); color: var(--gc-ink); font-family: var(--gc-font-sans); }
+a { color: var(--gc-brand-ink); }
+a:hover { color: var(--gc-brand-ink-hover); }
