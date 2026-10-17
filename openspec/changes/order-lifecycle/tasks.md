@@ -1,6 +1,6 @@
 ## 1. Phone and reference helpers
 
-- [ ] 1.1 `lib/phone.ts` `normaliseZambianMobile` with tests from the `phone-numbers` scenarios
+- [x] 1.1 `lib/phone.ts` `normaliseZambianMobile` with tests from the `phone-numbers` scenarios — gate: pnpm test lib/phone.test.ts → 13 passed
 - [ ] 1.2 Schema and migration for `orders`, `order_lines`, `pop_submissions`, `order_status_events`, `reference_counters` (RLS on; check constraints for status, fulfilment, time window, actor, and nullable PII columns allowed only when `anonymised_at` is set)
 - [ ] 1.3 `lib/orders/reference.ts` allocating references in the caller's transaction; PGlite tests for first of year, Lusaka year boundary, concurrency, rollback and five-digit numbers
 
