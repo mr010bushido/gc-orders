@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "check:portability": "node scripts/check-portability.mjs",
     "test": "vitest run"
   },
   "dependencies": {
