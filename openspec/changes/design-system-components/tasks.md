@@ -8,7 +8,7 @@
 - [x] 2.1 `Button` (primary, ghost, link form) with tests (added `vitest.setup.ts` with Testing Library cleanup for the jsdom project) — gate: pnpm test components/ui/Button → 5 passed; pnpm lint, pnpm typecheck → pass
 - [x] 2.2 `Input` with label, helper and error states, with tests — gate: pnpm test components/ui/Input → 4 passed; pnpm lint, pnpm typecheck → pass
 - [x] 2.3 `RadioCardGroup` with keyboard tests (arrow keys come from the native radio group, no custom key handler) — gate: pnpm test components/ui/RadioCardGroup → 4 passed; pnpm lint, pnpm typecheck → pass
-- [ ] 2.4 `AddonList` with tests
+- [x] 2.4 `AddonList` with tests (prices are whole-Kwacha numbers, so `formatKwacha` in `components/ui/format.ts` was added here rather than in 3.3) — gate: pnpm test components/ui/AddonList → 3 passed; pnpm lint, pnpm typecheck → pass
 
 ## 3. Booking components
 
