@@ -6,7 +6,7 @@
 
 ## 2. Creation
 
-- [ ] 2.1 zod schemas for each line kind's `meta`
+- [x] 2.1 zod schemas for each line kind's `meta` (`lib/orders/line-meta.ts`; added `zod` 4.6.7 with `pnpm add`, lockfile updated). Cake meta snapshots flavour and frosting key and name, diet and tiers; add-on keeps its key; dessert keeps its type and flavour-split note; other kinds are `{}` — gate: pnpm test lib/orders/line-meta.test.ts → 9 passed; pnpm typecheck, pnpm lint → pass
 - [ ] 2.2 `createOrder(db, input, now)` from a `basket-pricing` result: order, lines, first event, reference, token hash, payment deadline; tests for atomicity, snapshot stability and delivery address
 
 ## 3. Transitions
