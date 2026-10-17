@@ -6,7 +6,7 @@
 
 ## 2. Tests
 
-- [ ] 2.1 `lib/db/test-db.ts`: create a fresh PGlite database with the committed migrations applied, for use by later changes
+- [x] 2.1 `lib/db/test-db.ts`: create a fresh PGlite database with committed migrations applied, for later changes. Gate: `pnpm test lib/db/test-db.test.ts` 1 passed; `pnpm typecheck` passed; isolated databases and shared `Db` assignment checked.
 - [ ] 2.2 Schema check tests: RLS enabled on every `public` table, no `auth.`/`storage.` references in migrations, column conventions (no `timestamp` without time zone, no enum types, no `serial`)
 - [ ] 2.3 Migration idempotency test: applying twice changes nothing
 
