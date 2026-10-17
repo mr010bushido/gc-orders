@@ -18,4 +18,4 @@
 
 ## 4. Verify
 
-- [ ] 4.1 Schema checks from `data-layer` pass for the new tables; `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate order-lifecycle --strict` passes
+- [x] 4.1 Schema checks from `data-layer` pass for the new tables; `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate order-lifecycle --strict` passes. Full suite run as `pnpm test --maxWorkers=2` because the default concurrency times out PGlite tests on `develop` too (pre-existing; timeouts not raised). The one skipped test is the pre-existing `lib/db/postgres.test.ts`, which needs `TEST_DATABASE_URL` (CI `migrate-postgres` job) — gate: pnpm lint → pass; pnpm typecheck → pass; pnpm check:portability → pass; pnpm test --maxWorkers=2 → 464 passed, 1 skipped (45 files); pnpm build → pass; openspec validate order-lifecycle --strict → valid
