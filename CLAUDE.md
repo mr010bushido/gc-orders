@@ -52,7 +52,7 @@ Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` starts from the commi
 - **Open PRs with an explicit base.** Use `gh pr create --base develop` for features. `main` is GitHub's default branch, so a bare `gh pr create` targets `main`, which is wrong for features.
 - **Branch names and PR titles carry the Linear key.** Branch: `feature/jms-162-<openspec-change>`. PR title: `JMS-162: …`. The key links both to the issue.
 - **Link to files on `develop` or `main`,** never on a feature branch, in Linear issues and docs. Feature branches are deleted after merge, which breaks the links.
-- **Delete the branch after merging,** then run `/opsx:archive` for its change.
+- **Delete the branch after merging,** then run `/opsx:archive` for its change. Set the Linear issue to Done once the archive PR merges.
 
 ## Code
 
@@ -114,6 +114,7 @@ Implementers also do not push, open or update PRs. They commit to their own bran
 7. **Block, never guess.** If a task is ambiguous, reveals a design problem, needs a forbidden action, or has a gate that cannot pass, stop. Prefix the line `BLOCKED: <one-line question>`, commit the work so far, and return. Do not start later tasks and do not wait for an answer. After an answer, remove the prefix, record the answer on the line and continue.
 8. **Return** the change name, branch, tasks ticked with their gates, any BLOCKED lines, and overall `N/M` progress. When the last task is ticked, recommend opening a PR into `develop`; the user pushes and opens it.
 9. No interactive prompts, no production secrets, and commits only to your own branch.
+10. **Keep Linear status current.** The coordinator moves the change's Linear issue: In Progress when the branch is created, In Review when the PR is opened, Done when the PR that archives the change merges (a merged feature PR alone does not close it). It reports each update in its final message, and says so if Linear is unavailable instead of claiming it was updated. Implementers never touch Linear.
 
 ## Portability guardrails
 
