@@ -1,6 +1,6 @@
 import { and, eq, gt, lte, type SQL } from "drizzle-orm";
 import type { Db } from "../db";
-import { orders, orderStatusEvents } from "../db/schema";
+import { orders, orderStatusEvents, popSubmissions } from "../db/schema";
 import type { Actor, OrderStatus } from "../db/schema/orders";
 import { isOrderId, OrderError, paymentExpiryHours, type Order } from "./orders";
 
@@ -47,4 +47,22 @@ async function refusal(db: Db, orderId: string, action: Action, now: Date): Prom
   const lapsed = current.status === "expired" || (current.status === "awaiting_payment" && current.paymentDueAt! <= now);
   if (action === "submit_pop" && lapsed) return new OrderError("ORDER_EXPIRED");
   return new OrderError("INVALID_TRANSITION", `cannot ${action} an order that is ${current.status}`);
+}
+
+/**
+ * Stores the customer's POP text (trimmed, 10–2,000 characters). An `awaiting_payment` order moves to `awaiting_verification`;
+ * a flagged order keeps its status and gains another submission. Anything else is refused.
+ */
+export async function submitPop(db: Db, orderId: string, text: string, now: Date): Promise<{ order: Order; resubmitted: boolean }> {
+  const trimmed = typeof text === "string" ? text.trim() : "";
+  if (trimmed.length < 10 || trimmed.length > 2000) throw new OrderError("POP_TEXT_INVALID");
+  if (!isOrderId(orderId)) throw new OrderError("ORDER_NOT_FOUND");
+  return db.transaction(async (tx) => {
+    // The row lock keeps a concurrent verify or clearFlag from slipping between this check and the insert.
+    const [current] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
+    const resubmitted = current?.status === "awaiting_verification" && current.flaggedAt !== null;
+    const order = resubmitted ? current : await transition(tx, orderId, "submit_pop", "customer", now);
+    await tx.insert(popSubmissions).values({ orderId, text: trimmed, submittedAt: now });
+    return { order, resubmitted };
+  });
 }

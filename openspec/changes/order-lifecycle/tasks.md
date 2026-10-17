@@ -12,7 +12,7 @@
 ## 3. Transitions
 
 - [x] 3.1 `lib/orders/transitions.ts` with the allowed-transition table (including `decline`) and compare-and-set updates writing events; tests for every legal and illegal pair (6 actions × 6 statuses) and a concurrent verify. `transition(db, id, action, actor, now)` takes the caller's actor (design: callers pass an actor) and rejects one that does not match the table. Additions: `send_quote` sets `payment_due_at` from the expiry setting (Q21); `verify` clears the flag (the schema forbids a flag outside verification); `submit_pop` only matches while the deadline is in the future and `expire` only once it has passed, so the job and a late POP cannot both win; unknown ids give `ORDER_NOT_FOUND` — gate: pnpm test lib/orders/transitions.test.ts → 43 passed; pnpm test lib/orders → 69 passed; pnpm typecheck, pnpm lint → pass
-- [ ] 3.2 `submitPop` (validation, resubmission while flagged, `ORDER_EXPIRED`)
+- [x] 3.2 `submitPop` (validation, resubmission while flagged, `ORDER_EXPIRED`) in `lib/orders/transitions.ts`: locks the order row, then either adds a submission to a flagged order or runs the `submit_pop` transition, all in one transaction; a second POP on an unflagged order is `INVALID_TRANSITION`; past the deadline is `ORDER_EXPIRED` even before the job runs. Returns `{ order, resubmitted }` for notifications — gate: pnpm test lib/orders/pop.test.ts → 8 passed; pnpm typecheck, pnpm lint → pass
 - [ ] 3.3 `setFlag` / `clearFlag`, verify-clears-flag, `markBalancePaid`, `complete` with `balanceUnpaid`, `markSeen`
 - [ ] 3.4 `effectiveStatus`, `getTimeline` and `findOrderByToken` with tests
 
