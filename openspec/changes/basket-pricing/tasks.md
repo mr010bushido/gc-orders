@@ -1,7 +1,7 @@
 ## 1. Extend the cake quote
 
 - [x] 1.1 Add an enumerable `lines` array (cake, rush, one per add-on, delivery) to `quote()` without changing existing fields. Coordinator answer: YES, update the four exact-object assertions to accept `lines`; added `lines: expect.any(Array)` while retaining every existing value assertion because the new enumerable field changes the result shape. — gate: pnpm test lib/pricing.test.ts → 38 passed; pnpm lint, pnpm typecheck, openspec validate basket-pricing --strict → passed
-- [ ] 1.2 Test that the line amounts of every `cake-pricing` scenario sum to its total
+- [x] 1.2 Test that the line amounts of every valid `cake-pricing` scenario sum to its total, plus fractional rush, duplicate add-ons, line ordering and JSON enumeration; rejection scenarios retain their existing rejection tests because they return no total. — gate: pnpm test lib/pricing.test.ts → 47 passed; pnpm lint, pnpm typecheck → passed; openspec validate basket-pricing --strict → passed
 
 ## 2. Basket pricing
 

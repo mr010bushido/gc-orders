@@ -11,6 +11,37 @@ const input: QuoteInput = {
 };
 
 describe("cake pricing", () => {
+  it.each<{ scenario: string; overrides: Partial<QuoteInput> }>([
+    { scenario: "Single tier", overrides: {} },
+    { scenario: "Multiple tiers", overrides: { flavourGroup: "signature", tierSizes: [8, 10] } },
+    { scenario: "Within 48 hours", overrides: { flavourGroup: "fruit", tierSizes: [10], addons: ["message_topper"], delivery: true, eventDate: "2026-09-16" } },
+    { scenario: "Outside 48 hours", overrides: { eventDate: "2026-09-17" } },
+    { scenario: "Gloss print with delivery", overrides: { flavourGroup: "signature", tierSizes: [8, 10], addons: ["gloss_print"], delivery: true } },
+    { scenario: "Deposit rounding", overrides: { flavourGroup: "fruit", tierSizes: [10], addons: ["message_topper"], delivery: true, eventDate: "2026-09-16" } },
+    { scenario: "Fractional rush", overrides: { tierSizes: [16], eventDate: "2026-09-16" } },
+    { scenario: "Every add-on once", overrides: { addons: ["edible_print", "gloss_print", "message_topper", "edible_print"] } },
+  ])("returns lines summing to the total for $scenario", ({ overrides }) => {
+    const result = quote({ ...input, ...overrides }, now);
+    expect(result.lines.reduce((sum, line) => sum + line.amount, 0)).toBe(result.total);
+    expect(JSON.parse(JSON.stringify(result)).lines).toEqual(result.lines);
+    for (const line of result.lines) {
+      expect(line.quantity).toBe(1);
+      expect(line.unitAmount).toBe(line.amount);
+      expect(line.label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("orders cake, rush, unique add-ons and delivery lines", () => {
+    const result = quote({ ...input, addons: ["gloss_print", "edible_print", "gloss_print"], delivery: true, eventDate: "2026-09-16" }, now);
+    expect(result.lines).toEqual([
+      { kind: "cake", label: "Cake", quantity: 1, unitAmount: 1040, amount: 1040 },
+      { kind: "rush", label: "Cake rush", quantity: 1, unitAmount: 208, amount: 208 },
+      { kind: "addon", label: "gloss print", quantity: 1, unitAmount: 75, amount: 75 },
+      { kind: "addon", label: "edible print", quantity: 1, unitAmount: 100, amount: 100 },
+      { kind: "delivery", label: "Delivery", quantity: 1, unitAmount: 150, amount: 150 },
+    ]);
+  });
+
   it("prices a single classic 8-inch tier for pickup", () => {
     expect(quote(input, now)).toEqual({
       cake: 1040, rushFee: 0, addons: 0, delivery: 0, total: 1040, deposit: 520,
