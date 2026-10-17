@@ -11,7 +11,8 @@
     "check:portability": "node scripts/check-portability.mjs",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node scripts/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

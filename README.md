@@ -44,6 +44,8 @@ For schema changes, edit `lib/db/schema.ts`, run `pnpm db:generate`, and commit 
 
 `db:migrate` uses `DATABASE_MIGRATION_URL` when set, otherwise `DATABASE_URL`. Use a direct connection or session pooler for migrations, not a transaction pooler. For Supabase on an IPv4-only host, use the session pooler rather than the IPv6-only direct connection. The runtime may use the transaction pooler. No cloud configuration or production migration is performed by these scripts automatically.
 
+After migrating, `pnpm db:seed` inserts the PRD price list (`lib/catalogue/defaults.ts`) and every setting default (`lib/catalogue/settings.ts`), using the same URL as `db:migrate`. It never overwrites or duplicates existing rows, so it is safe to rerun after the owner edits prices. The morning, afternoon and evening window hours are seeded unset; the owner must set them before customer booking goes live.
+
 Schema conventions:
 
 - Money columns are `integer` whole Kwacha. The pricing engine still calculates in integer hundredths internally.
