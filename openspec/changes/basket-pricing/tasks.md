@@ -5,7 +5,7 @@
 
 ## 2. Basket pricing
 
-- [ ] 2.1 Write `lib/basket-pricing.test.ts` from the `basket-pricing` scenarios (every scenario is a test), including the 23:30 UTC edge and a fractional surcharge rate
+- [ ] BLOCKED: With fractional rush and dessert surcharge, should basket total sum the rounded lines, or round the unrounded sum and allocate the rounding difference to a named line? — 2.1 Write `lib/basket-pricing.test.ts` from the `basket-pricing` scenarios (every scenario is a test), including the 23:30 UTC edge and a fractional surcharge rate. A rush classic 16-inch cake is K2249 + K449.80; 30 cupcakes are K900; a 20.06% dessert surcharge is K180.54. Half-up rounded lines sum to K3780, while the unrounded K3779.34 rounds to K3779. The spec requires lines to sum to total but does not choose between these policies; the design rounds amounts half-up and preserves the unrounded basis for the deposit. Check performed: node:assert/strict arithmetic reproduction confirmed both totals; no basket implementation or later tasks started.
 - [ ] 2.2 Implement `PricingError`, `DEFAULT_RULES` and `priceBasket(input, now, rules)` until the tests pass
 - [ ] 2.3 Implement `earliestEventDate` and `isCakeRushDate` and their tests
 - [ ] 2.4 Property-style check: for generated baskets the line amounts always sum to the total and the deposit is the rounded half of the unrounded total
