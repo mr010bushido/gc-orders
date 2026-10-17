@@ -15,6 +15,13 @@
       "when": 1792253926035,
       "tag": "0001_job-heartbeats",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792253990455,
+      "tag": "0002_rate-limit-hits",
+      "breakpoints": true
     }
   ]
 }
