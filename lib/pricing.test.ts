@@ -14,18 +14,21 @@ describe("cake pricing", () => {
   it("prices a single classic 8-inch tier for pickup", () => {
     expect(quote(input, now)).toEqual({
       cake: 1040, rushFee: 0, addons: 0, delivery: 0, total: 1040, deposit: 520,
+      lines: expect.any(Array),
     });
   });
 
   it("sums tier multipliers before adding a gloss print and delivery", () => {
     expect(quote({ ...input, flavourGroup: "signature", tierSizes: [8, 10], addons: ["gloss_print"], delivery: true }, now)).toEqual({
       cake: 2520, rushFee: 0, addons: 75, delivery: 150, total: 2745, deposit: 1373,
+      lines: expect.any(Array),
     });
   });
 
   it("applies the rush fee to cake only and halves the unrounded total", () => {
     expect(quote({ ...input, flavourGroup: "fruit", tierSizes: [10], addons: ["message_topper"], delivery: true, eventDate: "2026-09-16" }, now)).toEqual({
       cake: 2000, rushFee: 400, addons: 100, delivery: 150, total: 2650, deposit: 1325,
+      lines: expect.any(Array),
     });
   });
 
@@ -83,6 +86,7 @@ describe("cake pricing", () => {
   it("rounds fractional rush and total half-up without rounding before the deposit", () => {
     expect(quote({ ...input, tierSizes: [16], eventDate: "2026-09-16" }, now)).toEqual({
       cake: 2249, rushFee: 450, addons: 0, delivery: 0, total: 2699, deposit: 1349,
+      lines: expect.any(Array),
     });
   });
 
