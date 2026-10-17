@@ -1,6 +1,6 @@
 ## 1. Test setup
 
-- [ ] 1.1 Add `vitest.config.ts` (jsdom for `components/**`, node elsewhere) and dev dependencies `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`; existing tests still pass
+- [x] 1.1 Add `vitest.config.ts` (jsdom for `components/**`, node elsewhere) and dev dependencies `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`; existing tests still pass — gate: pnpm test → 80 passed; pnpm lint, pnpm typecheck → pass
 - [ ] 1.2 Add `components/ui/cn.ts`, `components/ui/icons.tsx` and a test that fails on hex colours or `dark:` colour classes in `components/ui/*.tsx`
 
 ## 2. Form components
