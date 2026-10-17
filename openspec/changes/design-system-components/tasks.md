@@ -24,7 +24,7 @@
 
 ## 5. Gallery and checks
 
-- [ ] 5.1 `app/dev/components/page.tsx` showing every component and state; 404 in production
+- [x] 5.1 `app/dev/components/page.tsx` showing every component and state; 404 in production (client gallery in `app/dev/components/Gallery.tsx`; the page calls `notFound()` when `NODE_ENV` is production; it is a catalogue, so it shows several primaries and both month fonts on purpose) — gate: pnpm test → 147 passed (incl. `app/dev/components/page.test.ts`); pnpm lint, pnpm typecheck, pnpm build → pass; `pnpm start` → `/dev/components` 404, `/` 200
 - [ ] 5.2 Axe check for every component in one test file
 - [ ] 5.3 Check the gallery in light and dark at 375px and 1280px and note the result on this line
 - [ ] 5.4 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `openspec validate design-system-components --strict` passes
