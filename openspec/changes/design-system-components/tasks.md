@@ -14,7 +14,7 @@
 
 - [x] 3.1 `Stepper` (phone segments, tablet circles) with tests (tablet switch at the `md` breakpoint) — gate: pnpm test components/ui/Stepper → 4 passed; pnpm lint, pnpm typecheck → pass
 - [x] 3.2 `Banner` with tests (warning has `role="alert"`) — gate: pnpm test components/ui/Banner → 4 passed; pnpm lint, pnpm typecheck → pass
-- [ ] 3.3 `SummaryCard` and a `formatKwacha` helper with tests
+- [x] 3.3 `SummaryCard` and a `formatKwacha` helper with tests (`formatKwacha` itself was added in 2.4; its tests are in `components/ui/format.test.ts`) — gate: pnpm test components/ui/SummaryCard components/ui/format → 9 passed; pnpm lint, pnpm typecheck → pass
 - [ ] 3.4 `DatePicker` with month grid, rush/closed/past states, min date and keyboard navigation and the `monthFont` prop (display or sans), with tests
 
 ## 4. Owner components
