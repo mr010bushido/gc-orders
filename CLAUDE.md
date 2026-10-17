@@ -121,11 +121,12 @@ The app is piloted on Vercel and Supabase, then moves to a self-hosted VPS. In a
 
 - Use plain Postgres through Drizzle, with migrations kept in the repository. Do not reference `auth.*`, `storage.*` or `auth.uid()` in schema or policies.
 - Enforce authorization in server code. RLS stays on as defense in depth and is never the only layer. Do not call the Supabase Data API.
-- Reach auth, image storage and scheduled jobs through interfaces this repository owns. Platform implementations sit behind them.
+- Reach owner auth and image storage through `OwnerAuth` and `ImageStore` in `lib/platform/`; use the exported `ownerAuthContract` and `imageStoreContract` suites for every adapter. Platform implementations live under `lib/platform/adapters/<name>/`.
+- Reach scheduled jobs through `lib/platform/jobs.ts` and heartbeats through `HeartbeatStore` in `lib/platform/heartbeat.ts`.
 - Avoid Vercel-only runtime features: no `@vercel/*` storage APIs and no Vercel Cron.
 - If a task would be easier with a platform-only API outside an adapter, build it behind the interface or mark the task BLOCKED with the question.
 
-The `platform-portability` change will turn these into a spec and a CI check.
+Run `pnpm check:portability` to catch forbidden platform imports, schema references and Vercel Cron entries. CI also checks the standalone build and `/api/health`.
 
 ## Specs: always use OpenSpec
 
