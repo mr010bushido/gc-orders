@@ -9,7 +9,7 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: "dom", environment: "jsdom", include: ["components/**/*.test.{ts,tsx}"] },
+        test: { name: "dom", environment: "jsdom", setupFiles: ["./vitest.setup.ts"], include: ["components/**/*.test.{ts,tsx}"] },
       },
       {
         extends: true,
