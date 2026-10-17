@@ -13,7 +13,7 @@
 ## 3. Health and CI
 
 - [x] 3.1 Register the `database` health check (2 s timeout, no driver text). Gate: `pnpm test app/api/health/route.test.ts lib/platform/health.test.ts` 9 passed, covering success/failure/missing configuration/timeout; `pnpm typecheck`, `pnpm lint`, database-unconfigured `pnpm build` passed.
-- [ ] 3.2 `job_heartbeats` table and database `HeartbeatStore` passing the heartbeat scenarios; swap it in for the in-memory store
+- [x] 3.2 `job_heartbeats` table and database `HeartbeatStore`, replacing memory and integrating job callers. Gate: generated migration; `pnpm test lib/platform/heartbeat.test.ts app/api/jobs/[name]/route.test.ts lib/db/schema.test.ts` 19 passed, including new store instance, latest timestamp, never-run and route scenarios; `pnpm typecheck`, `pnpm lint` passed.
 - [ ] 3.3 `rate_limit_hits` table and Postgres `RateLimiter` (hashed keys, self-cleaning) with window and limit tests
 - [ ] 3.4 CI job `migrate-postgres`: Postgres 17 service, apply migrations, run the schema checks against it
 - [ ] 3.5 Document migration steps (pooler vs direct URL, human-run migrations) in `README.md`

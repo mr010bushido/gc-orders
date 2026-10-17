@@ -1,11 +1,20 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { createTestDb } from "../../../../lib/db/test-db";
+
+let test: Awaited<ReturnType<typeof createTestDb>>;
+vi.mock("../../../../lib/db", () => ({ getDb: () => test.db }));
 
 const original = process.env.JOBS_SECRET;
-beforeEach(() => {
+beforeEach(async () => {
+  test = await createTestDb();
   vi.resetModules();
   process.env.JOBS_SECRET = "correct-secret";
 });
-afterEach(() => { process.env.JOBS_SECRET = original; });
+afterEach(async () => {
+  if (original === undefined) delete process.env.JOBS_SECRET;
+  else process.env.JOBS_SECRET = original;
+  await test.close();
+});
 
 function request(secret?: string) {
   return new Request("http://localhost/api/jobs/expire", {
