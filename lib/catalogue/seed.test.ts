@@ -24,7 +24,7 @@ async function counts() {
   };
 }
 
-const expected = { standard: 13, specialDiet: 6, groups: 4, frostings: 3, sizes: 5, addons: 3, desserts: 11, settings: Object.keys(SETTINGS).length };
+const expected = { standard: 13, specialDiet: 6, groups: 4, frostings: 3, sizes: 5, addons: 4, desserts: 11, settings: Object.keys(SETTINGS).length };
 
 it("seeds the PRD catalogue and every setting default on a fresh database", async () => {
   await seedCatalogue(database.db);

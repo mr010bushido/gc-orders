@@ -6,7 +6,7 @@ CREATE TABLE "addons" (
 	"active" boolean DEFAULT true NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "addons_key_unique" UNIQUE("key"),
-	CONSTRAINT "addons_positive_price" CHECK ("addons"."price" > 0)
+	CONSTRAINT "addons_nonnegative_price" CHECK ("addons"."price" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "addons" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

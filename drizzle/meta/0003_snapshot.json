@@ -62,9 +62,9 @@
       },
       "policies": {},
       "checkConstraints": {
-        "addons_positive_price": {
-          "name": "addons_positive_price",
-          "value": "\"addons\".\"price\" > 0"
+        "addons_nonnegative_price": {
+          "name": "addons_nonnegative_price",
+          "value": "\"addons\".\"price\" >= 0"
         }
       },
       "isRLSEnabled": true

@@ -46,7 +46,7 @@ export const addons = pgTable("addons", {
   price: integer("price").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
-}, (table) => [check("addons_positive_price", sql`${table.price} > 0`)]).enableRLS();
+}, (table) => [check("addons_nonnegative_price", sql`${table.price} >= 0`)]).enableRLS();
 
 export const dessertTypes = pgTable("dessert_types", {
   id: uuid("id").defaultRandom().primaryKey(),

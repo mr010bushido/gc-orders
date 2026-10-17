@@ -9,7 +9,7 @@ import { resolveSettings } from "./settings";
 const catalogue = defaultCatalogue();
 const rules = toPricingRules(catalogue);
 // The original engine with the catalogue's add-on display names; every price and rate is the built-in default.
-const original = { ...DEFAULT_CAKE_RULES, addonNames: { edible_print: "Edible print", gloss_print: "Gloss print", message_topper: "Message topper" } };
+const original = { ...DEFAULT_CAKE_RULES, addonNames: { chocolate_drip: "Chocolate drip", edible_print: "Edible print", gloss_print: "Gloss print", message_topper: "Message topper" } };
 
 // Captures either the result or the thrown error so rejections are compared too.
 function outcome(price: () => unknown) {
@@ -52,7 +52,7 @@ describe("toPricingRules on the seeded catalogue", () => {
     it("matches on every flavour group, tier combination, add-on set, delivery choice and date", () => {
       const sizes = [8, 10, 12, 14, 16];
       const tiers = [...sizes.map(a => [a]), ...sizes.flatMap(a => sizes.map(b => [a, b])), ...sizes.flatMap(a => sizes.flatMap(b => sizes.map(c => [a, b, c])))];
-      const addonSets = [[], ["edible_print"], ["gloss_print"], ["message_topper"], ["edible_print", "gloss_print", "message_topper"]];
+      const addonSets = [[], ["chocolate_drip"], ["edible_print"], ["gloss_print"], ["message_topper"], ["chocolate_drip", "edible_print", "gloss_print", "message_topper"]];
       let compared = 0;
       for (const flavourGroup of Object.keys(DEFAULT_CAKE_RULES.flavourPrices)) {
         for (const tierSizes of tiers) {
@@ -67,7 +67,7 @@ describe("toPricingRules on the seeded catalogue", () => {
           }
         }
       }
-      expect(compared).toBe(4 * 155 * 5 * 2 * 3);
+      expect(compared).toBe(4 * 155 * 6 * 2 * 3);
     });
   });
 
@@ -116,7 +116,7 @@ describe("toPricingRules on the seeded catalogue", () => {
       vegan_vanilla: 1700, vegan_chocolate: 1700, vegan_carrot: 1700, diabetic_lemon: 1700, diabetic_carrot_banana: 1700, diabetic_traditional_fruit_cake: 1700,
     };
     expect(Object.fromEntries(catalogue.flavours.map(f => [f.key, tenInch(f.key)]))).toEqual(prd);
-    expect(rules.cake.addonPrices).toEqual({ edible_print: 100, gloss_print: 75, message_topper: 100 });
+    expect(rules.cake.addonPrices).toEqual({ chocolate_drip: 0, edible_print: 100, gloss_print: 75, message_topper: 100 });
     expect(Object.fromEntries(Object.entries(rules.dessertTypes!).map(([key, d]) => [key, d.price]))).toEqual(Object.fromEntries(catalogue.dessertTypes.map(d => [d.key, 30])));
     expect(rules.minimumDessertQuantity).toBe(30);
   });
@@ -222,5 +222,24 @@ describe("review fixes", () => {
     const lines = quote({ flavourGroup: "classic", tierSizes: [10], addons: ["gloss_print", "edible_print"], delivery: false, eventDate: "2026-09-22" }, now, renamed.cake).lines;
     expect(lines.filter(l => l.kind === "addon").map(l => l.label)).toEqual(["Gloss photo print", "Edible print"]);
     expect(quote({ flavourGroup: "classic", tierSizes: [10], addons: ["gloss_print"], delivery: false, eventDate: "2026-09-22" }, now).lines[1].label).toBe("gloss print");
+  });
+});
+
+describe("K0 add-ons", () => {
+  const now = new Date("2026-09-14T12:00:00+02:00");
+  it("prices chocolate drip as a K0 line without changing totals or the deposit", () => {
+    const cake = { flavourGroup: "classic", tierSizes: [16], addons: [] as string[] };
+    const basket = { cake, desserts: [{ type: "cupcakes", quantity: 30 }], delivery: true, eventDate: "2026-09-16" };
+    const plain = priceBasket(basket, now, rules);
+    const withDrip = priceBasket({ ...basket, cake: { ...cake, addons: ["chocolate_drip"] } }, now, rules);
+    expect(withDrip.lines.filter(l => l.kind === "addon")).toEqual([{ kind: "addon", label: "Chocolate drip", quantity: 1, unitAmount: 0, amount: 0, amountHundredths: 0 }]);
+    expect(withDrip.total).toBe(withDrip.lines.reduce((sum, l) => sum + l.amount, 0));
+    expect(withDrip).toMatchObject({ total: plain.total, deposit: plain.deposit });
+    expect(quote({ ...cake, addons: ["chocolate_drip"], delivery: false, eventDate: "2026-09-22" }, now, rules.cake)).toMatchObject({ addons: 0, total: 2249 });
+  });
+
+  it("still rejects a negative add-on price and a K0 flavour price", () => {
+    expect(() => quote({ flavourGroup: "classic", tierSizes: [10], addons: [], delivery: false, eventDate: "2026-09-22" }, now, { ...rules.cake, addonPrices: { chocolate_drip: -1 } })).toThrow("pricing rules");
+    expect(() => quote({ flavourGroup: "classic", tierSizes: [10], addons: [], delivery: false, eventDate: "2026-09-22" }, now, { ...rules.cake, flavourPrices: { classic: 0 } })).toThrow("pricing rules");
   });
 });

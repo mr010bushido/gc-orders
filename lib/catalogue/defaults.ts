@@ -42,6 +42,7 @@ export const DEFAULT_CATALOGUE = {
     { size: 16, multiplier: 173 },
   ],
   addons: [
+    { key: "chocolate_drip", name: "Chocolate drip", price: 0 },
     { key: "edible_print", name: "Edible print", price: 100 },
     { key: "gloss_print", name: "Gloss print", price: 75 },
     { key: "message_topper", name: "Message topper", price: 100 },

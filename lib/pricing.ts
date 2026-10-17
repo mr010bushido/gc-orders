@@ -17,7 +17,7 @@ export type CakeRules = {
 export const DEFAULT_CAKE_RULES: Readonly<CakeRules> = Object.freeze({
   flavourPrices: Object.freeze({ classic: 1300, signature: 1400, fruit: 2000, vegan_diabetic: 1700 }),
   sizeMultipliers: Object.freeze({ 8: 80, 10: 100, 12: 120, 14: 144, 16: 173 }),
-  addonPrices: Object.freeze({ edible_print: 100, gloss_print: 75, message_topper: 100 }),
+  addonPrices: Object.freeze({ chocolate_drip: 0, edible_print: 100, gloss_print: 75, message_topper: 100 }),
   deliveryFee: 150,
   rushRatePercent: 20,
   rushWindowHours: 48,
@@ -34,12 +34,12 @@ export type QuoteInput = {
 
 function checkRules(rules: CakeRules) {
   const amount = (value: unknown, min: number) => Number.isSafeInteger(value) && (value as number) >= min;
-  const table = (value: unknown) => !!value && typeof value === "object" && Object.values(value).every(price => amount(price, 1));
-  if (!rules || !table(rules.flavourPrices) || !table(rules.sizeMultipliers) || !table(rules.addonPrices)
+  const table = (value: unknown, min = 1) => !!value && typeof value === "object" && Object.values(value).every(price => amount(price, min));
+  if (!rules || !table(rules.flavourPrices) || !table(rules.sizeMultipliers) || !table(rules.addonPrices, 0)
     || !amount(rules.deliveryFee, 0) || !amount(rules.rushRatePercent, 0) || !amount(rules.rushWindowHours, 0) || !amount(rules.maxTiers, 1)
     || !Number.isSafeInteger(rules.rushWindowHours * HOUR)
     || (rules.addonNames !== undefined && (!rules.addonNames || typeof rules.addonNames !== "object" || Object.values(rules.addonNames).some(name => typeof name !== "string")))) {
-    throw new RangeError("pricing rules need positive safe integer prices and nonnegative safe integer rates");
+    throw new RangeError("pricing rules need positive safe integer prices (add-ons may be 0) and nonnegative safe integer rates");
   }
 }
 

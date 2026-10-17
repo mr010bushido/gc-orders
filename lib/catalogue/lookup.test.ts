@@ -20,7 +20,7 @@ describe("catalogue lookups", () => {
     expect(resolveFrosting(catalogue, "ganache")).toEqual({ ok: false, code: "UNKNOWN_FROSTING" });
     expect(resolveSize(catalogue, 9)).toEqual({ ok: false, code: "UNKNOWN_SIZE" });
     expect(resolveSize(catalogue, "10")).toEqual({ ok: false, code: "UNKNOWN_SIZE" });
-    expect(resolveAddon(catalogue, "chocolate_drip")).toEqual({ ok: false, code: "UNKNOWN_ADDON" });
+    expect(resolveAddon(catalogue, "fruit_toppings")).toEqual({ ok: false, code: "UNKNOWN_ADDON" });
     expect(resolveDessertType(catalogue, "eclairs")).toEqual({ ok: false, code: "UNKNOWN_DESSERT" });
   });
 
