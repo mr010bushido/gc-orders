@@ -6,7 +6,7 @@
 ## 2. Form components
 
 - [x] 2.1 `Button` (primary, ghost, link form) with tests (added `vitest.setup.ts` with Testing Library cleanup for the jsdom project) — gate: pnpm test components/ui/Button → 5 passed; pnpm lint, pnpm typecheck → pass
-- [ ] 2.2 `Input` with label, helper and error states, with tests
+- [x] 2.2 `Input` with label, helper and error states, with tests — gate: pnpm test components/ui/Input → 4 passed; pnpm lint, pnpm typecheck → pass
 - [ ] 2.3 `RadioCardGroup` with keyboard tests
 - [ ] 2.4 `AddonList` with tests
 
