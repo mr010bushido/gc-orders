@@ -1,4 +1,4 @@
-import { quote, type PricingLine, type QuoteInput } from "./pricing";
+import { quote, type CakeRules, type PricingLine, type QuoteInput } from "./pricing";
 
 const DAY = 24 * 60 * 60 * 1000;
 const LUSAKA_OFFSET = 2 * 60 * 60 * 1000;
@@ -39,7 +39,13 @@ export type PricingRules = {
   dessertLeadTimeDays: number;
   dessertSurchargeBasisPoints: number;
   deliveryFee: number;
+  /** Catalogue dessert types; when set they replace the built-in list and `dessertUnitPrice`. */
+  dessertTypes?: Readonly<Record<string, { readonly name: string; readonly price: number }>>;
+  /** Cake price tables for `quote()`; defaults to its built-in rules. */
+  cake?: CakeRules;
 };
+
+type NumericRule = Exclude<keyof PricingRules, "dessertTypes" | "cake">;
 
 export const DEFAULT_RULES: Readonly<PricingRules> = Object.freeze({
   dessertUnitPrice: 30,
@@ -113,11 +119,15 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
   if (!input || typeof input !== "object" || typeof input.delivery !== "boolean") {
     throw new TypeError("basket must be an object with a boolean delivery choice");
   }
-  if (!rules || Object.keys(DEFAULT_RULES).some(key => !Number.isSafeInteger(rules[key as keyof PricingRules]) || rules[key as keyof PricingRules] < 0) || !(rules.dessertUnitPrice > 0) || !(rules.minimumDessertQuantity > 0)) {
+  if (!rules || Object.keys(DEFAULT_RULES).some(key => !Number.isSafeInteger(rules[key as NumericRule]) || rules[key as NumericRule] < 0) || !(rules.dessertUnitPrice > 0) || !(rules.minimumDessertQuantity > 0)) {
     throw new RangeError("pricing rules must contain nonnegative safe integers and positive dessert price and minimum");
   }
   safeHundredths(rules.deliveryFee * 100);
   safeHundredths(rules.dessertLeadTimeDays * DAY);
+  const dessertTypes = rules.dessertTypes ?? Object.fromEntries(Object.entries(DESSERTS).map(([key, name]) => [key, { name, price: rules.dessertUnitPrice }]));
+  if (!dessertTypes || typeof dessertTypes !== "object" || Object.values(dessertTypes).some(type => !type || typeof type.name !== "string" || !Number.isSafeInteger(type.price) || type.price <= 0)) {
+    throw new RangeError("dessert types need a name and a positive safe integer price");
+  }
   const desserts = input.desserts === undefined ? [] : input.desserts;
   const quoteLines = input.quoteLines === undefined ? [] : input.quoteLines;
   if (!Array.isArray(desserts)) {
@@ -137,7 +147,7 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
       if (!input.cake || typeof input.cake !== "object") {
         throw new TypeError("cake must be an object");
       }
-      const cakeQuote = quote({ ...input.cake, eventDate: input.eventDate, delivery: false }, now);
+      const cakeQuote = quote({ ...input.cake, eventDate: input.eventDate, delivery: false }, now, rules.cake);
       lines.push(...cakeQuote.lines);
       eventInstant = Date.parse(`${input.eventDate}T00:00:00+02:00`);
     } catch (error) {
@@ -149,18 +159,19 @@ export function priceBasket(input: BasketInput, now: Date, rules = DEFAULT_RULES
 
   let dessertHundredths = 0;
   for (const dessert of desserts) {
-    if (!dessert || typeof dessert.type !== "string" || !Object.hasOwn(DESSERTS, dessert.type)) {
+    if (!dessert || typeof dessert.type !== "string" || !Object.hasOwn(dessertTypes, dessert.type)) {
       throw new PricingError("UNKNOWN_DESSERT", "unknown dessert type");
     }
-    if (!Number.isSafeInteger(dessert.quantity) || dessert.quantity < rules.minimumDessertQuantity || !Number.isSafeInteger(dessert.quantity * rules.dessertUnitPrice * 100)) {
+    const { name, price } = dessertTypes[dessert.type];
+    if (!Number.isSafeInteger(dessert.quantity) || dessert.quantity < rules.minimumDessertQuantity || !Number.isSafeInteger(dessert.quantity * price * 100)) {
       throw new PricingError("DESSERT_MIN_QUANTITY", "dessert quantity must meet the minimum and produce a safe whole-piece amount");
     }
     if (dessert.note !== undefined && typeof dessert.note !== "string") {
       throw new TypeError("dessert note must be text");
     }
-    const amountHundredths = safeHundredths(dessert.quantity * rules.dessertUnitPrice * 100);
+    const amountHundredths = safeHundredths(dessert.quantity * price * 100);
     dessertHundredths = safeHundredths(dessertHundredths + amountHundredths);
-    lines.push(line("dessert", DESSERTS[dessert.type as keyof typeof DESSERTS], amountHundredths, dessert.quantity));
+    lines.push(line("dessert", name, amountHundredths, dessert.quantity));
   }
   if (desserts.length > 0 && eventInstant - now.getTime() < rules.dessertLeadTimeDays * DAY) {
     if (input.cake === undefined) {
