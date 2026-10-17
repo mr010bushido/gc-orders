@@ -21,7 +21,7 @@ None.
 
 ## Impact
 
-- New: `components/ui/*`, `app/dev/components/page.tsx`, `vitest.config.ts`, test files.
+- New: `components/ui/*`, `app/dev/components/page.tsx`, `vitest.config.mts`, test files.
 - New dev dependencies: `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`.
 - Owner: Claude (frontend). No dependencies on other changes; can start now.
 - Linear issue: created when the implementer is delegated.

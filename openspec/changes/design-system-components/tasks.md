@@ -1,6 +1,6 @@
 ## 1. Test setup
 
-- [x] 1.1 Add `vitest.config.ts` (jsdom for `components/**`, node elsewhere) and dev dependencies `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`; existing tests still pass — gate: pnpm test → 80 passed; pnpm lint, pnpm typecheck → pass
+- [x] 1.1 Add `vitest.config.mts` (renamed from `.ts` in 5.2 to silence the Vite CommonJS-config warning) (jsdom for `components/**`, node elsewhere) and dev dependencies `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`; existing tests still pass — gate: pnpm test → 80 passed; pnpm lint, pnpm typecheck → pass
 - [x] 1.2 Add `components/ui/cn.ts`, `components/ui/icons.tsx` and a test that fails on hex colours or `dark:` colour classes in `components/ui/*.tsx` (the scan also rejects `rgb()`/`hsl()` and any `shadow-float` outside `Sheet.tsx`) — gate: pnpm test components/ui → 4 passed; pnpm lint, pnpm typecheck → pass
 
 ## 2. Form components
@@ -25,6 +25,6 @@
 ## 5. Gallery and checks
 
 - [x] 5.1 `app/dev/components/page.tsx` showing every component and state; 404 in production (client gallery in `app/dev/components/Gallery.tsx`; the page calls `notFound()` when `NODE_ENV` is production; it is a catalogue, so it shows several primaries and both month fonts on purpose) — gate: pnpm test → 147 passed (incl. `app/dev/components/page.test.ts`); pnpm lint, pnpm typecheck, pnpm build → pass; `pnpm start` → `/dev/components` 404, `/` 200
-- [ ] 5.2 Axe check for every component in one test file
+- [x] 5.2 Axe check for every component in one test file (`components/ui/a11y.test.tsx`, 12 cases plus one that proves axe reports an unlabelled input; the `color-contrast` rule is off because jsdom cannot compute colour, so contrast is checked in 5.3) — gate: pnpm test components/ui/a11y → 13 passed; pnpm lint, pnpm typecheck → pass
 - [ ] 5.3 Check the gallery in light and dark at 375px and 1280px and note the result on this line
 - [ ] 5.4 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; `openspec validate design-system-components --strict` passes
