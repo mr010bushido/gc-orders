@@ -20,4 +20,4 @@
 
 ## 4. Verify
 
-- [ ] 4.1 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass with no database configured; `openspec validate database-foundation --strict` passes
+- [x] 4.1 Final checks passed with `DATABASE_URL`, `DATABASE_MIGRATION_URL`, and `TEST_DATABASE_URL` unset: `pnpm lint`, `pnpm typecheck`, `pnpm test` (284 passed, 1 Postgres-only test skipped), `pnpm check:portability`, `pnpm build`, `openspec validate database-foundation --strict`, `git diff --check`. Targeted schema/migration checks passed; the Postgres-only test ran separately against disposable local Postgres 17.6 with all 9 schema/integration tests passing. Standalone missing-database health returned sanitized 503; built health with local Postgres returned 200. Final checks also fixed blank migration-URL fallback and added 4 configuration regression tests. CI and independent review have not run.

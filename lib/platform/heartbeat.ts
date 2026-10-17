@@ -1,3 +1,7 @@
+import { eq, sql } from "drizzle-orm";
+import { getDb, type Db } from "../db";
+import { jobHeartbeats } from "../db/schema";
+
 export interface HeartbeatStore {
   record(job: string, at: Date): Promise<void>;
   last(job: string): Promise<Date | null>;
@@ -21,6 +25,3 @@ export class DatabaseHeartbeatStore implements HeartbeatStore {
 }
 
 export const heartbeatStore: HeartbeatStore = new DatabaseHeartbeatStore();
-import { eq, sql } from "drizzle-orm";
-import { getDb, type Db } from "../db";
-import { jobHeartbeats } from "../db/schema";
