@@ -78,9 +78,10 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
   } catch {
     throw new OrderError("ORDER_INVALID", "line meta does not match its kind");
   }
+  // Up to three rounded lines can shift the displayed total by 1.5 Kwacha from the unrounded total used for the deposit.
   if ((lines.length === 0 && !data.requestsQuote) || lines.reduce((sum, line) => sum + line.amount, 0) !== total || deposit > total
     || (!data.requestsQuote && (lines.some(line => line.kind === "delivery") !== (data.fulfilment === "delivery")
-      || deposit < Math.floor(total / 2) || deposit > Math.ceil(total / 2)))) {
+      || deposit <= 0 || deposit < Math.floor(total / 2) - 1 || deposit > Math.ceil(total / 2) + 1))) {
     throw new OrderError("ORDER_INVALID", "basket lines, delivery and deposit must match the priced order");
   }
 
