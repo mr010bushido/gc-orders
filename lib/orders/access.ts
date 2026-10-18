@@ -39,17 +39,15 @@ export async function findMyBooking(reference: string, phone: string, deps: Find
   if (!ipAllowed || !referenceAllowed) return { ok: false, code: "RATE_LIMITED" };
   if (normalised && referenceKey) {
     const [row] = await db.select().from(orders).where(and(eq(orders.reference, referenceKey), eq(orders.customerPhone, normalised)));
-    if (row) {
-      const appUrl = deps.appUrl ?? process.env.APP_URL;
+    const appUrl = deps.appUrl ?? process.env.APP_URL;
+    if (row && appUrl) {
       // Reissue a fresh private token, keeping only its hash in the database.
       const { randomBytes } = await import("node:crypto");
       const { hashToken } = await import("./orders");
       const token = randomBytes(32).toString("base64url");
       await db.update(orders).set({ accessTokenHash: hashToken(token) }).where(eq(orders.id, row.id));
-      if (appUrl) {
-        try { await (deps.sms ?? createSmsSender()).send({ to: normalised, text: `Your booking link: ${appUrl}/order/${encodeURIComponent(referenceKey)}?t=${encodeURIComponent(token)}` }); }
-        catch { /* Keep the response indistinguishable from a non-match. */ }
-      }
+      try { await (deps.sms ?? createSmsSender()).send({ to: normalised, text: `Your booking link: ${appUrl}/order/${encodeURIComponent(referenceKey)}?t=${encodeURIComponent(token)}` }); }
+      catch { /* Keep the response indistinguishable from a non-match. */ }
     }
   }
   return { ok: true, message: FIND_BOOKING_MESSAGE };

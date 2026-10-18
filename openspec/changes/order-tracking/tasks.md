@@ -1,7 +1,7 @@
 ## 1. Access and lookup (Codex)
 
 - [x] 1.1 `lib/orders/access.ts`: token verification, masking helpers, not-found equivalence; tests — gate: `pnpm test lib/orders/access.test.ts` → 4 passed; `pnpm lint` → passed; `openspec validate order-tracking --strict` → valid
-- [x] 1.2 `findMyBooking(reference, phone)` using `normaliseZambianMobile`, the rate limiter and the SMS sender from `notifications`; tests for match, mismatch, different phone formats and limits — gate: `pnpm test lib/orders/access.test.ts` → 4 passed; `pnpm lint` → passed
+- [x] 1.2 `findMyBooking(reference, phone)` using `normaliseZambianMobile`, the rate limiter and the SMS sender from `notifications`; also preserve the current token when `APP_URL` is absent so a lookup cannot invalidate the link without sending a replacement — gate: `pnpm test lib/orders/access.test.ts` → 5 passed; `pnpm lint` → passed; `openspec validate order-tracking --strict` → valid
 - [x] 1.3 `submitPopAction(token, text)` calling `submitPop` and scheduling `notify('pop_received')` and `notify('owner_pop_submitted')` with `after()` after the response; tests for expired, flagged, too-short text and a provider failure — gate: `pnpm test app/order/actions.test.ts` → 4 passed; `pnpm lint` → passed; `openspec validate order-tracking --strict` → valid
 - [x] 1.4 Set `Cache-Control: no-store` and `Referrer-Policy: no-referrer` for `/order` and all nested order routes in Next response headers — gate: `pnpm lint` → passed; `pnpm typecheck` → passed; `openspec validate order-tracking --strict` → valid
 
@@ -16,5 +16,5 @@
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: create an order, open the page with the token, submit POP, see `awaiting_verification`; wrong token shows the generic not-found
+- [x] 3.1 Test: create an order, open the page with the token, submit POP, see `awaiting_verification`; wrong token shows the generic not-found — gate: `pnpm test app/order/page.integration.test.tsx` → 2 passed
 - [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate order-tracking --strict` passes

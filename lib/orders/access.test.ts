@@ -1,7 +1,7 @@
 import { beforeAll, afterAll, expect, it } from "vitest";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "./fixtures";
-import { createOrder } from "./orders";
+import { createOrder, findOrderByToken } from "./orders";
 import { FIND_BOOKING_MESSAGE, NOT_FOUND_MESSAGE, findMyBooking, findOrderForAccess, maskEmail, maskPhone } from "./access";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
@@ -47,4 +47,16 @@ it("returns rate limited and sends no message after a limit", async () => {
   });
   expect(result).toEqual({ ok: false, code: "RATE_LIMITED" });
   expect(sent).toEqual([]);
+});
+
+it("does not rotate the private token when no link origin is configured", async () => {
+  const { order, accessToken } = await createOrder(test.db, orderInput(), BOOKED_AT);
+  const sent: string[] = [];
+  await expect(findMyBooking(order.reference, "0977 123 456", {
+    db: test.db, clientAddress: "missing-origin", appUrl: "",
+    limiter: { hit: async () => true },
+    sms: { send: async ({ text }) => { sent.push(text); return { id: "fake" }; } },
+  })).resolves.toEqual({ ok: true, message: FIND_BOOKING_MESSAGE });
+  expect(sent).toEqual([]);
+  expect(await findOrderByToken(test.db, accessToken)).not.toBeNull();
 });
