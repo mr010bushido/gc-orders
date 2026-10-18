@@ -1,5 +1,5 @@
 {
-  "id": "ceb0e3d1-5524-4db0-89b2-a8bfa44e1ff5",
+  "id": "8435e306-48e1-4680-b2f1-213c52a8a072",
   "prevId": "7566ff86-d1e4-4a96-b447-c7c445407434",
   "version": "7",
   "dialect": "postgresql",
@@ -142,7 +142,7 @@
         },
         "date_decisions_shape": {
           "name": "date_decisions_shape",
-          "value": "(\"date_decisions\".\"state\" = 'closed' and \"date_decisions\".\"reason\" is not null and \"date_decisions\".\"confirmed_count_at_decision\" is null)\n    or (\"date_decisions\".\"state\" = 'open' and \"date_decisions\".\"reason\" is null and \"date_decisions\".\"confirmed_count_at_decision\" >= 0)"
+          "value": "(\"date_decisions\".\"state\" = 'closed' and \"date_decisions\".\"reason\" is not null and \"date_decisions\".\"confirmed_count_at_decision\" is null)\n    or (\"date_decisions\".\"state\" = 'open' and \"date_decisions\".\"reason\" is null and \"date_decisions\".\"confirmed_count_at_decision\" is not null and \"date_decisions\".\"confirmed_count_at_decision\" >= 0)"
         }
       },
       "isRLSEnabled": true

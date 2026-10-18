@@ -23,5 +23,5 @@ export const dateDecisions = pgTable("date_decisions", {
   check("date_decisions_state", sql`${table.state} in ${oneOf(DATE_STATES)}`),
   check("date_decisions_reason", sql`${table.reason} is null or ${table.reason} in ${oneOf(CLOSE_REASONS)}`),
   check("date_decisions_shape", sql`(${table.state} = 'closed' and ${table.reason} is not null and ${table.confirmedCountAtDecision} is null)
-    or (${table.state} = 'open' and ${table.reason} is null and ${table.confirmedCountAtDecision} >= 0)`),
+    or (${table.state} = 'open' and ${table.reason} is null and ${table.confirmedCountAtDecision} is not null and ${table.confirmedCountAtDecision} >= 0)`),
 ]).enableRLS();

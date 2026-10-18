@@ -10,7 +10,7 @@ CREATE TABLE "date_decisions" (
 	CONSTRAINT "date_decisions_state" CHECK ("date_decisions"."state" in ('closed', 'open')),
 	CONSTRAINT "date_decisions_reason" CHECK ("date_decisions"."reason" is null or "date_decisions"."reason" in ('capacity', 'manual')),
 	CONSTRAINT "date_decisions_shape" CHECK (("date_decisions"."state" = 'closed' and "date_decisions"."reason" is not null and "date_decisions"."confirmed_count_at_decision" is null)
-    or ("date_decisions"."state" = 'open' and "date_decisions"."reason" is null and "date_decisions"."confirmed_count_at_decision" >= 0))
+    or ("date_decisions"."state" = 'open' and "date_decisions"."reason" is null and "date_decisions"."confirmed_count_at_decision" is not null and "date_decisions"."confirmed_count_at_decision" >= 0))
 );
 --> statement-breakpoint
 ALTER TABLE "date_decisions" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
