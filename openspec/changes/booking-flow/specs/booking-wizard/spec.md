@@ -55,7 +55,7 @@ The review step SHALL show the summary card with every line, the total in the di
 - **THEN** the wizard returns to the details step with the date field marked in error
 
 ### Requirement: Confirmation screen
-After success the app SHALL show the booking reference, the total and deposit, and the payment instructions (Airtel and MTN numbers, "quote your reference"), with a primary button to continue to the order page.
+After success the app SHALL show the booking reference, server-priced lines, total and deposit, and the payment instructions (Airtel and MTN numbers, "quote your reference"), with a primary button to continue to `/` until the order page is delivered by `order-tracking`. The access token SHALL remain in the response for that change. If the server total differs from the reviewed total, the confirmation SHALL explain that the price was updated.
 
 #### Scenario: Reference displayed
 - **WHEN** a booking succeeds

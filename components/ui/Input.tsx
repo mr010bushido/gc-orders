@@ -31,7 +31,7 @@ export function Input({ label, helper, error, id, className, ...rest }: InputPro
         {...rest}
       />
       {message && (
-        <p id={messageId} className={cn('flex items-start gap-1.5 text-sm', error ? 'text-err-ink' : 'text-ink-soft')}>
+        <p id={messageId} role={error ? 'alert' : undefined} className={cn('flex items-start gap-1.5 text-sm', error ? 'text-err-ink' : 'text-ink-soft')}>
           {error && <ErrorIcon size={16} className="mt-0.5 shrink-0" />}
           {message}
         </p>

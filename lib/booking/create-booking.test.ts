@@ -71,6 +71,28 @@ it("locks a cake rush fee into the stored order and returns configured payment i
   expect((await test.db.select().from(orderLines)).map(line => line.kind)).toContain("rush");
 });
 
+it("de-duplicates add-ons before pricing and persisting metadata", async () => {
+  const result = await createBooking(test.db, request({ cake: { flavour: "vanilla", frosting: "american_buttercream", tierSizes: [8], addons: ["message_topper", "message_topper", "edible_print"] }, topperMessage: "Happy birthday" }), NOW);
+  expect(result.ok).toBe(true);
+  const addonLines = (await test.db.select().from(orderLines)).filter(line => line.kind === "addon");
+  expect(addonLines.map(line => line.meta.key)).toEqual(["message_topper", "edible_print"]);
+});
+
+it("rejects duplicate dessert types and more than ten dessert lines", async () => {
+  expect(await createBooking(test.db, request({ cake: undefined, desserts: [
+    { type: "brownies", quantity: 30 }, { type: "brownies", quantity: 60 },
+  ] }), NOW)).toMatchObject({ ok: false, errors: { desserts: "DUPLICATE_DESSERT" } });
+  expect(await createBooking(test.db, request({ cake: undefined, desserts: Array.from({ length: 11 }, (_, i) => ({ type: `dessert-${i}`, quantity: 30 })) }), NOW))
+    .toMatchObject({ ok: false, errors: { desserts: "INVALID_INPUT" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
+
+it("uses the configured tier maximum", async () => {
+  const result = await createBooking(test.db, request({ cake: { flavour: "vanilla", frosting: "american_buttercream", tierSizes: [8, 8, 8, 8], addons: [] } }), NOW);
+  expect(result).toMatchObject({ ok: false, errors: { tierSizes: "TOO_MANY_TIERS" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
+
 it("rejects over-limit tiers and invalid email before writing", async () => {
   expect(await createBooking(test.db, request({ cake: { flavour: "vanilla", frosting: "american_buttercream", tierSizes: [8, 8, 8, 8], addons: [] } }), NOW))
     .toMatchObject({ ok: false, errors: { tierSizes: "TOO_MANY_TIERS" } });

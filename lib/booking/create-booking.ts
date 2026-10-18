@@ -44,6 +44,8 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     for (const issue of parsed.error.issues) {
       const field = fieldFor(issue.path);
       addError(errors, field, field === "phone" ? "PHONE_INVALID" : field === "email" ? "EMAIL_INVALID"
+        : issue.message === "Duplicate dessert types" ? "DUPLICATE_DESSERT"
+          : field === "desserts" && issue.code === "too_big" ? "INVALID_INPUT"
         : field === "tierSizes" && issue.code === "too_big" ? "TOO_MANY_TIERS"
           : issue.code === "invalid_type" || issue.code === "too_small" ? "REQUIRED" : "INVALID_INPUT");
     }
@@ -153,6 +155,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
       accessToken: created.accessToken,
       total: created.order.total,
       deposit: created.order.deposit,
+      lines: priced.lines,
       paymentInstructions: {
         airtelNumber: catalogue.settings.airtel_number,
         mtnNumber: catalogue.settings.mtn_number,
