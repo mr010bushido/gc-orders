@@ -5,6 +5,8 @@ import { getDb } from "@/lib/db";
 import { effectiveStatus, findOrderByToken, OrderError, type OrderDetail } from "@/lib/orders/orders";
 import { submitPop } from "@/lib/orders/transitions";
 import { notify } from "@/lib/notify/notify";
+import { findMyBooking } from "@/lib/orders/access";
+import { headers } from "next/headers";
 
 export type PopActionResult = { ok: true; status: "awaiting_verification" } | { ok: false; error: string };
 
@@ -35,4 +37,13 @@ export async function submitPopAction(token: string, text: string): Promise<PopA
       : "We couldn't submit those payment details. Try again.";
     return { ok: false, error: message };
   }
+}
+
+export async function findMyBookingAction(_previous: { ok: boolean; message?: string; error?: string } | null, formData: FormData) {
+  const requestHeaders = await headers();
+  const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const address = forwarded || requestHeaders.get("x-real-ip") || "unknown";
+  const result = await findMyBooking(String(formData.get("reference") ?? ""), String(formData.get("phone") ?? ""), { clientAddress: address });
+  if (!result.ok) return { ok: false, error: "Too many attempts. Please try again later." };
+  return { ok: true, message: result.message };
 }
