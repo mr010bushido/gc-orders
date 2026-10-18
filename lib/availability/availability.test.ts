@@ -5,7 +5,7 @@ import type { OrderStatus } from "../db/schema/orders";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "../orders/fixtures";
 import { createOrder } from "../orders/orders";
-import { closeDate, getCapacitySuggestions, getClosedDates, isDateOpen, keepOpen, openDate } from "./availability";
+import { assertDateOpen, AvailabilityError, closeDate, getCapacitySuggestions, getClosedDates, isDateOpen, keepOpen, openDate } from "./availability";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
 beforeAll(async () => { test = await createTestDb(); });
@@ -141,4 +141,23 @@ it("leaves existing orders untouched when a busy date is closed", async () => {
   await closeDate(test.db, "2027-05-05", "manual", "Power cut", decidedAt);
   expect(await test.db.select().from(orders).where(eq(orders.eventDate, "2027-05-05"))).toEqual(before);
   expect(before).toHaveLength(4);
+});
+
+it("refuses a date closed after the form loaded, creating no order", async () => {
+  await closeDate(test.db, "2027-06-01", "manual", "Holiday", decidedAt);
+  const submit = () => test.db.transaction(async (tx) => {
+    await assertDateOpen(tx, "2027-06-01");
+    await createOrder(tx, orderInput({ eventDate: "2027-06-01" }), BOOKED_AT);
+  });
+  await expect(submit()).rejects.toMatchObject({ name: "AvailabilityError", code: "DATE_UNAVAILABLE" });
+  expect(await test.db.select().from(orders).where(eq(orders.eventDate, "2027-06-01"))).toEqual([]);
+  await expect(assertDateOpen(test.db, "2027-06-02")).resolves.toBeUndefined();
+});
+
+it("reads the decision inside the caller's transaction", async () => {
+  await expect(test.db.transaction(async (tx) => {
+    await closeDate(tx, "2027-06-03", "manual", "", decidedAt);
+    await assertDateOpen(tx, "2027-06-03");
+  })).rejects.toBeInstanceOf(AvailabilityError);
+  expect(await isDateOpen(test.db, "2027-06-03")).toBe(true);
 });
