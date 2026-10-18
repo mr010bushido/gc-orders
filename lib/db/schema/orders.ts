@@ -42,6 +42,7 @@ export const orders = pgTable("orders", {
   anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 }, (table) => [
+  index("orders_event_date_status_idx").on(table.eventDate, table.status),
   check("orders_status", sql`${table.status} in ${oneOf(ORDER_STATUSES)}`),
   check("orders_fulfilment", sql`${table.fulfilment} in ${oneOf(FULFILMENTS)}`),
   check("orders_time_window", sql`${table.timeWindow} in ${oneOf(TIME_WINDOWS)}`),

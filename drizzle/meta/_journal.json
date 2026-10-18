@@ -36,6 +36,13 @@
       "when": 1792265243715,
       "tag": "0004_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792300770176,
+      "tag": "0005_date-availability",
+      "breakpoints": true
     }
   ]
 }
