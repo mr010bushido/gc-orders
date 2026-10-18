@@ -2,7 +2,7 @@
 
 - [x] 1.1 `lib/orders/access.ts`: token verification, masking helpers, not-found equivalence; tests — gate: `pnpm test lib/orders/access.test.ts` → 4 passed; `pnpm lint` → passed; `openspec validate order-tracking --strict` → valid
 - [x] 1.2 `findMyBooking(reference, phone)` using `normaliseZambianMobile`, the rate limiter and the SMS sender from `notifications`; tests for match, mismatch, different phone formats and limits — gate: `pnpm test lib/orders/access.test.ts` → 4 passed; `pnpm lint` → passed
-- [ ] 1.3 `submitPopAction(token, text)` calling `submitPop` and then `notify('pop_received')` and `notify('owner_pop_submitted')`; tests for expired, flagged, too-short text and a provider failure
+- [x] 1.3 `submitPopAction(token, text)` calling `submitPop` and scheduling `notify('pop_received')` and `notify('owner_pop_submitted')` with `after()` after the response; tests for expired, flagged, too-short text and a provider failure — gate: `pnpm test app/order/actions.test.ts` → 4 passed; `pnpm lint` → passed; `openspec validate order-tracking --strict` → valid
 - [ ] 1.4 Route handlers/headers: `no-store`, `no-referrer`
 
 ## 2. Pages (Claude)
