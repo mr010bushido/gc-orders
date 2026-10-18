@@ -17,4 +17,4 @@
 ## 3. Integration (Claude owns this check)
 
 - [x] 3.1 Test: create an order, open the page with the token, submit POP, see `awaiting_verification`; wrong token shows the generic not-found — gate: `pnpm test app/order/page.integration.test.tsx` → 2 passed
-- [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate order-tracking --strict` passes
+- [x] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build`, and `NEXT_OUTPUT=standalone pnpm build` pass with `DATABASE_URL` and `DATABASE_MIGRATION_URL` unset; portability and OpenSpec validation pass — gate: lint → passed; typecheck → passed; test → 614 passed, 1 skipped; default build → passed; standalone build → passed; `pnpm check:portability` → passed; `openspec validate order-tracking --strict` → valid
