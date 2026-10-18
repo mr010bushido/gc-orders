@@ -34,7 +34,7 @@ The system SHALL send SMS and email to the owner on a new booking, a new quote r
 - **THEN** the SMS is skipped and logged as `skipped`, and the email is still sent
 
 ### Requirement: Failures never block
-A provider error SHALL NOT fail the action that triggered the message, SHALL be recorded in the log with a failure status and a non-secret error summary, and SHALL NOT be retried more than once.
+A provider error SHALL NOT fail the action that triggered the message, SHALL be recorded in the log with a failure status and a non-secret error summary, and SHALL NOT be retried automatically. A failed send SHALL remain visible to the owner as a `failed` log row; a resend issuing a fresh order link is left to `owner-orders`, because the plaintext order token is never stored.
 
 #### Scenario: Twilio down during booking
 - **WHEN** the SMS provider returns an error while a booking is created
@@ -66,8 +66,12 @@ Provider credentials SHALL come only from environment variables and SHALL NOT ap
 - **THEN** the stored error summary does not
 
 ### Requirement: Notifications health check
-The system SHALL register a `notifications` health check that reports `degraded` when `NODE_ENV` is `production` and either the SMS or the email channel uses the console sender, and `ok` otherwise. It SHALL NOT reveal which variable is missing.
+The system SHALL register a `notifications` health check that reports `degraded` when `NODE_ENV` is `production` and either the SMS or the email channel uses the console sender or the order-link origin (`APP_URL`) is unset, and `ok` otherwise. It SHALL NOT reveal which variable is missing.
 
 #### Scenario: Production without credentials
 - **WHEN** production runs with no Twilio credentials
 - **THEN** `GET /api/health` maps `notifications` to `degraded` and names no variable
+
+#### Scenario: Link origin unset
+- **WHEN** `APP_URL` is unset and a booking is received
+- **THEN** the message carries no link and directs the customer to the order page in words, and in production the `notifications` check reports `degraded`

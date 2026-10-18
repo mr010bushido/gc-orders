@@ -14,10 +14,13 @@ export const consoleSms: SmsSender = {
   },
 };
 
+/** Upper bound on one provider request, so a hung provider cannot hold the triggering action open. */
+export const PROVIDER_TIMEOUT_MS = 10_000;
+
 export const twilioConfigured = (env: Env) => Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM);
 
 /** Twilio's Messages API in one request. Errors carry only the HTTP status and Twilio's numeric error code. */
-export function twilioSms(accountSid: string, authToken: string, from: string): SmsSender {
+export function twilioSms(accountSid: string, authToken: string, from: string, timeoutMs = PROVIDER_TIMEOUT_MS): SmsSender {
   return {
     async send({ to, text }) {
       let response: Response;
@@ -26,9 +29,10 @@ export function twilioSms(accountSid: string, authToken: string, from: string): 
           method: "POST",
           headers: { Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}` },
           body: new URLSearchParams({ To: to, From: from, Body: text }),
+          signal: AbortSignal.timeout(timeoutMs),
         });
       } catch {
-        // fetch errors can echo the URL, which contains the account SID.
+        // fetch and abort errors can echo the URL, which contains the account SID.
         throw new Error("Twilio request failed");
       }
       const body = await response.json().catch(() => null) as { sid?: unknown; code?: unknown } | null;

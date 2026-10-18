@@ -10,7 +10,7 @@ Twilio to Zambia costs roughly $0.30 to $0.43 per message and is outbound only. 
 - Predictable SMS count and short messages.
 
 **Non-Goals:**
-- Queues, retries beyond one, delivery receipts, templating engines.
+- Queues, automatic retries, delivery receipts, templating engines. There is no automatic retry in v1: a failed send is logged as `failed` with a summarised error and is visible to the owner. An owner-triggered resend that issues a fresh order link is follow-up work for `owner-orders`, because the plaintext order token is never stored.
 
 ## Decisions
 
@@ -28,4 +28,4 @@ Twilio to Zambia costs roughly $0.30 to $0.43 per message and is outbound only. 
 - [SMS cost] → Three to four per booking as in the PRD; the log table lets the owner count them.
 - [Provider outage loses a message] → The failed row is visible; the owner can contact the customer from the order page.
 - [Secrets in logs] → The senders never log request bodies or headers.
-- [Console sender hides misconfiguration in production] → The health registry gets a `notifications` check that reports `degraded` when production runs the console sender.
+- [Console sender hides misconfiguration in production] → The health registry gets a `notifications` check that reports `degraded` when production runs the console sender or has no order-link origin.

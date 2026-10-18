@@ -5,7 +5,8 @@ const twilio = { TWILIO_ACCOUNT_SID: "AC-fake", TWILIO_AUTH_TOKEN: "fake-token",
 const resend = { RESEND_API_KEY: "re_fake", EMAIL_FROM: "orders@example.com" };
 
 it.each([
-  ["production with both providers", { NODE_ENV: "production", ...twilio, ...resend }, undefined],
+  ["production with both providers and the link origin", { NODE_ENV: "production", ...twilio, ...resend, APP_URL: "https://cakes.test" }, undefined],
+  ["production without the link origin", { NODE_ENV: "production", ...twilio, ...resend }, "degraded"],
   ["production without credentials", { NODE_ENV: "production" }, "degraded"],
   ["production without Twilio", { NODE_ENV: "production", ...resend }, "degraded"],
   ["production without Resend", { NODE_ENV: "production", ...twilio }, "degraded"],

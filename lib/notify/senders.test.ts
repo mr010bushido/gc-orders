@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { consoleEmail, createEmailSender, resendEmail } from "./email";
-import { consoleSms, createSmsSender, twilioSms } from "./sms";
+import { consoleSms, createSmsSender, PROVIDER_TIMEOUT_MS, twilioSms } from "./sms";
 
 // Built at runtime so secret scanners do not mistake the fake SID for a real one.
 const SID = "AC" + "0123456789abcdef".repeat(2);
@@ -89,4 +89,26 @@ it.each([
   const error = await errorOf(resendEmail(KEY, "orders@example.com").send(email));
   expect(error.message).toBe(message);
   expect(JSON.stringify([error.message, error.stack, error.cause])).not.toContain(KEY);
+});
+
+// Rejects with the signal's abort reason, as fetch does, once the timeout fires; never resolves otherwise.
+const hang: typeof fetch = (input, init) => new Promise((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)));
+
+it("gives up on a hung provider within the timeout without leaking credentials", async () => {
+  fetchMock.mockImplementation(hang);
+  const started = Date.now();
+  const smsError = await errorOf(twilioSms(SID, TOKEN, "+15005550006", 20).send({ to: "+260977123456", text: "Hi" }));
+  const emailError = await errorOf(resendEmail(KEY, "orders@example.com", 20).send(email));
+  expect(Date.now() - started).toBeLessThan(2000);
+  expect([smsError.message, emailError.message]).toEqual(["Twilio request failed", "Resend request failed"]);
+  expect(JSON.stringify([smsError.message, smsError.stack, emailError.message, emailError.stack])).not.toMatch(new RegExp(`${SID}|${TOKEN}|${KEY}`));
+  for (const [, init] of fetchMock.mock.calls) expect(init?.signal).toBeInstanceOf(AbortSignal);
+});
+
+it("sets the default timeout on real sends", async () => {
+  fetchMock.mockImplementation(async () => json(201, { sid: "SM1", id: "em_1" }));
+  await twilioSms(SID, TOKEN, "+15005550006").send({ to: "+260977123456", text: "Hi" });
+  await resendEmail(KEY, "orders@example.com").send(email);
+  expect(PROVIDER_TIMEOUT_MS).toBe(10_000);
+  for (const [, init] of fetchMock.mock.calls) expect(init?.signal).toBeInstanceOf(AbortSignal);
 });

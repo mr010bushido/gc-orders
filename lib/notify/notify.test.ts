@@ -6,6 +6,7 @@ import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "../orders/fixtures";
 import { createOrder } from "../orders/orders";
 import { notify, ROUTES, type NotifyDeps } from "./notify";
+import { twilioSms } from "./sms";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
 beforeAll(async () => {
@@ -116,4 +117,67 @@ it("skips the channels of an anonymised order", async () => {
   await notify("order_expired", { order: { ...order, customerPhone: null, customerEmail: null } }, deps());
   expect(sms.send).not.toHaveBeenCalled();
   expect(await log(order.id)).toMatchObject([{ channel: "sms", status: "skipped", recipient: "" }]);
+});
+
+it("words the link fallback instead of sending a relative link when APP_URL is unset", async () => {
+  vi.stubEnv("APP_URL", "");
+  try {
+    const { order, token } = await newOrder();
+    await notify("booking_received", { order, token }, { ...deps(), appUrl: undefined });
+    const text = sms.send.mock.calls[0][0].text as string;
+    expect(text).toContain("on your order page");
+    expect(text).not.toContain("/order/");
+    expect(text).not.toContain(token);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
+it("resolves and logs a failure when the SMS provider hangs past the timeout", async () => {
+  vi.stubGlobal("fetch", ((_, init) => new Promise((__, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)))) as typeof fetch);
+  try {
+    const { order } = await newOrder();
+    await expect(notify("deposit_verified", { order }, { ...deps(), sms: twilioSms("AC-fake", "fake-token", "+15005550006", 20) })).resolves.toBeUndefined();
+    expect((await log(order.id)).map(row => [row.channel, row.status, row.error]).sort())
+      .toEqual([["email", "sent", null], ["sms", "failed", "Twilio request failed"]]);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+// Wraps the test database so one kind of write fails, leaving every other call untouched.
+function failing(when: (method: "insert" | "update", values: Record<string, unknown>) => boolean): NotifyDeps["db"] {
+  return new Proxy(test.db, {
+    get(target, property, receiver) {
+      if (property !== "insert" && property !== "update") return Reflect.get(target, property, receiver);
+      return (table: never) => {
+        const builder = target[property](table) as unknown as Record<string, (values: Record<string, unknown>) => unknown>;
+        const method = property === "insert" ? "values" : "set";
+        return new Proxy(builder, {
+          get: (inner, key) => (key === method
+            ? (values: Record<string, unknown>) => { if (when(property, values)) throw new Error("connection lost"); return inner[method](values); }
+            : Reflect.get(inner, key)),
+        });
+      };
+    },
+  }) as NotifyDeps["db"];
+}
+
+it("still sends the email when the SMS claim fails", async () => {
+  const { order } = await newOrder();
+  await expect(notify("pop_received", { order }, { ...deps(), db: failing((method, values) => method === "insert" && values.channel === "sms") })).resolves.toBeUndefined();
+  expect(sms.send).not.toHaveBeenCalled();
+  expect(email.send).toHaveBeenCalledOnce();
+  expect((await log(order.id)).map(row => [row.channel, row.status])).toEqual([["email", "sent"]]);
+  expect(error.mock.calls.join()).toContain("pop_received sms failed");
+});
+
+it("does not mark an accepted message as failed when recording the send fails", async () => {
+  const { order } = await newOrder();
+  await expect(notify("pop_received", { order }, { ...deps(), db: failing((method, values) => method === "update" && values.status === "sent") })).resolves.toBeUndefined();
+  expect(sms.send).toHaveBeenCalledOnce();
+  expect(email.send).toHaveBeenCalledOnce();
+  // The claim row is left as written: no provider error summary is recorded against a message the provider accepted.
+  expect((await log(order.id)).map(row => row.error)).toEqual(["not sent", "not sent"]);
+  expect(error).toHaveBeenCalledTimes(2);
 });

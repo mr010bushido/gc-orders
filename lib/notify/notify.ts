@@ -45,15 +45,21 @@ export async function notify<E extends NotificationEvent>(event: E, context: Not
       .where(inArray(settingsTable.key, [...SETTING_KEYS]));
     const settings = resolveSettings(rows);
     const { order } = context;
-    const appUrl = deps.appUrl ?? process.env.APP_URL ?? "";
-    const link = "token" in context ? `${appUrl}/order/${encodeURIComponent(order.reference)}?t=${encodeURIComponent(context.token)}` : undefined;
+    const appUrl = deps.appUrl ?? process.env.APP_URL;
+    // Without an origin a link would be relative and useless in an SMS; templates then point to the order page in words.
+    const link = "token" in context && appUrl ? `${appUrl}/order/${encodeURIComponent(order.reference)}?t=${encodeURIComponent(context.token)}` : undefined;
     const message = TEMPLATES[event]({ order, link, settings });
     const route = ROUTES[event];
     for (const channel of route.channels) {
-      const to = recipient(route.to, channel, order, settings, deps.ownerEmail ?? process.env.OWNER_EMAIL);
-      await deliver(db, now, { orderId: order.id, event, channel }, to, async (address) => channel === "sms"
-        ? (deps.sms ?? createSmsSender()).send({ to: address, text: message.sms })
-        : (deps.email ?? createEmailSender()).send({ to: address, subject: message.subject, text: message.text, html: message.html }));
+      // Each channel stands alone: a database or provider error on one must not stop the other.
+      try {
+        const to = recipient(route.to, channel, order, settings, deps.ownerEmail ?? process.env.OWNER_EMAIL);
+        await deliver(db, now, { orderId: order.id, event, channel }, to, async (address) => channel === "sms"
+          ? (deps.sms ?? createSmsSender()).send({ to: address, text: message.sms })
+          : (deps.email ?? createEmailSender()).send({ to: address, subject: message.subject, text: message.text, html: message.html }));
+      } catch (error) {
+        console.error(`notify ${event} ${channel} failed: ${summariseError(error)}`);
+      }
     }
   } catch (error) {
     console.error(`notify ${event} failed: ${summariseError(error)}`);
@@ -78,11 +84,14 @@ async function deliver(db: Db, now: () => Date, key: Key, to: string | null, sen
     ...(to === null ? { status: "skipped" as const, error: "no recipient configured" } : { status: "failed" as const, error: "not sent" }),
   }).onConflictDoNothing().returning({ id: notificationLog.id });
   if (!claimed || to === null) return;
+  let id: string;
   try {
-    const { id } = await send(to);
-    await db.update(notificationLog).set({ status: "sent", providerMessageId: id, error: null, at: now() })
-      .where(eq(notificationLog.id, claimed.id));
+    ({ id } = await send(to));
   } catch (error) {
     await db.update(notificationLog).set({ error: summariseError(error), at: now() }).where(eq(notificationLog.id, claimed.id));
+    return;
   }
+  // The provider accepted the message: a failure here must not mark it failed. The caller logs it.
+  await db.update(notificationLog).set({ status: "sent", providerMessageId: id, error: null, at: now() })
+    .where(eq(notificationLog.id, claimed.id));
 }

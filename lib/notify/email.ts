@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { maskEmail } from "./mask";
+import { PROVIDER_TIMEOUT_MS } from "./sms";
 
 export type EmailMessage = { to: string; subject: string; text: string; html: string };
 export interface EmailSender { send(message: EmailMessage): Promise<{ id: string }> }
@@ -17,7 +18,7 @@ export const consoleEmail: EmailSender = {
 export const resendConfigured = (env: Env) => Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 
 /** Resend's HTTP API in one request. Errors carry only the HTTP status. */
-export function resendEmail(apiKey: string, from: string): EmailSender {
+export function resendEmail(apiKey: string, from: string, timeoutMs = PROVIDER_TIMEOUT_MS): EmailSender {
   return {
     async send({ to, subject, text, html }) {
       let response: Response;
@@ -26,6 +27,7 @@ export function resendEmail(apiKey: string, from: string): EmailSender {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({ from, to: [to], subject, text, html }),
+          signal: AbortSignal.timeout(timeoutMs),
         });
       } catch {
         throw new Error("Resend request failed");
