@@ -11,4 +11,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate date-availability --strict` passes
+- [x] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate date-availability --strict` passes — gate: pnpm lint, pnpm typecheck, pnpm test --maxWorkers=2 (45 files, 487 passed, 1 skipped; default concurrency has pre-existing PGlite timeouts on develop), pnpm build, pnpm check:portability, openspec validate date-availability --strict → all pass
