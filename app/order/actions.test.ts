@@ -4,13 +4,14 @@ import { orderInput } from "@/lib/orders/fixtures";
 import { submitPop } from "@/lib/orders/transitions";
 import { setFlag } from "@/lib/orders/transitions";
 
-const mocks = vi.hoisted(() => ({ db: undefined as unknown, callbacks: [] as (() => unknown)[], notify: vi.fn() }));
+const mocks = vi.hoisted(() => ({ db: undefined as unknown, callbacks: [] as (() => unknown)[], notify: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/server", () => ({ after: (callback: () => unknown) => mocks.callbacks.push(callback) }));
+vi.mock("next/cache", () => ({ refresh: () => mocks.refresh() }));
 vi.mock("@/lib/db", () => ({ getDb: () => mocks.db }));
 vi.mock("@/lib/notify/notify", () => ({ notify: (...args: unknown[]) => mocks.notify(...args) }));
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
-beforeEach(async () => { test = await createTestDb(); mocks.db = test.db; mocks.callbacks = []; mocks.notify.mockReset().mockResolvedValue(undefined); });
+beforeEach(async () => { test = await createTestDb(); mocks.db = test.db; mocks.callbacks = []; mocks.notify.mockReset().mockResolvedValue(undefined); mocks.refresh.mockReset(); });
 afterEach(async () => { await test.close(); });
 
 async function action() { vi.resetModules(); return import("./actions"); }
@@ -21,6 +22,7 @@ it("returns after POP is stored and schedules notifications after the response",
   const { submitPopAction } = await action();
   await expect(submitPopAction(accessToken, "Airtel K520 sent, TID 123")).resolves.toEqual({ ok: true, status: "awaiting_verification" });
   expect(mocks.callbacks).toHaveLength(1);
+  expect(mocks.refresh).toHaveBeenCalledOnce();
   expect(mocks.notify).not.toHaveBeenCalled();
   await mocks.callbacks[0]();
   expect(mocks.notify.mock.calls.map(([event]) => event).sort()).toEqual(["owner_pop_submitted", "pop_received"]);
@@ -35,6 +37,7 @@ it("shows validation for short text and treats a wrong token as generic failure"
   expect(await submitPopAction(accessToken, "short")).toMatchObject({ ok: false, error: expect.stringContaining("10 characters") });
   expect(await submitPopAction("wrong-token", "Airtel K520 sent, TID 123")).toMatchObject({ ok: false });
   expect(mocks.callbacks).toHaveLength(0);
+  expect(mocks.refresh).not.toHaveBeenCalled();
 });
 
 it("allows a flagged order to receive another POP without changing its status", async () => {
@@ -59,4 +62,23 @@ it("refuses an expired order and provider failures stay outside the action respo
   mocks.notify.mockRejectedValue(new Error("provider failed"));
   expect(await submitPopAction(liveToken, "Airtel K520 sent, TID 123")).toEqual({ ok: true, status: "awaiting_verification" });
   await expect(mocks.callbacks.at(-1)?.()).resolves.toBeUndefined();
+});
+
+it("notifies from the saved order when recovery rotates the link during POP submission", async () => {
+  const { createOrder } = await import("@/lib/orders/orders");
+  const { order, accessToken } = await createOrder(test.db, orderInput(), new Date());
+  const { submitPopAction } = await action();
+  await test.client.exec(`
+    CREATE FUNCTION rotate_token_on_pop() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      UPDATE orders SET access_token_hash = 'rotated-during-submit' WHERE id = NEW.order_id;
+      RETURN NEW;
+    END $$;
+    CREATE TRIGGER rotate_token_on_pop AFTER INSERT ON pop_submissions
+    FOR EACH ROW EXECUTE FUNCTION rotate_token_on_pop();
+  `);
+  expect(await submitPopAction(accessToken, "Airtel K520 sent, TID 123")).toEqual({ ok: true, status: "awaiting_verification" });
+  await mocks.callbacks[0]();
+  expect(mocks.notify).toHaveBeenCalledWith("pop_received", { order: expect.objectContaining({ id: order.id, status: "awaiting_verification" }) }, { db: test.db });
+  expect(mocks.refresh).toHaveBeenCalledOnce();
 });

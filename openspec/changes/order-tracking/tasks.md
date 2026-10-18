@@ -18,3 +18,14 @@
 
 - [x] 3.1 Test: create an order, open the page with the token, submit POP, see `awaiting_verification`; wrong token shows the generic not-found — gate: `pnpm test app/order/page.integration.test.tsx` → 2 passed
 - [x] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build`, and `NEXT_OUTPUT=standalone pnpm build` pass with `DATABASE_URL` and `DATABASE_MIGRATION_URL` unset; portability and OpenSpec validation pass — gate: lint → passed; typecheck → passed; test → 614 passed, 1 skipped; default build → passed; standalone build → passed; `pnpm check:portability` → passed; `openspec validate order-tracking --strict` → valid
+
+## 4. Independent review fixes
+
+- [x] 4.1 Serialize recovery sends on the order row and conditionally restore the previous token hash after an SMS failure; log without customer data — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
+- [x] 4.2 Schedule lookup, rotation and SMS after the response for every allowed request, with an injected scheduler in service tests — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
+- [x] 4.3 Refresh the order page after successful POP while preserving the form's live-region success message — gate: `pnpm test app/order/actions.test.ts app/order/page.integration.test.tsx` → 8 passed
+- [x] 4.4 Label the deposit amount without claiming verification and use `balanceDue` for settled balances — gate: `pnpm test app/order/page.integration.test.tsx` → 3 passed
+- [x] 4.5 Skip the reference limiter when the client-address limit denies a lookup — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
+- [x] 4.6 Notify from the order returned by `submitPop` so concurrent token rotation cannot break a saved POP — gate: `pnpm test app/order/actions.test.ts` → 5 passed
+- [x] 4.7 Render a stable countdown placeholder through hydration, then calculate immediately and every second — gate: `pnpm test app/order/countdown.dom.test.tsx` → 1 passed
+- [x] 4.8 Show `Awaiting quote` in the shared status pill with the agreed gold-wash style; complete integration gates — gate: `pnpm test app/order/page.integration.test.tsx` → 3 passed; lint, typecheck, portability → passed; full test → 620 passed, 1 skipped; default and standalone build → passed; `openspec validate order-tracking --strict` → valid

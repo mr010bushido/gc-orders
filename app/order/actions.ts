@@ -1,8 +1,9 @@
 "use server";
 
 import { after } from "next/server";
+import { refresh } from "next/cache";
 import { getDb } from "@/lib/db";
-import { effectiveStatus, findOrderByToken, OrderError, type OrderDetail } from "@/lib/orders/orders";
+import { effectiveStatus, findOrderByToken, OrderError } from "@/lib/orders/orders";
 import { submitPop } from "@/lib/orders/transitions";
 import { notify } from "@/lib/notify/notify";
 import { findMyBooking } from "@/lib/orders/access";
@@ -19,15 +20,15 @@ export async function submitPopAction(token: string, text: string): Promise<PopA
     if (effectiveStatus(detail.order, now) !== "awaiting_payment" && !(detail.order.status === "awaiting_verification" && detail.order.flaggedAt)) {
       throw new OrderError(detail.order.paymentDueAt && detail.order.paymentDueAt <= now ? "ORDER_EXPIRED" : "INVALID_TRANSITION");
     }
-    await submitPop(db, detail.order.id, text, now);
-    const updated = await findOrderByToken(db, token) as OrderDetail;
+    const { order } = await submitPop(db, detail.order.id, text, now);
     after(async () => {
       // `notify` is designed never to throw; keep that guarantee at this boundary too.
       await Promise.allSettled([
-        notify("pop_received", { order: updated.order }, { db }),
-        notify("owner_pop_submitted", { order: updated.order }, { db }),
+        notify("pop_received", { order }, { db }),
+        notify("owner_pop_submitted", { order }, { db }),
       ]);
     });
+    refresh();
     return { ok: true, status: "awaiting_verification" };
   } catch (error) {
     const code = error instanceof OrderError ? error.code : "ORDER_INVALID";
@@ -43,7 +44,7 @@ export async function findMyBookingAction(_previous: { ok: boolean; message?: st
   const requestHeaders = await headers();
   const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
   const address = forwarded || requestHeaders.get("x-real-ip") || "unknown";
-  const result = await findMyBooking(String(formData.get("reference") ?? ""), String(formData.get("phone") ?? ""), { clientAddress: address });
+  const result = await findMyBooking(String(formData.get("reference") ?? ""), String(formData.get("phone") ?? ""), { clientAddress: address, schedule: after });
   if (!result.ok) return { ok: false, error: "Too many attempts. Please try again later." };
   return { ok: true, message: result.message };
 }
