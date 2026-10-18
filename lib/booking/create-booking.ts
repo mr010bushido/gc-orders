@@ -19,6 +19,23 @@ function addError(errors: Partial<Record<BookingField, BookingErrorCode>>, field
   errors[field] ??= code;
 }
 
+function unsafeDessertSubtotal(desserts: { type: string; quantity: number }[], rules: ReturnType<typeof toPricingRules>): boolean {
+  let subtotal = 0;
+  for (const dessert of desserts) {
+    const price = rules.dessertTypes?.[dessert.type]?.price;
+    const minimum = rules.minimumDessertQuantity;
+    if (!Number.isSafeInteger(price) || !price || price < 1 || !Number.isSafeInteger(minimum)
+      || minimum < 1) return false;
+    const minimumAmount = minimum * price * 100;
+    if (!Number.isSafeInteger(minimumAmount) || minimumAmount > Number.MAX_SAFE_INTEGER - 100) return false;
+    const amount = dessert.quantity * price * 100;
+    if (!Number.isSafeInteger(amount) || amount > Number.MAX_SAFE_INTEGER - 100
+      || subtotal > Number.MAX_SAFE_INTEGER - 100 - amount) return true;
+    subtotal += amount;
+  }
+  return false;
+}
+
 /** Validates and prices an untrusted request, then writes the immutable order snapshot. */
 export async function createBooking(db: Db, input: unknown, now: Date): Promise<BookingResponse> {
   const parsed = bookingRequestSchema.safeParse(input);
@@ -78,12 +95,24 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   const cake = request.cake;
   const selectedFlavour = cake ? catalogue.flavours.find(item => item.key === cake.flavour)! : undefined;
   const selectedFrosting = cake ? catalogue.frostings.find(item => item.key === cake.frosting)! : undefined;
-  const priced = priceBasket({
-    ...(cake ? { cake: { flavourGroup: flavour?.ok ? flavour.value : "", tierSizes: cake.tierSizes, addons: cake.addons } } : {}),
-    desserts: request.desserts,
-    delivery: request.fulfilment === "delivery",
-    eventDate: request.eventDate,
-  }, now, rules);
+  let priced;
+  try {
+    priced = priceBasket({
+      ...(cake ? { cake: { flavourGroup: flavour?.ok ? flavour.value : "", tierSizes: cake.tierSizes, addons: cake.addons } } : {}),
+      desserts: request.desserts,
+      delivery: request.fulfilment === "delivery",
+      eventDate: request.eventDate,
+    }, now, rules);
+  } catch (error) {
+    if (!(error instanceof PricingError)) throw error;
+    if (error.code === "DESSERT_MIN_QUANTITY" && unsafeDessertSubtotal(request.desserts, rules)) {
+      return { ok: false, errors: { desserts: "DESSERT_MIN_QUANTITY" } };
+    }
+    if (error.code === "AMOUNT_OUT_OF_RANGE" && unsafeDessertSubtotal(request.desserts, rules)) {
+      return { ok: false, errors: { desserts: "INVALID_INPUT" } };
+    }
+    throw error;
+  }
   let dessertIndex = 0;
   let addonIndex = 0;
   const orderInput: CreateOrderInput = {

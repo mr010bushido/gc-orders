@@ -89,3 +89,18 @@ it("accepts more than ten valid submissions without an IP-based limit", async ()
   expect(results.every(result => result.ok)).toBe(true);
   expect(await test.db.select().from(orders)).toHaveLength(11);
 });
+
+it("rejects a dessert quantity whose priced amount exceeds safe integer range", async () => {
+  const result = await createBooking(test.db, request({ cake: undefined, desserts: [{ type: "cupcakes", quantity: 4_000_000_000_000 }] }), NOW);
+  expect(result).toMatchObject({ ok: false, errors: { desserts: "DESSERT_MIN_QUANTITY" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
+
+it("rejects an aggregate dessert subtotal that exceeds safe integer range", async () => {
+  const result = await createBooking(test.db, request({ cake: undefined, desserts: [
+    { type: "cupcakes", quantity: 1_510_000_000_000 },
+    { type: "brownies", quantity: 1_510_000_000_000 },
+  ] }), NOW);
+  expect(result).toMatchObject({ ok: false, errors: { desserts: "INVALID_INPUT" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
