@@ -13,5 +13,5 @@ export function StatusMessage({ status, flagged = false }: { status: OrderStatus
   const message = flagged && status === "awaiting_verification"
     ? "The owner needs a little more information. Please send the payment confirmation again."
     : messages[status];
-  return <p className="leading-6 text-ink-soft">{message}</p>;
+  return <p role="status" aria-live="polite" className="leading-6 text-ink-soft">{message}</p>;
 }

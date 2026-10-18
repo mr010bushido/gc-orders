@@ -18,3 +18,11 @@ it("explains flagged verification", () => {
   render(<StatusMessage status="awaiting_verification" flagged />);
   expect(screen.getByText(/needs a little more information/i)).toBeTruthy();
 });
+
+it("announces the status message after a page refresh", () => {
+  const { rerender } = render(<StatusMessage status="awaiting_payment" />);
+  const announcement = screen.getByRole("status");
+  expect(announcement.getAttribute("aria-live")).toBe("polite");
+  rerender(<StatusMessage status="awaiting_verification" />);
+  expect(announcement.textContent).toContain("owner for verification");
+});

@@ -45,6 +45,7 @@ it("opens a private order, submits POP, then shows awaiting verification", async
   const updated = await page(order.reference, accessToken);
   expect(updated).toContain("Awaiting verification");
   expect(updated).toContain("Your payment details are with the owner for verification.");
+  expect(updated).toMatch(/role="status" aria-live="polite"[^>]*>Your payment details are with the owner for verification\./);
   expect(updated).toContain("Deposit amount");
   expect(updated).not.toContain("Pay your 50% deposit");
 });

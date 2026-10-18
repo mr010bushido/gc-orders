@@ -23,9 +23,9 @@
 
 - [x] 4.1 Serialize recovery sends on the order row and conditionally restore the previous token hash after an SMS failure; log without customer data — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
 - [x] 4.2 Schedule lookup, rotation and SMS after the response for every allowed request, with an injected scheduler in service tests — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
-- [x] 4.3 Refresh the order page after successful POP while preserving the form's live-region success message — gate: `pnpm test app/order/actions.test.ts app/order/page.integration.test.tsx` → 8 passed
+- [x] 4.3 Refresh the order page after successful POP and announce the new state in its persistent live region — gate: `pnpm test app/order/actions.test.ts app/order/page.integration.test.tsx app/order/status-message.dom.test.tsx` → 16 passed
 - [x] 4.4 Label the deposit amount without claiming verification and use `balanceDue` for settled balances — gate: `pnpm test app/order/page.integration.test.tsx` → 3 passed
 - [x] 4.5 Skip the reference limiter when the client-address limit denies a lookup — gate: `pnpm test lib/orders/access.test.ts` → 8 passed
 - [x] 4.6 Notify from the order returned by `submitPop` so concurrent token rotation cannot break a saved POP — gate: `pnpm test app/order/actions.test.ts` → 5 passed
 - [x] 4.7 Render a stable countdown placeholder through hydration, then calculate immediately and every second — gate: `pnpm test app/order/countdown.dom.test.tsx` → 1 passed
-- [x] 4.8 Show `Awaiting quote` in the shared status pill with the agreed gold-wash style; complete integration gates — gate: `pnpm test app/order/page.integration.test.tsx` → 3 passed; lint, typecheck, portability → passed; full test → 620 passed, 1 skipped; default and standalone build → passed; `openspec validate order-tracking --strict` → valid
+- [x] 4.8 Show `Awaiting quote` in the shared status pill with the agreed gold-wash style; complete integration gates — gate: `pnpm test app/order/page.integration.test.tsx` → 3 passed; lint, typecheck, portability → passed; full test → 621 passed, 1 skipped; default and standalone build → passed; `openspec validate order-tracking --strict` → valid
