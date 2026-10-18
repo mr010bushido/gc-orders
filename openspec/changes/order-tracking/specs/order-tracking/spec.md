@@ -83,3 +83,10 @@ The page SHALL use shared components and tokens, one display-font moment, and an
 #### Scenario: Success announced
 - **WHEN** POP submission succeeds
 - **THEN** the confirmation message is in a live region
+
+### Requirement: Booking confirmation hand-off
+The booking confirmation SHALL link to `/order/<reference>?t=<accessToken>` so the customer can continue to their private order page.
+
+#### Scenario: Continue from confirmation
+- **WHEN** a booking succeeds and the customer selects Continue
+- **THEN** the private order page opens with the issued reference and access token
