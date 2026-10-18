@@ -19,7 +19,7 @@ Out of scope: owner-visible log screens, inbound SMS (Zambia is outbound only), 
 - `notifications`: sender interfaces, providers, templates, triggers, recipients, logging and failure behaviour.
 
 ### Modified Capabilities
-None.
+- `health-endpoint`: a check may report `degraded` (200, `status: "degraded"`); any `fail` still gives 503.
 
 ## Impact
 

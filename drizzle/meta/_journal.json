@@ -43,6 +43,13 @@
       "when": 1792300770176,
       "tag": "0005_date-availability",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792301525753,
+      "tag": "0006_notifications",
+      "breakpoints": true
     }
   ]
 }

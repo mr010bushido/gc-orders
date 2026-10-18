@@ -64,3 +64,10 @@ Provider credentials SHALL come only from environment variables and SHALL NOT ap
 #### Scenario: Error from provider
 - **WHEN** the provider error text includes the account SID
 - **THEN** the stored error summary does not
+
+### Requirement: Notifications health check
+The system SHALL register a `notifications` health check that reports `degraded` when `NODE_ENV` is `production` and either the SMS or the email channel uses the console sender, and `ok` otherwise. It SHALL NOT reveal which variable is missing.
+
+#### Scenario: Production without credentials
+- **WHEN** production runs with no Twilio credentials
+- **THEN** `GET /api/health` maps `notifications` to `degraded` and names no variable

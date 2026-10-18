@@ -1,19 +1,24 @@
-const healthChecks = new Map<string, () => Promise<void> | void>();
+type CheckResult = "ok" | "degraded" | "fail";
+type HealthCheck = () => Promise<void | "degraded"> | void | "degraded";
 
-export function registerHealthCheck(name: string, fn: () => Promise<void> | void) {
+const healthChecks = new Map<string, HealthCheck>();
+
+/** A check passes by returning, reports `degraded` by returning that string, and fails by throwing or rejecting. */
+export function registerHealthCheck(name: string, fn: HealthCheck) {
   healthChecks.set(name, fn);
 }
 
 export async function runHealthChecks() {
-  const checks = Object.fromEntries(await Promise.all(
+  const checks: Record<string, CheckResult> = Object.fromEntries(await Promise.all(
     [...healthChecks].map(async ([name, fn]) => {
       try {
-        await fn();
-        return [name, "ok"] as const;
+        return [name, (await fn()) === "degraded" ? "degraded" : "ok"] as const;
       } catch {
         return [name, "fail"] as const;
       }
     }),
   ));
-  return { status: Object.values(checks).includes("fail") ? "fail" as const : "ok" as const, checks };
+  const results = Object.values(checks);
+  const status = results.includes("fail") ? "fail" as const : results.includes("degraded") ? "degraded" as const : "ok" as const;
+  return { status, checks };
 }
