@@ -1,6 +1,6 @@
-import { and, eq, gt, inArray, isNotNull, isNull, lte, type SQL } from "drizzle-orm";
+import { and, eq, exists, gt, inArray, isNotNull, isNull, lte, type SQL } from "drizzle-orm";
 import type { Db } from "../db";
-import { orders, orderStatusEvents, popSubmissions } from "../db/schema";
+import { orderLines, orders, orderStatusEvents, popSubmissions } from "../db/schema";
 import { BALANCE_METHODS, type Actor, type BalanceMethod, type OrderStatus } from "../db/schema/orders";
 import { isOrderId, OrderError, paymentExpiryHours, type Order } from "./orders";
 
@@ -21,6 +21,7 @@ export type Action = keyof typeof TRANSITIONS;
 /**
  * Applies `action` with a compare-and-set on the current status and writes its event in the same transaction,
  * so two concurrent calls cannot both succeed. Pass `tx` to join a caller's transaction.
+ * For `send_quote`, write the quote lines and new totals in that transaction before calling this function.
  */
 export async function transition(db: Db, orderId: string, action: Action, actor: Actor, now: Date): Promise<Order> {
   const rule = TRANSITIONS[action];
@@ -29,7 +30,11 @@ export async function transition(db: Db, orderId: string, action: Action, actor:
   return db.transaction(async (tx) => {
     const set: Partial<typeof orders.$inferInsert> = { status: rule.to };
     const guards: SQL[] = [];
-    if (action === "send_quote") set.paymentDueAt = new Date(now.getTime() + (await paymentExpiryHours(tx)) * HOUR);
+    if (action === "send_quote") {
+      set.paymentDueAt = new Date(now.getTime() + (await paymentExpiryHours(tx)) * HOUR);
+      guards.push(gt(orders.total, 0), gt(orders.deposit, 0), exists(tx.select({ id: orderLines.id }).from(orderLines)
+        .where(and(eq(orderLines.orderId, orders.id), eq(orderLines.kind, "quote")))));
+    }
     if (action === "verify") set.flaggedAt = null;
     if (action === "submit_pop") guards.push(gt(orders.paymentDueAt, now));
     if (action === "expire") guards.push(lte(orders.paymentDueAt, now));

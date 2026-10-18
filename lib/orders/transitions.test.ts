@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { orders, orderStatusEvents } from "../db/schema";
+import { orderLines, orders, orderStatusEvents } from "../db/schema";
 import { ORDER_STATUSES, type OrderStatus } from "../db/schema/orders";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "./fixtures";
@@ -16,6 +16,12 @@ const beforeDeadline = new Date(BOOKED_AT.getTime() + HOUR);
 const afterDeadline = new Date(BOOKED_AT.getTime() + 25 * HOUR);
 
 async function orderIn(status: OrderStatus) {
+  if (status === "awaiting_quote") {
+    const { order } = await createOrder(test.db, orderInput({ requestsQuote: true, basket: {
+      lines: [{ kind: "quote", label: "Quoted cake", quantity: 1, unitAmount: 1040, amount: 1040, meta: {} }], total: 1040, deposit: 520,
+    } }), BOOKED_AT);
+    return order.id;
+  }
   const { order } = await createOrder(test.db, orderInput(), BOOKED_AT);
   await test.db.update(orders).set({ status }).where(eq(orders.id, order.id));
   return order.id;
@@ -66,8 +72,17 @@ it("declines a quote request as the owner", async () => {
 
 it("starts the payment clock when the quote is sent", async () => {
   const { order } = await createOrder(test.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), BOOKED_AT);
-  const sent = await transition(test.db, order.id, "send_quote", "owner", beforeDeadline);
+  await expect(transition(test.db, order.id, "send_quote", "owner", beforeDeadline)).rejects.toMatchObject({ code: "INVALID_TRANSITION" });
+  expect((await test.db.select().from(orders).where(eq(orders.id, order.id)))[0]).toMatchObject({ status: "awaiting_quote", paymentDueAt: null });
+  expect(await events(order.id)).toHaveLength(1);
+  const sent = await test.db.transaction(async tx => {
+    await tx.insert(orderLines).values({ orderId: order.id, position: 0, kind: "quote", label: "Quoted cake", quantity: 1, unitAmount: 1040, amount: 1040, meta: {} });
+    await tx.update(orders).set({ total: 1040, deposit: 520 }).where(eq(orders.id, order.id));
+    return transition(tx, order.id, "send_quote", "owner", beforeDeadline);
+  });
+  expect(sent.status).toBe("awaiting_payment");
   expect(sent.paymentDueAt).toEqual(new Date(beforeDeadline.getTime() + 24 * HOUR));
+  expect(await events(order.id)).toHaveLength(2);
 });
 
 it("does not expire an order before its deadline, nor accept POP after it", async () => {

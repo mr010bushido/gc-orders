@@ -3,7 +3,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import { orders } from "../db/schema";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "./fixtures";
-import { createOrder, effectiveStatus, findOrderByToken, getTimeline } from "./orders";
+import { createOrder, effectiveStatus, findOrderByToken, getOrder, getTimeline } from "./orders";
 import { setFlag, submitPop, transition } from "./transitions";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
@@ -47,7 +47,10 @@ it("orders same-instant events by the lifecycle", async () => {
 
 it("finds an order by its token and nothing by a wrong one", async () => {
   const { order, accessToken } = await createOrder(test.db, orderInput(), BOOKED_AT);
-  expect(await findOrderByToken(test.db, accessToken)).toMatchObject({ order: { id: order.id }, lines: [{ kind: "cake" }] });
+  const detail = await findOrderByToken(test.db, accessToken);
+  expect(detail).toMatchObject({ order: { id: order.id }, lines: [{ kind: "cake" }] });
+  expect(detail?.order).not.toHaveProperty("accessTokenHash");
+  expect((await getOrder(test.db, order.id))?.order).not.toHaveProperty("accessTokenHash");
   const wrong = (accessToken[0] === "A" ? "B" : "A") + accessToken.slice(1);
   for (const token of [wrong, "", "short", order.accessTokenHash, `${accessToken}=`]) {
     expect(await findOrderByToken(test.db, token)).toBeNull();

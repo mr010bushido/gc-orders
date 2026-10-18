@@ -57,10 +57,12 @@ it("keeps the snapshot when the catalogue price changes", async () => {
 });
 
 it("stores a delivery address and rejects delivery without one", async () => {
-  const { order } = await createOrder(test.db, orderInput({ fulfilment: "delivery", deliveryAddress: " Plot 12, Kabulonga " }), BOOKED_AT);
+  const pickup = orderInput();
+  const basket = { lines: [...pickup.basket.lines, { kind: "delivery" as const, label: "Delivery", quantity: 1, unitAmount: 150, amount: 150, meta: {} }], total: 1190, deposit: 595 };
+  const { order } = await createOrder(test.db, orderInput({ fulfilment: "delivery", deliveryAddress: " Plot 12, Kabulonga ", basket }), BOOKED_AT);
   expect(order.deliveryAddress).toBe("Plot 12, Kabulonga");
   for (const deliveryAddress of [undefined, "   "]) {
-    await expect(createOrder(test.db, orderInput({ fulfilment: "delivery", deliveryAddress }), BOOKED_AT)).rejects.toMatchObject({ code: "DELIVERY_ADDRESS_REQUIRED" });
+    await expect(createOrder(test.db, orderInput({ fulfilment: "delivery", deliveryAddress, basket }), BOOKED_AT)).rejects.toMatchObject({ code: "DELIVERY_ADDRESS_REQUIRED" });
   }
   expect(await counts()).toMatchObject({ orders: 1, events: 1 });
 });
@@ -71,6 +73,10 @@ it.each<[string, Parameters<typeof orderInput>[0], string]>([
   ["blank name", { customer: { name: " ", phone: "0977123456", email: "a@example.com" } }, "ORDER_INVALID"],
   ["empty priced basket", { basket: { lines: [], total: 0, deposit: 0 } }, "ORDER_INVALID"],
   ["lines not adding up", { basket: { lines: orderInput().basket.lines, total: 1, deposit: 0 } }, "ORDER_INVALID"],
+  ["delivery fulfilment without a delivery line", { fulfilment: "delivery", deliveryAddress: "Plot 12, Kabulonga" }, "ORDER_INVALID"],
+  ["pickup fulfilment with a delivery line", { basket: { lines: [...orderInput().basket.lines, { kind: "delivery", label: "Delivery", quantity: 1, unitAmount: 150, amount: 150, meta: {} }], total: 1190, deposit: 595 } }, "ORDER_INVALID"],
+  ["deposit below half", { basket: { ...orderInput().basket, deposit: 519 } }, "ORDER_INVALID"],
+  ["deposit above half", { basket: { ...orderInput().basket, deposit: 521 } }, "ORDER_INVALID"],
   ["cake line without meta", { basket: { ...orderInput().basket, lines: [{ ...orderInput().basket.lines[0], meta: {} }] } }, "ORDER_INVALID"],
 ])("rejects %s and stores nothing", async (_name, overrides, code) => {
   await expect(createOrder(test.db, orderInput(overrides), BOOKED_AT)).rejects.toSatisfy(error => error instanceof OrderError && error.code === code);

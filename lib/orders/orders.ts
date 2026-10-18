@@ -23,7 +23,7 @@ export class OrderError extends Error {
 
 export type Order = typeof orders.$inferSelect;
 export type OrderLine = typeof orderLines.$inferSelect;
-export type OrderDetail = { order: Order; lines: OrderLine[]; currentPop: { text: string; submittedAt: Date } | null };
+export type OrderDetail = { order: Omit<Order, "accessTokenHash">; lines: OrderLine[]; currentPop: { text: string; submittedAt: Date } | null };
 
 const optionalText = (max: number) => z.string().trim().max(max).optional();
 
@@ -78,8 +78,10 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
   } catch {
     throw new OrderError("ORDER_INVALID", "line meta does not match its kind");
   }
-  if ((lines.length === 0 && !data.requestsQuote) || lines.reduce((sum, line) => sum + line.amount, 0) !== total || deposit > total) {
-    throw new OrderError("ORDER_INVALID", "lines must be present and add up to the total, and the deposit cannot exceed it");
+  if ((lines.length === 0 && !data.requestsQuote) || lines.reduce((sum, line) => sum + line.amount, 0) !== total || deposit > total
+    || (!data.requestsQuote && (lines.some(line => line.kind === "delivery") !== (data.fulfilment === "delivery")
+      || deposit < Math.floor(total / 2) || deposit > Math.ceil(total / 2)))) {
+    throw new OrderError("ORDER_INVALID", "basket lines, delivery and deposit must match the priced order");
   }
 
   const accessToken = randomBytes(32).toString("base64url");
@@ -116,8 +118,10 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
 /** Reads an order with its line snapshot and latest POP, or null. Never touches the catalogue. */
 export async function getOrder(db: Db, id: string): Promise<OrderDetail | null> {
   if (!isOrderId(id)) return null;
-  const [order] = await db.select().from(orders).where(eq(orders.id, id));
-  if (!order) return null;
+  const [stored] = await db.select().from(orders).where(eq(orders.id, id));
+  if (!stored) return null;
+  const { accessTokenHash: _accessTokenHash, ...order } = stored;
+  void _accessTokenHash;
   const [lines, [pop]] = await Promise.all([
     db.select().from(orderLines).where(eq(orderLines.orderId, id)).orderBy(asc(orderLines.position)),
     db.select({ text: popSubmissions.text, submittedAt: popSubmissions.submittedAt }).from(popSubmissions)
