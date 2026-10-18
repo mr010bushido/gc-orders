@@ -1,6 +1,6 @@
 ## 1. Contract (Codex)
 
-- [ ] 1.1 `lib/booking/schema.ts`: request zod schema, error code list and response types; commit first, the screens import these types
+- [x] 1.1 `lib/booking/schema.ts`: request zod schema, error code list and response types; commit first, the screens import these types — gate: `pnpm typecheck` → passed
 - [ ] 1.2 `lib/booking/create-booking.ts`: validation, catalogue load, `priceBasket`, date rules, `assertDateOpen`, `createOrder`; tests for every `booking-submission` scenario
 - [ ] 1.3 Honeypot and the `RateLimiter` from `database-foundation`, with tests
 - [ ] 1.4 The server action in `app/book/actions.ts` wrapping 1.2, calling `notify('booking_received')` and `notify('owner_new_booking')` after commit, with a log-redaction test and a provider-failure test
