@@ -1,6 +1,6 @@
 ## 1. Model
 
-- [ ] 1.1 Schema and migration for `date_decisions` (RLS on) and an index on `orders (event_date, status)`
+- [x] 1.1 Schema and migration for `date_decisions` (RLS on) and an index on `orders (event_date, status)` — gate: pnpm lint, pnpm typecheck, pnpm test lib/db --maxWorkers=2 (35 passed, schema-check enforces RLS/uuid conventions), pnpm check:portability, openspec validate --strict → pass. Deviation: `event_date` is a unique column, not the primary key, because schema-check requires uuid PKs; `state`/`reason`/`confirmed_count_at_decision` carry a shape CHECK
 
 ## 2. Queries and decisions
 

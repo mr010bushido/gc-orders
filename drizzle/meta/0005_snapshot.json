@@ -1,0 +1,1199 @@
+{
+  "id": "ceb0e3d1-5524-4db0-89b2-a8bfa44e1ff5",
+  "prevId": "7566ff86-d1e4-4a96-b447-c7c445407434",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.addons": {
+      "name": "addons",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "addons_key_unique": {
+          "name": "addons_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "addons_nonnegative_price": {
+          "name": "addons_nonnegative_price",
+          "value": "\"addons\".\"price\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.date_decisions": {
+      "name": "date_decisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_date": {
+          "name": "event_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "confirmed_count_at_decision": {
+          "name": "confirmed_count_at_decision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "date_decisions_event_date_unique": {
+          "name": "date_decisions_event_date_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "event_date"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "date_decisions_state": {
+          "name": "date_decisions_state",
+          "value": "\"date_decisions\".\"state\" in ('closed', 'open')"
+        },
+        "date_decisions_reason": {
+          "name": "date_decisions_reason",
+          "value": "\"date_decisions\".\"reason\" is null or \"date_decisions\".\"reason\" in ('capacity', 'manual')"
+        },
+        "date_decisions_shape": {
+          "name": "date_decisions_shape",
+          "value": "(\"date_decisions\".\"state\" = 'closed' and \"date_decisions\".\"reason\" is not null and \"date_decisions\".\"confirmed_count_at_decision\" is null)\n    or (\"date_decisions\".\"state\" = 'open' and \"date_decisions\".\"reason\" is null and \"date_decisions\".\"confirmed_count_at_decision\" >= 0)"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.dessert_types": {
+      "name": "dessert_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flavour_suggestions": {
+          "name": "flavour_suggestions",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "dessert_types_key_unique": {
+          "name": "dessert_types_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "dessert_types_positive_price": {
+          "name": "dessert_types_positive_price",
+          "value": "\"dessert_types\".\"price\" > 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.flavour_groups": {
+      "name": "flavour_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_price": {
+          "name": "base_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "flavour_groups_key_unique": {
+          "name": "flavour_groups_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "flavour_groups_positive_price": {
+          "name": "flavour_groups_positive_price",
+          "value": "\"flavour_groups\".\"base_price\" > 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.flavours": {
+      "name": "flavours",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "diet": {
+          "name": "diet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'standard'"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "flavours_group_id_flavour_groups_id_fk": {
+          "name": "flavours_group_id_flavour_groups_id_fk",
+          "tableFrom": "flavours",
+          "tableTo": "flavour_groups",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "flavours_key_unique": {
+          "name": "flavours_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "flavours_diet": {
+          "name": "flavours_diet",
+          "value": "\"flavours\".\"diet\" in ('standard', 'vegan', 'diabetic')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.frostings": {
+      "name": "frostings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "frostings_key_unique": {
+          "name": "frostings_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.job_heartbeats": {
+      "name": "job_heartbeats",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "job": {
+          "name": "job",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "job_heartbeats_job_unique": {
+          "name": "job_heartbeats_job_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "job"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.order_lines": {
+      "name": "order_lines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_amount": {
+          "name": "unit_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meta": {
+          "name": "meta",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "order_lines_order_id_orders_id_fk": {
+          "name": "order_lines_order_id_orders_id_fk",
+          "tableFrom": "order_lines",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "order_lines_order_position": {
+          "name": "order_lines_order_position",
+          "nullsNotDistinct": false,
+          "columns": [
+            "order_id",
+            "position"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "order_lines_kind": {
+          "name": "order_lines_kind",
+          "value": "\"order_lines\".\"kind\" in ('cake', 'rush', 'addon', 'dessert', 'dessert_surcharge', 'delivery', 'quote')"
+        },
+        "order_lines_amounts": {
+          "name": "order_lines_amounts",
+          "value": "\"order_lines\".\"quantity\" > 0 and \"order_lines\".\"unit_amount\" >= 0 and \"order_lines\".\"amount\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.order_status_events": {
+      "name": "order_status_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_status": {
+          "name": "from_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_status": {
+          "name": "to_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "order_status_events_order_id_idx": {
+          "name": "order_status_events_order_id_idx",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "order_status_events_order_id_orders_id_fk": {
+          "name": "order_status_events_order_id_orders_id_fk",
+          "tableFrom": "order_status_events",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "order_status_events_from_status": {
+          "name": "order_status_events_from_status",
+          "value": "\"order_status_events\".\"from_status\" is null or \"order_status_events\".\"from_status\" in ('awaiting_quote', 'awaiting_payment', 'awaiting_verification', 'confirmed', 'completed', 'expired')"
+        },
+        "order_status_events_to_status": {
+          "name": "order_status_events_to_status",
+          "value": "\"order_status_events\".\"to_status\" in ('awaiting_quote', 'awaiting_payment', 'awaiting_verification', 'confirmed', 'completed', 'expired')"
+        },
+        "order_status_events_actor": {
+          "name": "order_status_events_actor",
+          "value": "\"order_status_events\".\"actor\" in ('owner', 'system', 'customer')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token_hash": {
+          "name": "access_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fulfilment": {
+          "name": "fulfilment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_date": {
+          "name": "event_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time_window": {
+          "name": "time_window",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_name": {
+          "name": "customer_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_phone": {
+          "name": "customer_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "customer_email": {
+          "name": "customer_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_address": {
+          "name": "delivery_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "design_notes": {
+          "name": "design_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "topper_message": {
+          "name": "topper_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deposit": {
+          "name": "deposit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_due_at": {
+          "name": "payment_due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flagged_at": {
+          "name": "flagged_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flag_note": {
+          "name": "flag_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance_paid_at": {
+          "name": "balance_paid_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance_method": {
+          "name": "balance_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance_note": {
+          "name": "balance_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_seen_at": {
+          "name": "owner_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anonymised_at": {
+          "name": "anonymised_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "orders_event_date_status_idx": {
+          "name": "orders_event_date_status_idx",
+          "columns": [
+            {
+              "expression": "event_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "orders_reference_unique": {
+          "name": "orders_reference_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "reference"
+          ]
+        },
+        "orders_access_token_hash_unique": {
+          "name": "orders_access_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "access_token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "orders_status": {
+          "name": "orders_status",
+          "value": "\"orders\".\"status\" in ('awaiting_quote', 'awaiting_payment', 'awaiting_verification', 'confirmed', 'completed', 'expired')"
+        },
+        "orders_fulfilment": {
+          "name": "orders_fulfilment",
+          "value": "\"orders\".\"fulfilment\" in ('pickup', 'delivery')"
+        },
+        "orders_time_window": {
+          "name": "orders_time_window",
+          "value": "\"orders\".\"time_window\" in ('morning', 'afternoon', 'evening')"
+        },
+        "orders_balance_method": {
+          "name": "orders_balance_method",
+          "value": "\"orders\".\"balance_method\" is null or \"orders\".\"balance_method\" in ('airtel', 'mtn', 'cash', 'bank', 'other')"
+        },
+        "orders_balance_recorded": {
+          "name": "orders_balance_recorded",
+          "value": "(\"orders\".\"balance_paid_at\" is null) = (\"orders\".\"balance_method\" is null)"
+        },
+        "orders_amounts": {
+          "name": "orders_amounts",
+          "value": "\"orders\".\"total\" >= 0 and \"orders\".\"deposit\" >= 0 and \"orders\".\"deposit\" <= \"orders\".\"total\""
+        },
+        "orders_payment_deadline": {
+          "name": "orders_payment_deadline",
+          "value": "\"orders\".\"status\" <> 'awaiting_payment' or \"orders\".\"payment_due_at\" is not null"
+        },
+        "orders_flag_while_verifying": {
+          "name": "orders_flag_while_verifying",
+          "value": "\"orders\".\"flagged_at\" is null or \"orders\".\"status\" = 'awaiting_verification'"
+        },
+        "orders_personal_data": {
+          "name": "orders_personal_data",
+          "value": "\"orders\".\"anonymised_at\" is not null or (\"orders\".\"customer_name\" is not null and \"orders\".\"customer_phone\" is not null\n    and \"orders\".\"customer_email\" is not null and \"orders\".\"delivery_address\" is not null and \"orders\".\"design_notes\" is not null and \"orders\".\"topper_message\" is not null)"
+        },
+        "orders_phone": {
+          "name": "orders_phone",
+          "value": "\"orders\".\"customer_phone\" is null or \"orders\".\"customer_phone\" ~ '^\\+260[579][0-9]{8}$'"
+        },
+        "orders_delivery_address": {
+          "name": "orders_delivery_address",
+          "value": "\"orders\".\"fulfilment\" <> 'delivery' or \"orders\".\"anonymised_at\" is not null or btrim(\"orders\".\"delivery_address\") <> ''"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.pop_submissions": {
+      "name": "pop_submissions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "pop_submissions_order_id_idx": {
+          "name": "pop_submissions_order_id_idx",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pop_submissions_order_id_orders_id_fk": {
+          "name": "pop_submissions_order_id_orders_id_fk",
+          "tableFrom": "pop_submissions",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.rate_limit_hits": {
+      "name": "rate_limit_hits",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key_hash": {
+          "name": "key_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "rate_limit_hits_key_hash_idx": {
+          "name": "rate_limit_hits_key_hash_idx",
+          "columns": [
+            {
+              "expression": "key_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rate_limit_hits_expires_at_idx": {
+          "name": "rate_limit_hits_expires_at_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.reference_counters": {
+      "name": "reference_counters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_number": {
+          "name": "last_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "reference_counters_year_unique": {
+          "name": "reference_counters_year_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "year"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "reference_counters_positive": {
+          "name": "reference_counters_positive",
+          "value": "\"reference_counters\".\"last_number\" > 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.settings": {
+      "name": "settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "settings_key_unique": {
+          "name": "settings_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.size_multipliers": {
+      "name": "size_multipliers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "multiplier": {
+          "name": "multiplier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "size_multipliers_size_unique": {
+          "name": "size_multipliers_size_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "size"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "size_multipliers_positive_size": {
+          "name": "size_multipliers_positive_size",
+          "value": "\"size_multipliers\".\"size\" > 0"
+        },
+        "size_multipliers_positive_multiplier": {
+          "name": "size_multipliers_positive_multiplier",
+          "value": "\"size_multipliers\".\"multiplier\" > 0"
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
