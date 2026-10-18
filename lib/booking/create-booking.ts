@@ -41,6 +41,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   }
 
   const request = parsed.data;
+  if (request.honeypot?.trim()) return { ok: false, errors: { _form: "INVALID_INPUT" } };
   const errors: Partial<Record<BookingField, BookingErrorCode>> = {};
   if (!request.cake && request.desserts.length === 0) addError(errors, "_form", "EMPTY_BASKET");
   const phone = normaliseZambianMobile(request.phone);

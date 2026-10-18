@@ -77,3 +77,15 @@ it("rejects over-limit tiers and invalid email before writing", async () => {
   expect(await createBooking(test.db, request({ email: "bad" }), NOW)).toMatchObject({ ok: false, errors: { email: "EMAIL_INVALID" } });
   expect(await test.db.select().from(orders)).toEqual([]);
 });
+
+it("rejects a filled honeypot without writing an order", async () => {
+  expect(await createBooking(test.db, request({ honeypot: "https://spam.example" }), NOW))
+    .toMatchObject({ ok: false, errors: { _form: "INVALID_INPUT" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
+
+it("accepts more than ten valid submissions without an IP-based limit", async () => {
+  const results = await Promise.all(Array.from({ length: 11 }, () => createBooking(test.db, request(), NOW)));
+  expect(results.every(result => result.ok)).toBe(true);
+  expect(await test.db.select().from(orders)).toHaveLength(11);
+});

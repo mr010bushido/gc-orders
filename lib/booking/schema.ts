@@ -22,7 +22,7 @@ export const bookingRequestSchema = z.object({
   email: z.email().max(254),
   designNotes: z.string().trim().max(2000).optional(),
   topperMessage: z.string().trim().max(200).optional(),
-  honeypot: z.string().optional(),
+  honeypot: z.string().max(200).optional(),
 });
 
 export type BookingRequest = z.input<typeof bookingRequestSchema>;
@@ -30,7 +30,7 @@ export type BookingRequest = z.input<typeof bookingRequestSchema>;
 export const BOOKING_ERROR_CODES = [
   "REQUIRED", "PHONE_INVALID", "EMAIL_INVALID", "DATE_UNAVAILABLE", "DATE_TOO_SOON",
   "DESSERT_MIN_QUANTITY", "DELIVERY_ADDRESS_REQUIRED", "TOO_MANY_TIERS", "INACTIVE_ITEM",
-  "EMPTY_BASKET", "RATE_LIMITED", "INVALID_INPUT",
+  "EMPTY_BASKET", "INVALID_INPUT",
 ] as const;
 
 export type BookingErrorCode = (typeof BOOKING_ERROR_CODES)[number];
