@@ -59,15 +59,15 @@ After the order is committed the action SHALL send the customer's booking-receiv
 - **THEN** the response is still `ok: true` and the failure is in the notification log
 
 ### Requirement: Abuse protection
-The action SHALL reject a request whose honeypot field is filled, and SHALL allow at most 10 submissions per client address per hour, returning `RATE_LIMITED` beyond that.
+The action SHALL reject a request whose honeypot field is filled. It SHALL NOT impose a per-IP booking submission limit. The separate capacity threshold counts confirmed orders for each event date and remains governed by `date-availability`.
 
 #### Scenario: Honeypot filled
 - **WHEN** the hidden field has a value
 - **THEN** no order is created and the response looks like a validation failure
 
-#### Scenario: Eleventh attempt
-- **WHEN** one address submits 11 requests within an hour
-- **THEN** the 11th returns `RATE_LIMITED`
+#### Scenario: Shared internet connection
+- **WHEN** one address submits more than 10 otherwise valid requests within an hour for open event dates
+- **THEN** the action does not reject them because they share an IP address
 
 ### Requirement: No personal data in logs
 The action SHALL NOT write names, phone numbers, emails or addresses to logs.
