@@ -5,7 +5,7 @@ import type { OrderStatus } from "../db/schema/orders";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "../orders/fixtures";
 import { createOrder } from "../orders/orders";
-import { getCapacitySuggestions, getClosedDates, isDateOpen } from "./availability";
+import { closeDate, getCapacitySuggestions, getClosedDates, isDateOpen, keepOpen, openDate } from "./availability";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
 beforeAll(async () => { test = await createTestDb(); });
@@ -91,4 +91,54 @@ it("suggests a kept-open date again only when its count grows", async () => {
   expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).not.toContain("2027-03-01");
   await book("2027-03-01", "confirmed");
   expect(await getCapacitySuggestions(test.db, TODAY)).toContainEqual({ date: "2027-03-01", confirmedCount: 11, capacity: 10 });
+});
+
+it("reopens a closed date by removing its row", async () => {
+  await closeDate(test.db, "2027-04-01", "manual", " Easter ", decidedAt);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2027-04-01"))).toMatchObject([{ state: "closed", reason: "manual", note: "Easter" }]);
+  expect(await openDate(test.db, "2027-04-01")).toBe(true);
+  expect(await isDateOpen(test.db, "2027-04-01")).toBe(true);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2027-04-01"))).toEqual([]);
+  expect(await openDate(test.db, "2027-04-01")).toBe(false);
+});
+
+it("overrides a suggestion, then suggests again after an extra order", async () => {
+  await book("2027-05-01", "confirmed", 10);
+  expect(await keepOpen(test.db, "2027-05-01", decidedAt)).toBe(true);
+  expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).not.toContain("2027-05-01");
+  await book("2027-05-01", "confirmed");
+  expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).toContain("2027-05-01");
+  expect(await keepOpen(test.db, "2027-05-01", decidedAt)).toBe(true);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2027-05-01"))).toMatchObject([{ state: "open", confirmedCountAtDecision: 11 }]);
+  expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).not.toContain("2027-05-01");
+});
+
+it("keeps a suggestion hidden when nothing changes after an override", async () => {
+  await book("2027-05-02", "confirmed", 10);
+  await keepOpen(test.db, "2027-05-02", decidedAt);
+  await book("2027-05-02", "awaiting_verification", 3);
+  expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).not.toContain("2027-05-02");
+});
+
+it("closing a suggested date records reason capacity and replaces a kept-open override", async () => {
+  await book("2027-05-03", "confirmed", 10);
+  await keepOpen(test.db, "2027-05-03", decidedAt);
+  await closeDate(test.db, "2027-05-03", "capacity", "", decidedAt);
+  expect(await isDateOpen(test.db, "2027-05-03")).toBe(false);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2027-05-03"))).toMatchObject([{ state: "closed", reason: "capacity", confirmedCountAtDecision: null }]);
+  expect((await getCapacitySuggestions(test.db, TODAY)).map(s => s.date)).not.toContain("2027-05-03");
+});
+
+it("does not reopen a closed date when asked to keep it open", async () => {
+  await closeDate(test.db, "2027-05-04", "manual", "Holiday", decidedAt);
+  expect(await keepOpen(test.db, "2027-05-04", decidedAt)).toBe(false);
+  expect(await isDateOpen(test.db, "2027-05-04")).toBe(false);
+});
+
+it("leaves existing orders untouched when a busy date is closed", async () => {
+  await book("2027-05-05", "confirmed", 4);
+  const before = await test.db.select().from(orders).where(eq(orders.eventDate, "2027-05-05"));
+  await closeDate(test.db, "2027-05-05", "manual", "Power cut", decidedAt);
+  expect(await test.db.select().from(orders).where(eq(orders.eventDate, "2027-05-05"))).toEqual(before);
+  expect(before).toHaveLength(4);
 });
