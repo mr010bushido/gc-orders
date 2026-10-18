@@ -1,7 +1,9 @@
 import { FindBookingForm } from "./find-form";
 import Link from "next/link";
+import { connection } from "next/server";
 
-export default function FindBookingPage() {
+export default async function FindBookingPage() {
+  await connection();
   return <main className="mx-auto min-h-screen max-w-xl px-5 py-10">
     <Link href="/" className="text-sm font-semibold text-brand-ink">Giuseppe’s Cakes</Link>
     <section className="mt-10 space-y-6">

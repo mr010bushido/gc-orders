@@ -9,15 +9,7 @@ import { maskEmail, maskPhone } from "@/lib/orders/access";
 import { StatusPill, type OrderStatus as PillStatus } from "@/design/components/StatusPill";
 import { PopForm } from "../pop-form";
 import { ExpiryCountdown } from "../countdown";
-
-const labels: Record<string, string> = {
-  awaiting_quote: "We’re reviewing your request and will contact you with a quote.",
-  awaiting_payment: "Your booking is held while you pay the deposit.",
-  awaiting_verification: "Your payment details are with the owner for verification.",
-  confirmed: "Your booking is confirmed. We look forward to making it for you.",
-  completed: "This order is complete. Thank you for choosing Giuseppe’s Cakes.",
-  expired: "This booking has expired. Please book again to choose a new date.",
-};
+import { StatusMessage } from "../status-message";
 
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ t?: string }> }) {
   await connection();
@@ -31,7 +23,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const canPay = status === "awaiting_payment" || (status === "awaiting_verification" && !!detail.order.flaggedAt);
   return <main className="mx-auto min-h-screen max-w-2xl px-5 py-8">
     <Link href="/" className="text-sm font-semibold text-brand-ink">Giuseppe’s Cakes</Link>
-    <header className="mt-8 space-y-3"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">Order tracking</p><h1 className="font-display text-4xl leading-tight">{detail.order.reference}</h1><StatusPill status={pillStatus} /><p className="leading-6 text-ink-soft">{labels[status]}</p></header>
+    <header className="mt-8 space-y-3"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">Order tracking</p><h1 className="font-display text-4xl leading-tight">{detail.order.reference}</h1><StatusPill status={pillStatus} /><StatusMessage status={status} flagged={!!detail.order.flaggedAt} /></header>
     <section className="mt-7 space-y-3 rounded-md border border-line bg-surface p-4"><h2 className="font-semibold">Your order</h2><dl className="divide-y divide-line text-sm">
       <div className="flex justify-between gap-4 py-3"><dt>Customer</dt><dd className="text-right">{detail.order.customerName?.split(" ")[0] ?? "Customer"}</dd></div>
       <div className="flex justify-between gap-4 py-3"><dt>Mobile</dt><dd className="text-right">{maskPhone(detail.order.customerPhone)}</dd></div>

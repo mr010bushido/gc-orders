@@ -6,3 +6,7 @@ After success the app SHALL show the booking reference, server-priced lines, tot
 #### Scenario: Continue to private order page
 - **WHEN** a booking succeeds and the customer selects Continue
 - **THEN** the app opens `/order/<reference>?t=<accessToken>`
+
+#### Scenario: Continue link carries issued credentials
+- **WHEN** the confirmation is rendered with a reference and access token
+- **THEN** Continue links to `/order/<encoded-reference>?t=<encoded-access-token>`

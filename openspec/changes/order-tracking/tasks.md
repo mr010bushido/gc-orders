@@ -7,12 +7,12 @@
 
 ## 2. Pages (Claude)
 
-- [ ] 2.1 `/order/[reference]` page: status pill, timeline, lines, totals, masked contact
-- [ ] 2.2 Payment instructions panel with expiry countdown and the POP form
-- [ ] 2.3 Per-status copy including pickup pin, expired and flagged states
-- [ ] 2.4 `/order` find-my-booking page
-- [ ] 2.5 Component tests for each state and the live-region announcement
-- [ ] 2.6 Change the booking confirmation Continue link from `/` to `/order/<reference>?t=<accessToken>`; update the booking-wizard spec delta and test the hand-off
+- [x] 2.1 `/order/[reference]` page: status pill, timeline, lines, totals, masked contact — gate: `pnpm lint` → passed; `pnpm typecheck` → passed
+- [x] 2.2 Payment instructions panel with expiry countdown and the POP form; server errors are field-adjacent alerts and focus the field — gate: `pnpm lint` → passed; `pnpm typecheck` → passed
+- [x] 2.3 Per-status copy including pickup pin, expired and flagged states, using `effectiveStatus` — gate: `pnpm lint` → passed; `pnpm typecheck` → passed
+- [x] 2.4 `/order` find-my-booking page with generic response and persistent rate limiting — gate: `pnpm lint` → passed; `pnpm typecheck` → passed
+- [x] 2.5 Component tests for each status copy, flagged state, POP field error/focus and live-region announcement — gate: `pnpm test app/order/order.dom.test.tsx app/order/status-message.dom.test.tsx` → 10 passed; `pnpm lint` → passed
+- [x] 2.6 Change the booking confirmation Continue link from `/` to `/order/<reference>?t=<accessToken>`; update the booking-wizard spec delta and test the hand-off — gate: `pnpm test app/book/wizard.dom.test.tsx` → 11 passed; `openspec validate order-tracking --strict` → valid
 
 ## 3. Integration (Claude owns this check)
 
