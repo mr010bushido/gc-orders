@@ -45,7 +45,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
       const field = fieldFor(issue.path);
       addError(errors, field, field === "phone" ? "PHONE_INVALID" : field === "email" ? "EMAIL_INVALID"
         : issue.message === "Duplicate dessert types" ? "DUPLICATE_DESSERT"
-          : field === "desserts" && issue.code === "too_big" ? "INVALID_INPUT"
+          : field === "desserts" && issue.path.length === 1 && issue.code === "too_big" ? "TOO_MANY_DESSERT_LINES"
         : field === "tierSizes" && issue.code === "too_big" ? "TOO_MANY_TIERS"
           : issue.code === "invalid_type" || issue.code === "too_small" ? "REQUIRED" : "INVALID_INPUT");
     }

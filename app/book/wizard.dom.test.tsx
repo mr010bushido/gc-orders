@@ -9,10 +9,10 @@ import { createTestDb } from '@/lib/db/test-db';
 import { orders } from '@/lib/db/schema';
 import { BookingWizard } from './wizard';
 
-const mocks = vi.hoisted(() => ({ db: undefined as unknown, after: vi.fn(), actionMock: undefined as unknown }));
+const mocks = vi.hoisted(() => ({ db: undefined as unknown, after: vi.fn(), actionMock: undefined as unknown, routerReplace: vi.fn() }));
 vi.mock('@/lib/db', () => ({ getDb: () => mocks.db }));
 vi.mock('next/server', () => ({ after: mocks.after }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.routerReplace }) }));
 vi.mock('./actions', async importOriginal => {
   const actual = await importOriginal<typeof import('./actions')>();
   return { createBookingAction: (...args: Parameters<typeof actual.createBookingAction>) => mocks.actionMock ? (mocks.actionMock as typeof actual.createBookingAction)(...args) : actual.createBookingAction(...args) };
@@ -28,6 +28,7 @@ beforeEach(async () => {
   await seedCatalogue(testDb.db);
   mocks.db = testDb.db;
   mocks.after.mockReset();
+  mocks.routerReplace.mockReset();
   sessionStorage.clear();
 });
 afterEach(async () => { await testDb.close(); vi.resetModules(); });
@@ -145,7 +146,69 @@ it('clamps deep links after restoring dessert-only and empty drafts', async () =
   sessionStorage.clear();
   render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
   expect(await screen.findByRole('heading', { name: 'Choose your treats' })).toBeTruthy();
+  await waitFor(() => expect(mocks.routerReplace).toHaveBeenCalledWith('/book?step=1', { scroll: false }));
   expect(screen.queryByText(/NaN|Invalid Date/)).toBeNull();
+});
+
+it('prevents selecting a dessert type already used by another row', async () => {
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(sessionStorage.getItem('gc-booking-draft-v1')).not.toBeNull());
+  await user.click(screen.getByRole('button', { name: '+ Add dessert type' }));
+  await user.click(screen.getByRole('button', { name: '+ Add dessert type' }));
+  await user.selectOptions(screen.getByLabelText('Dessert 1'), 'brownies');
+  expect((screen.getByLabelText('Dessert 2').querySelector('option[value="brownies"]') as HTMLOptionElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('renders one dessert error alert when the server rejects duplicate types', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: false as const, errors: { desserts: 'DUPLICATE_DESSERT' as const } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    desserts: [{ type: 'brownies', quantity: 30, note: '' }, { type: 'brownies', quantity: 30, note: '' }],
+    fulfilment: 'pickup', address: '', eventDate: earliestEventDate(false, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '',
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
+  const user = userEvent.setup();
+  await screen.findByRole('heading', { name: 'Review your booking' });
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(false));
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  await screen.findByText('Choose each dessert type only once.');
+  expect(document.querySelectorAll('#error-desserts[role="alert"]')).toHaveLength(1);
+  expect(new Set([...document.querySelectorAll('[id]')].map(node => node.id)).size).toBe(document.querySelectorAll('[id]').length);
+});
+
+it('keeps dessert and tier remove controls distinctly named', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [8, 10], addons: [] },
+    desserts: [{ type: 'brownies', quantity: 30, note: '' }, { type: 'cupcakes', quantity: 30, note: '' }],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(screen.getByLabelText('Dessert 2')).toBeTruthy());
+  expect(screen.getByRole('button', { name: 'Remove dessert 1' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Remove dessert 2' })).toBeTruthy();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('heading', { name: 'Cake details' });
+  expect(screen.getByLabelText('Tier 1 size')).toBeTruthy();
+  expect(screen.getByLabelText('Tier 2 size')).toBeTruthy();
+});
+
+it('skips focus on mount and focuses the heading after Continue and Back', async () => {
+  const user = userEvent.setup();
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [], fulfilment: 'pickup', address: '', eventDate: '', timeWindow: 'afternoon', name: '', phone: '', email: '', designNotes: '', topperMessage: '',
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  const chooseHeading = await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect((screen.getByLabelText('Add a cake') as HTMLInputElement).checked).toBe(true));
+  expect(document.activeElement).not.toBe(chooseHeading);
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  const detailsHeading = await screen.findByRole('heading', { name: 'Cake details' });
+  await waitFor(() => expect(document.activeElement).toBe(detailsHeading));
+  await user.click(screen.getByRole('button', { name: 'Back' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Choose your treats' })));
 });
 
 it('ignores a second submit while the action is pending', async () => {

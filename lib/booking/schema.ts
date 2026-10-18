@@ -12,7 +12,7 @@ export const bookingRequestSchema = z.object({
     type: z.string().trim().min(1),
     quantity: z.number().int(),
     note: z.string().trim().max(500).optional(),
-  })).max(10).default([]).superRefine((desserts, ctx) => {
+  })).max(50).default([]).superRefine((desserts, ctx) => {
     if (new Set(desserts.map(dessert => dessert.type)).size !== desserts.length) ctx.addIssue({ code: "custom", path: [0, "type"], message: "Duplicate dessert types" });
   }),
   honeypot: z.string().max(200).optional(),
@@ -32,7 +32,7 @@ export type BookingRequest = z.input<typeof bookingRequestSchema>;
 export const BOOKING_ERROR_CODES = [
   "REQUIRED", "PHONE_INVALID", "EMAIL_INVALID", "DATE_UNAVAILABLE", "DATE_TOO_SOON",
   "DESSERT_MIN_QUANTITY", "DELIVERY_ADDRESS_REQUIRED", "TOO_MANY_TIERS", "INACTIVE_ITEM",
-  "EMPTY_BASKET", "INVALID_INPUT", "DUPLICATE_DESSERT",
+  "EMPTY_BASKET", "INVALID_INPUT", "DUPLICATE_DESSERT", "TOO_MANY_DESSERT_LINES",
 ] as const;
 
 export type BookingErrorCode = (typeof BOOKING_ERROR_CODES)[number];

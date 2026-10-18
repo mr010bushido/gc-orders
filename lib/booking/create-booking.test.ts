@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { closeDate } from "../availability/availability";
 import { seedCatalogue } from "../catalogue/seed";
+import { defaultCatalogue } from "../catalogue/catalogue";
 import { createTestDb } from "../db/test-db";
 import { orderLines, orders, flavours } from "../db/schema";
 import { createBooking } from "./create-booking";
@@ -78,13 +79,18 @@ it("de-duplicates add-ons before pricing and persisting metadata", async () => {
   expect(addonLines.map(line => line.meta.key)).toEqual(["message_topper", "edible_print"]);
 });
 
-it("rejects duplicate dessert types and more than ten dessert lines", async () => {
+it("accepts all 11 seeded dessert types and rejects duplicate types and more than 50 lines", async () => {
+  const allDesserts = defaultCatalogue().dessertTypes.map(({ key }) => ({ type: key, quantity: 30 }));
+  expect(allDesserts).toHaveLength(11);
+  const accepted = await createBooking(test.db, request({ cake: undefined, desserts: allDesserts }), NOW);
+  expect(accepted).toMatchObject({ ok: true, total: expect.any(Number), lines: expect.any(Array) });
+  if (accepted.ok) expect(accepted.lines.filter(line => line.kind === "dessert")).toHaveLength(11);
+
   expect(await createBooking(test.db, request({ cake: undefined, desserts: [
     { type: "brownies", quantity: 30 }, { type: "brownies", quantity: 60 },
   ] }), NOW)).toMatchObject({ ok: false, errors: { desserts: "DUPLICATE_DESSERT" } });
-  expect(await createBooking(test.db, request({ cake: undefined, desserts: Array.from({ length: 11 }, (_, i) => ({ type: `dessert-${i}`, quantity: 30 })) }), NOW))
-    .toMatchObject({ ok: false, errors: { desserts: "INVALID_INPUT" } });
-  expect(await test.db.select().from(orders)).toEqual([]);
+  expect(await createBooking(test.db, request({ cake: undefined, desserts: Array.from({ length: 51 }, (_, i) => ({ type: `dessert-${i}`, quantity: 30 })) }), NOW))
+    .toMatchObject({ ok: false, errors: { desserts: "TOO_MANY_DESSERT_LINES" } });
 });
 
 it("uses the configured tier maximum", async () => {

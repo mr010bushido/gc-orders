@@ -1,11 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Booking request shape
-`createBooking` SHALL accept a request with: an optional cake (flavour id, frosting id, tier sizes, add-on keys, design notes, topper message), zero or more dessert lines (dessert type id, quantity, note), fulfilment (`pickup` or `delivery`) with an address for delivery, event date, time window (`morning`, `afternoon` or `evening`), customer name, phone and email. It SHALL reject a request with no cake and no dessert line.
+`createBooking` SHALL accept a request with: an optional cake (flavour id, frosting id, tier sizes, add-on keys, design notes, topper message), zero or more dessert lines (dessert type id, quantity, note), fulfilment (`pickup` or `delivery`) with an address for delivery, event date, time window (`morning`, `afternoon` or `evening`), customer name, phone and email. Dessert lines SHALL have unique types and be capped at 50 lines as a request-size sanity limit. Duplicate types SHALL return `DUPLICATE_DESSERT`; more than 50 lines SHALL return `TOO_MANY_DESSERT_LINES`. It SHALL reject a request with no cake and no dessert line.
 
 #### Scenario: Empty basket
 - **WHEN** a request has neither a cake nor a dessert line
 - **THEN** the response is `{ ok: false }` with error code `EMPTY_BASKET`
+
+#### Scenario: Dessert line limit
+- **WHEN** a request contains 51 dessert lines
+- **THEN** the response contains `desserts: TOO_MANY_DESSERT_LINES`
+
+#### Scenario: Duplicate dessert type
+- **WHEN** a request includes the same dessert type more than once
+- **THEN** the response contains `desserts: DUPLICATE_DESSERT`
 
 ### Requirement: Server-side validation with field errors
 The action SHALL validate every field on the server and return all errors at once as a map from field to code. Required fields: name, phone, email, event date, time window, fulfilment, and a flavour and frosting when a cake is present. The phone SHALL be a valid Zambian mobile number and is stored normalised. The email SHALL be well formed.
