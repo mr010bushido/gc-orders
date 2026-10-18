@@ -158,6 +158,10 @@ Tags: **[PRD]** specified in the PRD · **[DS]** specified in the design system 
 
 Tooling (not a product decision): pnpm, Vitest, Drizzle, Tailwind v4 with the design tokens as shipped.
 
+### Booking spam protection clarification (2026-10-18)
+
+The user removed the proposed 10-submissions-per-IP-per-hour restriction from `booking-flow`. Keep the hidden honeypot, but do not add a booking IP rate limit. The existing capacity threshold remains 10 confirmed orders due on an event date, with the owner deciding whether to close that date or keep it open. This leaves booking submissions without an application-level rate limit for now.
+
 The prototype's mock-order totals (e.g. Black Forest 12" delivery K1,860 vs K1,830 by the rules) are treated as illustrative. The PRD's App. B rules win.
 
 ## OpenSpec change map (proposed in JMS-166)

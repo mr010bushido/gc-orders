@@ -126,7 +126,7 @@ export function DatePicker({
                 const selected = date === value;
                 const notes = [rush && 'rush', state === 'closed' && 'fully booked', !available && state !== 'closed' && 'unavailable'];
                 return (
-                  <td key={d} aria-selected={selected} className="p-0.5">
+                  <td key={d} aria-selected={selected} className="p-0">
                     <button
                       type="button"
                       data-date={date}
