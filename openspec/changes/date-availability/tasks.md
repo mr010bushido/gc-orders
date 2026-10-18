@@ -5,7 +5,7 @@
 ## 2. Queries and decisions
 
 - [x] 2.1 `getClosedDates(db, from, to)` and `isDateOpen(db, date)` with PGlite tests — gate: pnpm lint, pnpm typecheck, pnpm test lib/availability lib/db --maxWorkers=2 (39 passed) → pass. Also fixed 1.1: the `open` shape CHECK let a null count through (null >= 0 is null), tightened and migration 0005 regenerated
-- [ ] 2.2 `getCapacitySuggestions(db, today)` reading the capacity setting; tests for 10 confirmed, unverified excluded, changed capacity and past dates
+- [x] 2.2 `getCapacitySuggestions(db, today)` reading the capacity setting; tests for 10 confirmed, unverified excluded, changed capacity and past dates — gate: pnpm lint, pnpm typecheck, pnpm test lib/availability (9 passed) → pass
 - [ ] 2.3 `closeDate`, `openDate`, `keepOpen`; tests for override then growth, override with no change, and closing a busy date
 - [ ] 2.4 `assertDateOpen(tx, date)` for the booking transaction, with the `DATE_UNAVAILABLE` error and a test
 
