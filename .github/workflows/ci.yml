@@ -42,7 +42,7 @@ jobs:
           for attempt in {1..30}; do
             status=$(curl -sS -o /tmp/health.json -w '%{http_code}' "http://127.0.0.1:$port/api/health" || true)
             if [ "$status" = 503 ]; then
-              node -e 'require("node:assert/strict").deepEqual(JSON.parse(require("node:fs").readFileSync("/tmp/health.json", "utf8")), { status: "fail", checks: { database: "fail" } })'
+              node -e 'require("node:assert/strict").deepEqual(JSON.parse(require("node:fs").readFileSync("/tmp/health.json", "utf8")), { status: "fail", checks: { database: "fail", notifications: "degraded" } })'
               exit 0
             fi
             sleep 1

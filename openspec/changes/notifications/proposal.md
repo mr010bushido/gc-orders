@@ -9,7 +9,7 @@ Customers and the owner must be told at key steps by SMS and email (PRD §2, §6
 - Add a `notification_log` table: channel, recipient (masked), template, order, status, provider message id, error, time.
 - Customer messages: booking received (reference, payment instructions, order link; pickup pin for pickup), POP received, deposit verified (pickup pin), quote ready (deposit link), expiry notice (SMS only).
 - Owner messages: new booking, new quote request, POP submitted (SMS and email).
-- Failures never block the action that triggered them: they are logged and retried once by the expiry job's tick or recorded for the owner to see.
+- Failures never block the action that triggered them. There is no automatic retry in v1: a failed send is logged as `failed` with a summarised error and is visible to the owner. An owner-triggered resend that issues a fresh order link is follow-up work for `owner-orders`, because the plaintext order token is never stored.
 
 Out of scope: owner-visible log screens, inbound SMS (Zambia is outbound only), WhatsApp.
 
@@ -19,7 +19,7 @@ Out of scope: owner-visible log screens, inbound SMS (Zambia is outbound only), 
 - `notifications`: sender interfaces, providers, templates, triggers, recipients, logging and failure behaviour.
 
 ### Modified Capabilities
-None.
+- `health-endpoint`: a check may report `degraded` (200, `status: "degraded"`); any `fail` still gives 503.
 
 ## Impact
 

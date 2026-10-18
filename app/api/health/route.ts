@@ -1,10 +1,11 @@
 import "../../../lib/db/health";
+import "../../../lib/notify/health";
 import { runHealthChecks } from "../../../lib/platform/health";
 
 export async function GET() {
   const result = await runHealthChecks();
   return Response.json(result, {
-    status: result.status === "ok" ? 200 : 503,
+    status: result.status === "fail" ? 503 : 200,
     headers: { "Cache-Control": "no-store" },
   });
 }

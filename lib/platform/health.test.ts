@@ -29,3 +29,12 @@ it("replaces a check with the same name", async () => {
   expect(await runHealthChecks()).toEqual({ status: "ok", checks: { db: "ok" } });
   expect(old).not.toHaveBeenCalled();
 });
+
+it("reports degraded when a check returns degraded and none fail", async () => {
+  const { registerHealthCheck, runHealthChecks } = await import("./health");
+  registerHealthCheck("one", () => {});
+  registerHealthCheck("two", () => "degraded");
+  expect(await runHealthChecks()).toEqual({ status: "degraded", checks: { one: "ok", two: "degraded" } });
+  registerHealthCheck("three", async () => { throw new Error("secret"); });
+  expect(await runHealthChecks()).toEqual({ status: "fail", checks: { one: "ok", two: "degraded", three: "fail" } });
+});
