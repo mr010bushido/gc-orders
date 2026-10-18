@@ -9,7 +9,7 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: "dom", environment: "jsdom", setupFiles: ["./vitest.setup.ts"], include: ["components/**/*.test.{ts,tsx}"] },
+        test: { name: "dom", environment: "jsdom", setupFiles: ["./vitest.setup.ts"], include: ["components/**/*.test.{ts,tsx}", "app/**/*.dom.test.tsx"] },
       },
       {
         extends: true,
@@ -17,7 +17,7 @@ export default defineConfig({
           name: "node",
           environment: "node",
           include: ["**/*.test.{ts,tsx}"],
-          exclude: ["components/**", "node_modules/**", ".next/**"],
+          exclude: ["components/**", "app/**/*.dom.test.tsx", "node_modules/**", ".next/**"],
         },
       },
     ],

@@ -7,15 +7,15 @@
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 Landing page and the `/book` wizard shell with stepper and `sessionStorage` state
-- [ ] 2.2 Step 1 Choose items (cake picker, frosting, dessert lines)
-- [ ] 2.3 Step 2 Cake details (tiers, add-ons, notes, topper text, running price)
-- [ ] 2.4 Step 3 Delivery and details (radio cards, date picker, time window, contact fields, rush banner)
-- [ ] 2.5 Step 4 Review (summary card, privacy note, single submit) and the confirmation screen with payment instructions
-- [ ] 2.6 Component tests for each step, including error focus and double submit
+- [x] 2.1 Landing page and the `/book` wizard shell with stepper and `sessionStorage` state — gates: `pnpm lint` → passed; `pnpm typecheck` → passed; browser refresh at step 4 restored the saved draft
+- [x] 2.2 Step 1 Choose items (cake picker, frosting, dessert lines) — gates: `pnpm test app/book/wizard.dom.test.tsx components/ui/DatePicker.test.tsx --maxWorkers=1` → 12 passed, including dessert minimum and flavour-note persistence; 375px dessert row fit
+- [x] 2.3 Step 2 Cake details (tiers, add-ons, notes, topper text, running price) — gate: `pnpm test app/book/wizard.dom.test.tsx components/ui/DatePicker.test.tsx --maxWorkers=1` → 12 passed
+- [x] 2.4 Step 3 Delivery and details (radio cards, date picker, time window, contact fields, rush banner) — gates: focused wizard/date-picker tests → 12 passed; live 375px review fit, no horizontal overflow
+- [x] 2.5 Step 4 Review (summary card, privacy note, single submit) and the confirmation screen with payment instructions — gates: focused wizard/date-picker tests → 12 passed; local action submission showed reference, total, 50% deposit, and settings sourced Airtel/MTN instructions
+- [x] 2.6 Component tests for each step, including error focus and double submit — gate: `pnpm test app/book/wizard.dom.test.tsx components/ui/DatePicker.test.tsx --maxWorkers=1` → 12 passed, including dessert-note persistence, error focus, single-submit protection, and PGlite order creation
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 End-to-end test drives the wizard to a created order against the action with a PGlite database, and compares the review total with the stored total
-- [ ] 3.2 Check at 375px in light and dark and note the result on this line
-- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate booking-flow --strict` passes
+- [x] 3.1 End-to-end test drives the wizard to a created order against the action with a PGlite database, and compares the review total with the stored total — gate: `pnpm test app/book/wizard.dom.test.tsx --maxWorkers=1` → PGlite order created; review total matched stored total
+- [x] 3.2 Check at 375px in light and dark and note the result on this line — gate: T3 preview at 375×812; review screen fit in both themes with `scrollWidth=375`; dessert screen fit with 44px remove target and no horizontal overflow; refresh restored draft; captures: `/home/jms/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvdl6rll-f3c17332.png` (light review), `/home/jms/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvdl6rnx-43da08ec.png` (dark review), `/home/jms/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mvdlhp96-98e38761.png` (light desserts)
+- [x] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate booking-flow --strict` passes — gates: `pnpm lint` → passed; `pnpm typecheck` → passed; `pnpm test --maxWorkers=1` → 582 passed, 1 skipped (serial run; default concurrency not claimed); `pnpm build` with local-only database → passed; `pnpm check:portability` → passed; `openspec validate booking-flow --strict` → valid; `git diff --check` → passed
