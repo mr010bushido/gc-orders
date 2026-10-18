@@ -29,6 +29,13 @@
       "when": 1792258761253,
       "tag": "0003_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792265243715,
+      "tag": "0004_orders",
+      "breakpoints": true
     }
   ]
 }

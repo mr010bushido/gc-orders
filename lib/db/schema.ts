@@ -1,6 +1,7 @@
 import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export { addons, dessertTypes, flavourGroups, flavours, frostings, settings, sizeMultipliers } from "./schema/catalogue";
+export { orderLines, orders, orderStatusEvents, popSubmissions, referenceCounters } from "./schema/orders";
 
 export const jobHeartbeats = pgTable("job_heartbeats", {
   id: uuid("id").defaultRandom().primaryKey(),
