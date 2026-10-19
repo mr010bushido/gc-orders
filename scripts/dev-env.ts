@@ -18,6 +18,15 @@ export function isLocalDatabaseUrl(value: string | undefined): boolean {
   return LOCAL_HOSTS.has(url.hostname.toLowerCase());
 }
 
+/** Local host AND explicit port 5435 AND database `cakes`: this project's compose dev database, not another local Postgres. */
+export function isComposeDevDatabaseUrl(value: string | undefined): boolean {
+  if (!isLocalDatabaseUrl(value)) return false;
+  const url = new URL(value!);
+  // postgres.js also lets `?port=` / `?database=` override the authority and path.
+  if (["port", "database", "dbname"].some((key) => url.searchParams.has(key))) return false;
+  return url.port === "5435" && url.pathname === "/cakes";
+}
+
 /** The full default `.env.local` for a given random `JOBS_SECRET`. */
 export function renderLocalEnv(jobsSecret: string): string {
   return mergeLocalEnv("", jobsSecret);

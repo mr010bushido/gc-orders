@@ -33,16 +33,20 @@ The repository SHALL define a local Postgres 17 service bound to `127.0.0.1` on 
 - **WHEN** `DATABASE_MIGRATION_URL` is exported and differs from `.env.local`
 - **THEN** the exported value is used
 
-### Requirement: Reset is local-only
-`pnpm db:reset` SHALL delete the local dev volume, recreate the database, migrate and seed it, and SHALL refuse to run, changing nothing, when the configured database URL host is not `localhost`, `127.0.0.1` or `::1`.
+### Requirement: Reset and setup only target the compose dev database
+`pnpm db:reset` SHALL delete the local dev volume, recreate the database, migrate and seed it. `pnpm db:reset` and `pnpm dev:setup` SHALL refuse to run, changing nothing, unless every configured database URL (`DATABASE_URL`, `DATABASE_MIGRATION_URL`) points at this project's compose dev database: host `localhost`, `127.0.0.1` or `::1`, an explicit port `5435`, and database `cakes`, with no `host`, `hostaddr`, `port`, `database` or `dbname` query override, and at least one of the two is set. An absent port means 5432 and is refused. The check SHALL run before any connection is made or any container or volume is touched.
 
 #### Scenario: Local reset
-- **WHEN** the URL points at `127.0.0.1:5435` and `pnpm db:reset` runs
+- **WHEN** the URL points at `127.0.0.1:5435/cakes` and `pnpm db:reset` runs
 - **THEN** the database is rebuilt empty, migrated and seeded
 
 #### Scenario: Hosted URL
 - **WHEN** `DATABASE_URL` points at a non-local host and `pnpm db:reset` runs
 - **THEN** the command exits non-zero with an explanatory message and no container or volume is touched
+
+#### Scenario: Local URL on another port
+- **WHEN** `DATABASE_URL` points at a local host on another port (for example a host Postgres on `127.0.0.1:5432`, or the test database on `5436`), has no port, or names a database other than `cakes`, and `pnpm db:reset` or `pnpm dev:setup` runs
+- **THEN** the command exits non-zero with an explanatory message, makes no connection, and touches no container or volume
 
 ### Requirement: No secrets committed
 The committed files SHALL contain only the fixed local-development credentials; `JOBS_SECRET` and any provider credential SHALL NOT appear in committed files.

@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { isLocalDatabaseUrl, mergeLocalEnv } from "./dev-env.ts";
+import { isComposeDevDatabaseUrl, mergeLocalEnv } from "./dev-env.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const envFile = `${root}.env.local`;
@@ -42,12 +42,12 @@ function prepareEnv(): void {
   loadEnv();
 }
 
-/** Refuses, before anything runs, when migrate and seed would target a non-local database. */
-function requireLocalDatabase(): void {
+/** Refuses, before anything runs, unless migrate and seed would target this project's compose dev database. */
+function requireComposeDevDatabase(): void {
   const urls = [process.env.DATABASE_URL, process.env.DATABASE_MIGRATION_URL].filter(Boolean);
-  if (urls.length === 0 || !urls.every(isLocalDatabaseUrl)) {
+  if (urls.length === 0 || !urls.every(isComposeDevDatabaseUrl)) {
     console.error(
-      "Refusing: DATABASE_URL and DATABASE_MIGRATION_URL must be local (localhost, 127.0.0.1 or ::1) and at least one must be set. Nothing was changed.",
+      "Refusing: DATABASE_URL and DATABASE_MIGRATION_URL must point at the compose dev database on 127.0.0.1:5435 (database cakes), and at least one must be set. Nothing was changed.",
     );
     process.exit(1);
   }
@@ -61,7 +61,7 @@ function migrateAndSeed(): void {
 const commands: Record<string, () => void> = {
   setup() {
     prepareEnv();
-    requireLocalDatabase();
+    requireComposeDevDatabase();
     compose("up", "-d", "--wait", "postgres");
     migrateAndSeed();
     console.log("Local database ready on 127.0.0.1:5435. Run: pnpm dev");
@@ -74,7 +74,7 @@ const commands: Record<string, () => void> = {
   },
   reset() {
     loadEnv();
-    requireLocalDatabase();
+    requireComposeDevDatabase();
     compose("down", "-v");
     compose("up", "-d", "--wait", "postgres");
     migrateAndSeed();

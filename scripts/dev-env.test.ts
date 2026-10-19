@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { LOCAL_DATABASE_URL, isLocalDatabaseUrl, mergeLocalEnv, renderLocalEnv } from "./dev-env.ts";
+import { LOCAL_DATABASE_URL, isComposeDevDatabaseUrl, isLocalDatabaseUrl, mergeLocalEnv, renderLocalEnv } from "./dev-env.ts";
 
 describe("isLocalDatabaseUrl", () => {
   it.each([
@@ -30,6 +30,39 @@ describe("isLocalDatabaseUrl", () => {
     "postgres://cakes:pw@localhost/cakes?hostaddr=10.0.0.5",
     "postgres://cakes:pw@localhost,evil.com/cakes",
   ])("rejects %s", (url) => expect(isLocalDatabaseUrl(url)).toBe(false));
+});
+
+describe("isComposeDevDatabaseUrl", () => {
+  it.each([
+    "postgres://cakes:pw@127.0.0.1:5435/cakes",
+    "postgres://cakes:pw@localhost:5435/cakes",
+    "postgres://cakes:pw@[::1]:5435/cakes",
+    LOCAL_DATABASE_URL,
+  ])("accepts %s", (url) => expect(isComposeDevDatabaseUrl(url)).toBe(true));
+
+  it.each([
+    undefined,
+    "",
+    "garbage",
+    "postgres://cakes:pw@127.0.0.1:5432/cakes",
+    "postgres://cakes:pw@127.0.0.1/cakes",
+    "postgres://cakes:pw@localhost/cakes",
+    "postgres://cakes:pw@127.0.0.1:5433/cakes",
+    "postgres://cakes:pw@127.0.0.1:5434/cakes",
+    "postgres://cakes:pw@127.0.0.1:5436/cakes_test",
+    "postgres://cakes:pw@127.0.0.1:5436/cakes",
+    "postgres://cakes:pw@127.0.0.1:5435/cakes_test",
+    "postgres://cakes:pw@127.0.0.1:5435/postgres",
+    "postgres://cakes:pw@127.0.0.1:5435",
+    "postgres://cakes:pw@127.0.0.1:5435/cakes/extra",
+    "postgres://cakes:pw@db.example.supabase.co:5435/cakes",
+    "postgres://cakes:pw@localhost.evil.com:5435/cakes",
+    "postgres://localhost:5435@evil.com/cakes",
+    "postgres://cakes:pw@localhost:5435/cakes?host=evil.com",
+    "postgres://cakes:pw@127.0.0.1:5435/cakes?hostaddr=10.0.0.5",
+    "postgres://cakes:pw@127.0.0.1:5435/cakes?port=5432",
+    "postgres://cakes:pw@127.0.0.1:5435/cakes?database=other",
+  ])("rejects %s", (url) => expect(isComposeDevDatabaseUrl(url)).toBe(false));
 });
 
 describe("renderLocalEnv and mergeLocalEnv", () => {
