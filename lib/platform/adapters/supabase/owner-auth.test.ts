@@ -22,7 +22,7 @@ function factory() {
       signOut: vi.fn(async () => { current = null; return { error: null }; }),
     },
   } as unknown as SupabaseClient;
-  const auth = createSupabaseOwnerAuth(() => client, async () => ({ set: vi.fn() }));
+  const auth = createSupabaseOwnerAuth(() => client, async () => ({ set: vi.fn(), getAll: () => [] }));
   return { auth, headers, issuedLinks };
 }
 

@@ -4,7 +4,10 @@ import { cookies } from "next/headers";
 import type { Owner, OwnerAuth } from "../../owner-auth";
 
 type CookieUpdate = { name: string; value: string; options: Record<string, unknown> };
-type CookieStore = { set(name: string, value: string, options: Record<string, unknown>): void };
+type CookieStore = {
+  set(name: string, value: string, options: Record<string, unknown>): void;
+  getAll(): Array<{ name: string; value: string }>;
+};
 type CookieStoreFactory = () => Promise<CookieStore>;
 type ClientFactory = (headers: Headers, setCookies?: (cookies: CookieUpdate[]) => void) => SupabaseClient;
 
@@ -50,7 +53,7 @@ export function createSupabaseOwnerAuth(
       const tokenHash = params.get("token_hash");
       const code = params.get("code");
       const result = tokenHash
-        ? await client.auth.verifyOtp({ token_hash: tokenHash, type: "email" })
+        ? await client.auth.verifyOtp({ token_hash: tokenHash, type: params.get("type") === "magiclink" ? "magiclink" : "email" })
         : code
           ? await client.auth.exchangeCodeForSession(code)
           : { data: { user: null }, error: new Error("Invalid login link") };
@@ -65,7 +68,11 @@ export function createSupabaseOwnerAuth(
     },
     async signOut(headers: Headers) {
       const cookieStore = await getCookieStore();
-      const client = clientFactory(headers, (updates) => {
+      const requestHeaders = new Headers(headers);
+      if (cookieStore.getAll().length) {
+        requestHeaders.set("cookie", cookieStore.getAll().map(({ name, value }) => `${name}=${encodeURIComponent(value)}`).join("; "));
+      }
+      const client = clientFactory(requestHeaders, (updates) => {
         for (const item of updates) cookieStore.set(item.name, item.value, item.options);
       });
       await client.auth.signOut();
