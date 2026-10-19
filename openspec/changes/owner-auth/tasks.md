@@ -5,7 +5,7 @@
 - [x] 1.3 Login and callback route logic: generic response, send only to the owner, link completion, non-owner sign-out; tests per `owner-auth` scenario — gate: pnpm test lib/auth/login-request.test.ts lib/platform/adapters/supabase/owner-auth.test.ts --maxWorkers=2 && pnpm typecheck && pnpm lint && pnpm check:portability → 7 passed; gates passed
 - [x] 1.4 Login rate limit via the shared limiter, with tests — gate: pnpm test lib/auth/login-request.test.ts --maxWorkers=2 && pnpm lint → 3 passed; lint passed
 - [x] 1.5 Guard-coverage test that fails if an exported action under `app/owner` lacks `requireOwner()` — gate: pnpm test lib/auth/owner-guard-coverage.test.ts --maxWorkers=2 && pnpm typecheck && pnpm lint → 2 passed; gates passed
-- [ ] 1.6 `proxy.ts` redirect for signed-out `/owner/**` visitors, and the no-store/noindex headers
+- [x] 1.6 `proxy.ts` redirect for signed-out `/owner/**` visitors, and the no-store/noindex headers — gate: pnpm test proxy.test.ts --maxWorkers=2 && pnpm typecheck && pnpm lint && pnpm check:portability → 3 passed; all gates passed
 - [ ] 1.7 Names only in `.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OWNER_EMAIL`
 
 ## 2. Screens (Claude)

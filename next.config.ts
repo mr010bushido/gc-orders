@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
         { key: "Cache-Control", value: "no-store" },
         { key: "Referrer-Policy", value: "no-referrer" },
       ],
+    }, {
+      source: "/owner/:path*",
+      headers: [
+        { key: "X-Robots-Tag", value: "noindex" },
+        { key: "Cache-Control", value: "no-store" },
+      ],
     }];
   },
   ...(process.env.NEXT_OUTPUT === "standalone" ? { output: "standalone" } : {}),
