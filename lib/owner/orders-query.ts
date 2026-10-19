@@ -1,11 +1,36 @@
 import { and, asc, desc, eq, gt, inArray, isNotNull, lt, lte, or, type SQL } from "drizzle-orm";
 import type { Db } from "../db";
-import { orderLines, orders } from "../db/schema";
+import { orderLines, orders, orderStatusEvents, popSubmissions } from "../db/schema";
 import { ORDER_STATUSES, type OrderStatus } from "../db/schema/orders";
 
 const ACTIVE: OrderStatus[] = ["awaiting_quote", "awaiting_payment", "awaiting_verification", "confirmed"];
 export type OrdersFilter = { status?: OrderStatus | "active" | "all" | "flagged"; sort?: "asc" | "desc"; date?: string; cursor?: string; limit?: number; now?: Date };
 export type OwnerOrderRow = Omit<typeof orders.$inferSelect, "accessTokenHash"> & { summary: string };
+export type OwnerOrderDetail = OwnerOrderRow & {
+  lines: (typeof orderLines.$inferSelect)[];
+  submissions: (typeof popSubmissions.$inferSelect)[];
+  events: (typeof orderStatusEvents.$inferSelect)[];
+};
+
+/** Load detail independently of list filters so a shared reference always opens its order. */
+export async function getOwnerOrderDetail(db: Db, reference: string): Promise<OwnerOrderDetail | null> {
+  const [order] = await db.select({
+    id: orders.id, reference: orders.reference, status: orders.status, fulfilment: orders.fulfilment,
+    eventDate: orders.eventDate, timeWindow: orders.timeWindow, customerName: orders.customerName,
+    customerPhone: orders.customerPhone, customerEmail: orders.customerEmail, deliveryAddress: orders.deliveryAddress,
+    designNotes: orders.designNotes, topperMessage: orders.topperMessage, total: orders.total, deposit: orders.deposit,
+    paymentDueAt: orders.paymentDueAt, flaggedAt: orders.flaggedAt, flagNote: orders.flagNote,
+    balancePaidAt: orders.balancePaidAt, balanceMethod: orders.balanceMethod, balanceNote: orders.balanceNote,
+    ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, createdAt: orders.createdAt,
+  }).from(orders).where(eq(orders.reference, reference)).limit(1);
+  if (!order) return null;
+  const [lines, submissions, events] = await Promise.all([
+    db.select().from(orderLines).where(eq(orderLines.orderId, order.id)).orderBy(asc(orderLines.position)),
+    db.select().from(popSubmissions).where(eq(popSubmissions.orderId, order.id)).orderBy(asc(popSubmissions.submittedAt)),
+    db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id)).orderBy(asc(orderStatusEvents.at)),
+  ]);
+  return { ...order, summary: lines.map(line => line.label).join(", ") || "Quote request", lines, submissions, events };
+}
 
 function parseCursor(cursor: string | undefined): { date: string; id: string } | null {
   if (!cursor) return null;
