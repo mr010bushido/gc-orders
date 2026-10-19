@@ -1,6 +1,6 @@
 ## 1. Adapter (Codex)
 
-- [ ] 1.1 Add `@supabase/supabase-js` and `@supabase/ssr`; Supabase `OwnerAuth` adapter under `lib/platform/adapters/supabase/`; pass `ownerAuthContract` with a mocked client
+- [x] 1.1 Add `@supabase/supabase-js` and `@supabase/ssr`; Supabase `OwnerAuth` adapter under `lib/platform/adapters/supabase/`; pass `ownerAuthContract` with a mocked client — gate: pnpm test lib/platform/adapters/supabase/owner-auth.test.ts --maxWorkers=2 && pnpm typecheck && pnpm lint && pnpm check:portability && openspec validate owner-auth --strict → 4 passed; all gates passed
 - [ ] 1.2 `lib/auth/require-owner.ts` (adapter session plus `OWNER_EMAIL` check) and tests for owner, other user and no session
 - [ ] 1.3 Login and callback route logic: generic response, send only to the owner, link completion, non-owner sign-out; tests per `owner-auth` scenario
 - [ ] 1.4 Login rate limit via the shared limiter, with tests
