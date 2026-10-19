@@ -9,7 +9,8 @@ export async function ownerForRequest(
   ownerEmail = process.env.OWNER_EMAIL,
 ): Promise<Owner | null> {
   if (!ownerEmail?.trim()) return null;
-  const owner = await auth.getOwner(requestHeaders);
+  // Any adapter failure (unconfigured, malformed cookie, outage) counts as signed out.
+  const owner = await auth.getOwner(requestHeaders).catch(() => null);
   return owner?.email.toLowerCase() === ownerEmail.trim().toLowerCase() ? owner : null;
 }
 

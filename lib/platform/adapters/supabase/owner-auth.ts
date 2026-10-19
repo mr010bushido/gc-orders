@@ -27,7 +27,10 @@ function configuredClient(headers: Headers, setCookies?: Parameters<ClientFactor
       getAll: () => (headers.get("cookie") ?? "").split(";").flatMap((part) => {
         const separator = part.indexOf("=");
         if (separator < 0) return [];
-        return [{ name: part.slice(0, separator).trim(), value: decodeURIComponent(part.slice(separator + 1).trim()) }];
+        const raw = part.slice(separator + 1).trim();
+        let value = raw;
+        try { value = decodeURIComponent(raw); } catch { /* keep the raw value: a malformed cookie must not crash the request */ }
+        return [{ name: part.slice(0, separator).trim(), value }];
       }),
       setAll: (values) => setCookies?.(values),
     },
@@ -40,7 +43,11 @@ export function createSupabaseOwnerAuth(
 ): OwnerAuth {
   return {
     async sendMagicLink(email, redirectTo) {
-      const client = clientFactory(new Headers());
+      // The PKCE code verifier is stored through setAll; without these cookies the emailed `code` link cannot be exchanged.
+      const cookieStore = await getCookieStore();
+      const client = clientFactory(new Headers(), (updates) => {
+        for (const item of updates) cookieStore.set(item.name, item.value, item.options);
+      });
       const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
     },

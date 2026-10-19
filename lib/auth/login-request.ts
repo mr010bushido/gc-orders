@@ -34,3 +34,12 @@ export async function requestOwnerLogin(
   }
   return "sent";
 }
+
+/** The origin for the emailed link. `APP_URL` wins so a forged Host header cannot point the owner's link elsewhere. */
+export function loginOrigin(requestHeaders: Pick<Headers, "get">, appUrl = process.env.APP_URL): string | null {
+  if (appUrl?.trim()) {
+    try { return new URL(appUrl.trim()).origin; } catch { return null; }
+  }
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  return host ? `${requestHeaders.get("x-forwarded-proto") ?? "https"}://${host}` : null;
+}

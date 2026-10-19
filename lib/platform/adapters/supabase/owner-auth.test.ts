@@ -1,4 +1,4 @@
-import { describe, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ownerAuthContract } from "../../contracts";
 import type { Owner } from "../../owner-auth";
@@ -28,4 +28,30 @@ function factory() {
 
 describe("Supabase OwnerAuth adapter", () => {
   ownerAuthContract(factory);
+});
+
+describe("Supabase OwnerAuth adapter cookies", () => {
+  it("stores the PKCE verifier cookies written while sending the link", async () => {
+    const cookieStore = { set: vi.fn(), getAll: () => [] };
+    const client = {
+      auth: { signInWithOtp: vi.fn(async () => ({ data: {}, error: null })) },
+    } as unknown as SupabaseClient;
+    const auth = createSupabaseOwnerAuth((_headers, setCookies) => {
+      client.auth.signInWithOtp = vi.fn(async () => {
+        setCookies?.([{ name: "verifier-cookie", value: "pkce", options: { httpOnly: true } }]);
+        return { data: {}, error: null };
+      }) as never;
+      return client;
+    }, async () => cookieStore);
+    await auth.sendMagicLink("owner@example.com", "https://cakes.invalid/owner/auth/callback");
+    expect(cookieStore.set).toHaveBeenCalledWith("verifier-cookie", "pkce", { httpOnly: true });
+  });
+
+  it("treats a malformed cookie as signed out instead of throwing", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://cakes.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "public-anon-placeholder");
+    const auth = createSupabaseOwnerAuth(undefined, async () => ({ set: vi.fn(), getAll: () => [] }));
+    await expect(auth.getOwner(new Headers({ cookie: "sb-cakes-auth-token=%E0%A4%A" }))).resolves.toBeNull();
+    vi.unstubAllEnvs();
+  });
 });

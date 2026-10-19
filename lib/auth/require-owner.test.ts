@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { OwnerAuth } from "../platform/owner-auth";
 import { makeOwnerAuthFake } from "../platform/fakes";
 import { ownerForRequest } from "./require-owner";
 
@@ -23,5 +24,10 @@ describe("ownerForRequest", () => {
     const { auth, headers } = makeOwnerAuthFake();
     await expect(ownerForRequest(auth, headers, "owner@example.com")).resolves.toBeNull();
     await expect(ownerForRequest(auth, headers, undefined)).resolves.toBeNull();
+  });
+
+  it("fails closed when the adapter throws", async () => {
+    const throwing = { getOwner: async () => { throw new Error("Owner login is not configured"); } } as unknown as OwnerAuth;
+    await expect(ownerForRequest(throwing, new Headers(), "owner@example.com")).resolves.toBeNull();
   });
 });

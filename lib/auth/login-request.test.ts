@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OwnerAuth } from "../platform/owner-auth";
 import type { RateLimiter } from "../platform/rate-limit";
-import { requestOwnerLogin } from "./login-request";
+import { loginOrigin, requestOwnerLogin } from "./login-request";
 
 function setup(allowed = true) {
   const auth: OwnerAuth = {
@@ -39,5 +39,16 @@ describe("requestOwnerLogin", () => {
     const unconfigured = setup();
     await expect(requestOwnerLogin("owner@example.com", new Headers(), "https://cakes.invalid", { auth: unconfigured.auth, limiter: unconfigured.limiter, ownerEmail: "owner@example.com" })).resolves.toBe("not-configured");
     expect(unconfigured.auth.sendMagicLink).not.toHaveBeenCalled();
+  });
+});
+
+describe("loginOrigin", () => {
+  it("prefers APP_URL over a forged host header", () => {
+    expect(loginOrigin(new Headers({ host: "attacker.invalid" }), "https://orders.cakes.invalid/")).toBe("https://orders.cakes.invalid");
+  });
+
+  it("falls back to the request host when APP_URL is unset", () => {
+    expect(loginOrigin(new Headers({ host: "localhost:3100", "x-forwarded-proto": "http" }), "")).toBe("http://localhost:3100");
+    expect(loginOrigin(new Headers(), "")).toBeNull();
   });
 });
