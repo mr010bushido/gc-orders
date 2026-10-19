@@ -25,18 +25,28 @@ Use Node.js 24 and the pnpm version pinned in `package.json`. The root Next.js A
 
 Normally branch from `develop` and open feature PRs with an explicit `develop` base. CI runs lint, typecheck, tests and the production build.
 
-## Database development and migrations
+### Local database
 
-Start the local Postgres 17 service and export the local-only connection URL:
+`pnpm dev:setup && pnpm dev` is all a fresh checkout needs (Docker required). `dev:setup` creates `.env.local` if it is missing (local `DATABASE_URL` and `DATABASE_MIGRATION_URL`, `APP_URL`, and a random `JOBS_SECRET`), starts the Postgres 17 container, waits until it is healthy, applies the migrations and seeds the catalogue. Rerunning it is safe: it never overwrites `.env.local` or an existing variable in it (it only appends keys that are absent), drizzle does not replay migrations, and the seed never overwrites rows the owner edited.
+
+| Command | What it does |
+|---|---|
+| `pnpm dev:setup` | env file, container, migrate, seed |
+| `pnpm db:up` / `pnpm db:down` | start / stop the container; data is kept |
+| `pnpm db:reset` | **deletes the local data volume**, recreates the database, migrates and seeds |
+| `pnpm db:migrate` / `pnpm db:seed` | read `.env.local` automatically; a variable exported in the shell wins over the file |
+
+Ports are bound to `127.0.0.1` and chosen to avoid 5432 (a host Postgres) and 5433/5434 (`fpp_board_backend`): the dev database is **5435** (container `gc_postgres_dev`) and the disposable test database is **5436**. The credentials (`cakes` / `local-cakes-only`, database `cakes`) are for this machine only; they appear in `compose.yaml` and `.env.example` and are never used by CI secrets or any hosted environment. Data lives in the `postgres-dev-data` Docker volume; `db:reset` is the only command that removes it. `db:reset` and `dev:setup` refuse to run, changing nothing, unless the database URLs point at `localhost`, `127.0.0.1` or `::1`.
+
+For tests that need a real Postgres, start the disposable test database (tmpfs, so its data vanishes when it stops) and point `TEST_DATABASE_URL` at it:
 
 ```sh
-docker compose up -d --wait
-export DATABASE_URL='postgres://cakes:local-cakes-only@127.0.0.1:5432/cakes'
-pnpm db:migrate
-pnpm dev
+docker compose --profile test up -d --wait postgres-test
+export TEST_DATABASE_URL=postgres://cakes:local-cakes-only@127.0.0.1:5436/cakes_test
+docker compose --profile test down postgres-test   # when finished
 ```
 
-The compose password is for local development only. Data lives in the `postgres-data` volume. `docker compose down` keeps it; adding `-v` deletes it. `.env.example` lists runtime and migration variables. Next.js can load `.env.local`, but the database CLI expects variables exported in the shell.
+## Database development and migrations
 
 Runtime connections use `postgres` through Drizzle with prepared statements disabled for transaction poolers. `DATABASE_POOL_MAX` defaults to 1 per instance; set a positive integer to increase it on the VPS. `getDb()` is lazy and throws a variable-name-only error if `DATABASE_URL` is missing. Server code accepts the shared `Db` type rather than importing a driver.
 
