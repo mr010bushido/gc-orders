@@ -1,20 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "../../../../components/ui/Button";
 import { Sheet } from "../../../../components/ui/Sheet";
 import { formatEventDate, formatKwacha } from "../../../../components/ui/format";
 import { ownerContactLinks } from "../../../../lib/owner/order-links";
 import type { OwnerOrderDetail } from "../../../../lib/owner/orders-query";
 import { markSeen } from "./actions";
+import { clearFlag, completeOrder, flagOrder, recordBalancePaid, verifyOrder } from "./actions";
+import type { BalanceMethod } from "../../../../lib/db/schema/orders";
 
 export function OrderDetailSheet({ order, onClose }: { order: OwnerOrderDetail | null; onClose: () => void }) {
   const [message, setMessage] = useState("");
+  const [note, setNote] = useState("");
+  const [method, setMethod] = useState<BalanceMethod>("cash");
+  const [busy, setBusy] = useState(false);
+  const [confirmComplete, setConfirmComplete] = useState(false);
   useEffect(() => { if (order?.ownerSeenAt === null) void markSeen(order.id); }, [order]);
   if (!order) return null;
   const links = ownerContactLinks(order.customerPhone, order.reference);
   const balance = order.total - order.deposit;
-  return <Sheet open onClose={onClose} title={order.customerName ?? "Order"} reference={order.reference} status={order.status}>
+  const act = async (run: () => Promise<{ ok: boolean; message?: string; balanceUnpaid?: boolean }>) => {
+    setBusy(true); setMessage("");
+    try { const result = await run(); if (result.ok) { setMessage("Order updated."); window.location.reload(); } else setMessage(result.message ?? "The order could not be updated."); }
+    catch { setMessage("The order could not be updated. Refresh and try again."); }
+    finally { setBusy(false); }
+  };
+  const submitFlag = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void act(() => flagOrder(order.id, note)); };
+  const submitBalance = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void act(() => recordBalancePaid(order.id, method, note)); };
+  const actions = order.status === "awaiting_verification" ? <>
+    {order.flaggedAt ? <Button variant="ghost" disabled={busy} onClick={() => void act(() => clearFlag(order.id))}>Clear flag</Button> : <span />}
+    <Button block disabled={busy} onClick={() => { if (window.confirm(`Verify ${formatKwacha(order.deposit)} deposit for ${order.reference}?`)) void act(() => verifyOrder(order.id)); }}>Verify {formatKwacha(order.deposit)} deposit</Button>
+  </> : order.status === "confirmed" ? <>
+    <Button variant="ghost" disabled={busy} onClick={() => order.balancePaidAt ? void act(() => completeOrder(order.id)) : setConfirmComplete(true)}>Mark completed</Button>
+    <Button block type="submit" form="balance-form" disabled={busy || Boolean(order.balancePaidAt)}>Balance paid</Button>
+  </> : undefined;
+  return <Sheet open onClose={onClose} title={order.customerName ?? "Order"} reference={order.reference} status={order.status} actions={actions}>
     <div className="space-y-5 py-4 text-sm">
       <section aria-label="Customer"><h3 className="font-semibold">Customer</h3><p>{order.customerName ?? "Personal details removed"}</p>
         {order.customerEmail && <p>{order.customerEmail}</p>}{order.customerPhone && <p>{order.customerPhone}</p>}
@@ -26,6 +47,9 @@ export function OrderDetailSheet({ order, onClose }: { order: OwnerOrderDetail |
       <section><h3 className="font-semibold">Proof of payment</h3>{order.submissions.length ? <ol className="space-y-3">{order.submissions.slice().reverse().map(pop => <li key={pop.id}><time className="text-xs text-ink-soft">{pop.submittedAt.toLocaleString()}</time><p className="whitespace-pre-wrap rounded-sm border border-line bg-canvas p-3">{pop.text}</p></li>)}</ol> : <p>No proof submitted.</p>}</section>
       <section><h3 className="font-semibold">Status history</h3><ol className="mt-2 space-y-2">{order.events.map(event => <li key={event.id} className="border-l-2 border-line pl-3"><p>{event.fromStatus ? `${event.fromStatus} → ` : "Created as "}{event.toStatus}</p><p className="text-xs text-ink-soft">{event.actor} · {event.at.toLocaleString()}</p></li>)}</ol></section>
       {order.flagNote && <section><h3 className="font-semibold">Flag note</h3><p className="whitespace-pre-wrap">{order.flagNote}</p></section>}
+      {order.status === "awaiting_verification" && !order.flaggedAt && <form onSubmit={submitFlag} className="space-y-2"><label htmlFor="flag-note" className="font-semibold">Flag for review</label><textarea id="flag-note" required value={note} onChange={event => setNote(event.target.value)} rows={3} className="w-full rounded-sm border border-line-strong bg-surface p-3 text-base" placeholder="Why does this need review?"/><Button variant="ghost" type="submit" disabled={busy}>Flag order</Button></form>}
+      {order.status === "confirmed" && <form id="balance-form" onSubmit={submitBalance} className="space-y-3 rounded-md border border-line p-3"><h3 className="font-semibold">Record balance paid</h3><label className="block">Method<select value={method} onChange={event => setMethod(event.target.value as BalanceMethod)} className="mt-1 h-11 w-full rounded-sm border border-line-strong bg-surface px-3">{["airtel", "mtn", "cash", "bank", "other"].map(item => <option key={item} value={item}>{item}</option>)}</select></label><label className="block">Note (optional)<textarea value={note} onChange={event => setNote(event.target.value)} rows={2} className="mt-1 w-full rounded-sm border border-line-strong bg-surface p-3"/></label><Button variant="ghost" type="submit" disabled={busy || Boolean(order.balancePaidAt)}>Record payment</Button></form>}
+      {confirmComplete && <div role="alertdialog" aria-modal="true" aria-labelledby="complete-warning" className="rounded-md border border-warn-ink bg-warn-bg p-3"><h3 id="complete-warning" className="font-semibold">Balance remaining</h3><p>{formatKwacha(order.balancePaidAt ? 0 : balance)} is still due. Complete this order anyway?</p><div className="mt-3 flex gap-2"><Button variant="ghost" onClick={() => setConfirmComplete(false)}>Cancel</Button><Button onClick={() => { setConfirmComplete(false); void act(() => completeOrder(order.id)); }}>Complete anyway</Button></div></div>}
       {message && <p role="status" aria-live="polite" className="rounded-sm border border-line p-3">{message}</p>}
     </div>
   </Sheet>;

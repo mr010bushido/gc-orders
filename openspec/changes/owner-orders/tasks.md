@@ -9,7 +9,7 @@
 
 - [x] 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more" — added live `awaiting_quote` pill parity with the settled design reference; fixed optional search params for direct page tests — gate: `pnpm test lib/owner/orders-query.test.ts --maxWorkers=2`, `pnpm lint`, `pnpm typecheck` → 2 passed; all gates passed
 - [x] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link; detail lookup is independent of list filters — gate: `pnpm lint`, `pnpm typecheck`, `pnpm test lib/owner/orders-query.test.ts components/ui/OrderCard.test.tsx --maxWorkers=2` → 5 passed; all gates passed (one unused-state lint warning to resolve in 2.3)
-- [ ] 2.3 Action bar and dialogs: Verify confirmation, Flag with note, Complete warning, Balance paid form
+- [x] 2.3 Action bar and dialogs: Verify confirmation, Flag with required note, Complete balance warning, Balance paid method/note form — gate: `pnpm lint`, `pnpm typecheck` → passed (no errors)
 - [ ] 2.4 Component tests for each status and for plain-text POP rendering
 - [ ] 2.5 Add the Orders item to the owner nav
 
