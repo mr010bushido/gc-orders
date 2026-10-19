@@ -15,6 +15,10 @@ The order page SHALL show an order only when the request carries a token whose h
 - **WHEN** an order page is served
 - **THEN** the response has `Cache-Control: no-store` and `Referrer-Policy: no-referrer`
 
+#### Scenario: Not found is identical
+- **WHEN** the token is wrong, missing, or the reference is unknown
+- **THEN** the same 404 page is shown, explaining the link may be old and linking to `/order`
+
 ### Requirement: Minimal data shown
 The order page SHALL show the first name, items, totals, deposit and balance due, status, timeline and event details. It SHALL mask the phone and email (last three digits and the domain only) and SHALL NOT show the full address.
 
@@ -38,7 +42,11 @@ The order page SHALL show the first name, items, totals, deposit and balance due
 - **THEN** it matches
 
 ### Requirement: Lookup rate limits
-The system SHALL allow at most 5 lookups per client address and 3 per reference per hour and return `RATE_LIMITED` beyond that.
+The system SHALL allow at most 5 lookups per client address and 3 per reference per hour and return `RATE_LIMITED` beyond that. The client address SHALL come from `X-Real-IP`, else the right-most `X-Forwarded-For` entry, never the left-most; with neither, lookups share one "unknown" address.
+
+#### Scenario: Spoofed forwarding header
+- **WHEN** a client sends `X-Forwarded-For: 1.2.3.4` and the proxy appends the real address
+- **THEN** the limit is counted against the real (right-most) address
 
 #### Scenario: Fourth lookup of one reference
 - **WHEN** a reference is looked up 4 times within an hour
@@ -58,6 +66,22 @@ While an order is `awaiting_payment` the page SHALL show the deposit amount, bot
 #### Scenario: Flagged order
 - **WHEN** the order is flagged
 - **THEN** the page tells the customer the owner will be in touch and offers the POP form again
+
+#### Scenario: Flag answered
+- **WHEN** the newest POP was submitted after the order was flagged
+- **THEN** the page says the updated details were received and no longer shows the flag note or the form
+
+#### Scenario: Error keeps the text
+- **WHEN** a submission is refused by the server
+- **THEN** the pasted text stays in the field, the error is announced next to it and the field has focus
+
+#### Scenario: Refusal is accurate
+- **WHEN** a submission is refused because the order is no longer open for payment details
+- **THEN** the message names the real reason (expired only when it is expired) and the page refreshes
+
+#### Scenario: Quote not yet given
+- **WHEN** the order is `awaiting_quote`
+- **THEN** the page shows "Quote pending" instead of total, deposit and balance
 
 ### Requirement: Notifications on POP
 Submitting POP SHALL send the customer a "POP received" message and the owner a "POP submitted" alert through `notify`, and a send failure SHALL NOT fail the submission.

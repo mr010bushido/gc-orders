@@ -26,3 +26,9 @@ it("hydrates after a delay and immediately shows an expired countdown", async ()
     await act(async () => { root.unmount(); });
   } finally { error.mockRestore(); environment.IS_REACT_ACT_ENVIRONMENT = false; }
 });
+
+it("shows the absolute Lusaka deadline next to the countdown", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<ExpiryCountdown deadline="2026-10-18T10:00:00Z" payBy="Sun, 18 October, 12:00" />);
+  expect(container.textContent).toContain("Pay by Sun, 18 October, 12:00 (Lusaka time)");
+});

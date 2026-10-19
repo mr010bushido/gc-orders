@@ -82,3 +82,37 @@ it("notifies from the saved order when recovery rotates the link during POP subm
   expect(mocks.notify).toHaveBeenCalledWith("pop_received", { order: expect.objectContaining({ id: order.id, status: "awaiting_verification" }) }, { db: test.db });
   expect(mocks.refresh).toHaveBeenCalledOnce();
 });
+
+it("does not call a confirmed order past its payment deadline expired, and refreshes the stale page", async () => {
+  const { createOrder } = await import("@/lib/orders/orders");
+  const { transition } = await import("@/lib/orders/transitions");
+  const now = new Date();
+  const { order, accessToken } = await createOrder(test.db, orderInput(), now);
+  await submitPop(test.db, order.id, "Airtel K520 sent, TID 123", new Date(now.getTime() + 1000));
+  await transition(test.db, order.id, "verify", "owner", new Date(now.getTime() + 2000));
+  await test.client.exec("UPDATE orders SET payment_due_at = now() - interval '1 day'");
+  const { submitPopAction } = await action();
+  const result = await submitPopAction(accessToken, "Airtel K520 sent again, TID 456");
+  expect(result).toMatchObject({ ok: false, error: expect.stringContaining("already confirmed") });
+  expect(result).not.toMatchObject({ error: expect.stringContaining("expired") });
+  expect(mocks.refresh).toHaveBeenCalledOnce();
+  expect(mocks.callbacks).toHaveLength(0);
+});
+
+it("explains an order that is already awaiting verification and refreshes", async () => {
+  const { createOrder } = await import("@/lib/orders/orders");
+  const now = new Date();
+  const { order, accessToken } = await createOrder(test.db, orderInput(), now);
+  await submitPop(test.db, order.id, "Airtel K520 sent, TID 123", new Date(now.getTime() + 1000));
+  const { submitPopAction } = await action();
+  expect(await submitPopAction(accessToken, "Airtel K520 sent again, TID 456")).toMatchObject({ ok: false, error: expect.stringContaining("already have your payment details") });
+  expect(mocks.refresh).toHaveBeenCalledOnce();
+});
+
+it("refreshes when an order has lapsed", async () => {
+  const { createOrder } = await import("@/lib/orders/orders");
+  const { accessToken } = await createOrder(test.db, orderInput(), new Date(Date.now() - 48 * 60 * 60 * 1000));
+  const { submitPopAction } = await action();
+  await submitPopAction(accessToken, "Airtel K520 sent, TID 123");
+  expect(mocks.refresh).toHaveBeenCalledOnce();
+});

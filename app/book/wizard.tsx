@@ -15,7 +15,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { Stepper } from '@/components/ui/Stepper';
 import { SummaryCard } from '@/components/ui/SummaryCard';
 import { AddonList } from '@/components/ui/AddonList';
-import { formatKwacha } from '@/components/ui/format';
+import { formatEventDate, formatKwacha } from '@/components/ui/format';
 import { normaliseZambianMobile } from '@/lib/phone';
 
 type Draft = {
@@ -35,7 +35,7 @@ const errorMessage: Record<string, string> = {
   TOO_MANY_TIERS: 'This cake has too many tiers.', INACTIVE_ITEM: 'One of these items is no longer available. Please review your choices.',
   EMPTY_BASKET: 'Choose at least one cake or dessert.', INVALID_INPUT: 'Please review the highlighted details.',
 };
-const shortDate = (date: string) => date ? new Date(`${date}T12:00:00+02:00`).toLocaleDateString('en-GB', { timeZone: 'Africa/Lusaka', day: 'numeric', month: 'long', year: 'numeric' }) : 'Choose a date';
+const shortDate = (date: string) => date ? formatEventDate(date) : 'Choose a date';
 
 export function BookingWizard({ catalogue, rules, today, closedDates, initialStep }: {
   catalogue: OrderableCatalogue; rules: PricingRules; today: string; closedDates: string[]; initialStep: number;

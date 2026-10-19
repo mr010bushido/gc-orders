@@ -26,3 +26,14 @@ it("announces the status message after a page refresh", () => {
   rerender(<StatusMessage status="awaiting_verification" />);
   expect(announcement.textContent).toContain("owner for verification");
 });
+
+it("says the owner has the updated details once a flagged order is answered", () => {
+  render(<StatusMessage status="awaiting_verification" flagged received />);
+  expect(screen.getByText(/received your updated details/i)).toBeTruthy();
+  expect(screen.queryByText(/needs a little more information/i)).toBeNull();
+});
+
+it("links an expired booking to the booking page", () => {
+  render(<StatusMessage status="expired" />);
+  expect(screen.getByRole("link", { name: "Book again" }).getAttribute("href")).toBe("/book");
+});

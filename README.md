@@ -74,3 +74,20 @@ pnpm test lib/db/schema.test.ts lib/db/postgres.test.ts
 Export `TEST_DATABASE_URL` to that disposable database before running these commands. Without it, schema checks use PGlite and the Postgres-only integration test is skipped. The standalone-build CI job verifies that the built health route returns a sanitized 503 without database configuration.
 
 Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` is based on committed `docs/prd-design-system`, not `develop`, to include the first OpenSpec change and design sources before documentation PR #1 merges. PR #1 is not merged or retargeted by this work. The parent's uncommitted `verify-git-flow` change is excluded.
+
+## Reverse proxy and client address
+
+The "find my booking" limit counts lookups per client address, read by `clientAddress()` in `lib/platform/client-address.ts`. It uses `X-Real-IP`, else the right-most `X-Forwarded-For` entry, and never the left-most one, which a client can forge to dodge the limit. With neither header all callers share one bucket, so a missing header makes the limit stricter, not weaker.
+
+- **Vercel** sets both headers itself; no configuration is needed.
+- **Self-hosted VPS (nginx):** the proxy must set the address from the socket and overwrite, not append to, anything the client sent:
+
+  ```nginx
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+  }
+  ```
+
+  `$proxy_add_x_forwarded_for` appends to a client-supplied chain; use it only if the app is behind a further trusted proxy. Do not expose the Node server directly to the internet, because then these headers are entirely client-controlled.
