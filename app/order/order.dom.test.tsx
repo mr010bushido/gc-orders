@@ -35,6 +35,15 @@ it("keeps the pasted SMS after a server error", async () => {
   expect(mocks.submit).toHaveBeenCalledOnce();
 });
 
+it("moves focus to the status message when the server says the page is stale", async () => {
+  mocks.submit.mockResolvedValue({ ok: false, stale: true, error: "This booking has expired. Please book again to choose a new date." });
+  render(<><StatusMessage status="awaiting_payment" /><PopForm token="private-token" /></>);
+  const field = screen.getByLabelText("Paste the full mobile money confirmation SMS");
+  fireEvent.change(field, { target: { value: "valid confirmation" } });
+  fireEvent.submit(field.closest("form")!);
+  await waitFor(() => expect(document.activeElement?.id).toBe("order-status"));
+});
+
 it("moves focus to the status message after a successful send", async () => {
   mocks.submit.mockResolvedValue({ ok: true, status: "awaiting_verification" });
   render(<><StatusMessage status="awaiting_payment" /><PopForm token="private-token" /></>);

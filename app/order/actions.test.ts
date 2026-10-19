@@ -93,7 +93,7 @@ it("does not call a confirmed order past its payment deadline expired, and refre
   await test.client.exec("UPDATE orders SET payment_due_at = now() - interval '1 day'");
   const { submitPopAction } = await action();
   const result = await submitPopAction(accessToken, "Airtel K520 sent again, TID 456");
-  expect(result).toMatchObject({ ok: false, error: expect.stringContaining("already confirmed") });
+  expect(result).toMatchObject({ ok: false, stale: true, error: expect.stringContaining("already confirmed") });
   expect(result).not.toMatchObject({ error: expect.stringContaining("expired") });
   expect(mocks.refresh).toHaveBeenCalledOnce();
   expect(mocks.callbacks).toHaveLength(0);

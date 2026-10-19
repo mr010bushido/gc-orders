@@ -6,15 +6,17 @@ import { submitPopAction, type PopActionResult } from "./pop-action";
 import { ORDER_STATUS_ID } from "./status-message";
 
 export function PopForm({ token }: { token: string }) {
-  const [state, action, pending] = useActionState<PopActionResult | null, FormData>(submitPopAction.bind(null, token), null);
+  const [state, action, pending] = useActionState<PopActionResult | null, FormData>(async (previous, formData) => {
+    const result = await submitPopAction(token, previous, formData);
+    // On success, or when the page was stale, the server refresh removes this form in the same render as the result,
+    // so an effect here would never run. Hand focus to the status message, which stays mounted.
+    if (result.ok || result.stale) document.getElementById(ORDER_STATUS_ID)?.focus();
+    return result;
+  }, null);
   // Controlled, because React resets an uncontrolled form once its action finishes, which would wipe the pasted SMS on an error.
   const [text, setText] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    if (state?.ok === false) field.current?.focus();
-    // The form unmounts when the page refreshes, so hand focus to the status message before it goes.
-    if (state?.ok) document.getElementById(ORDER_STATUS_ID)?.focus();
-  }, [state]);
+  useEffect(() => { if (state?.ok === false && !state.stale) field.current?.focus(); }, [state]);
   if (state?.ok) return <p role="status" aria-live="polite" className="rounded-md bg-ok-bg p-4 text-ok-ink">Payment details received. The owner will verify them and be in touch.</p>;
   return <form action={action} className="space-y-3">
     <label htmlFor="pop-text" className="block text-sm font-medium">Paste the full mobile money confirmation SMS</label>

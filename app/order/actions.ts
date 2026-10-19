@@ -11,7 +11,7 @@ import { headers } from "next/headers";
 import { clientAddress } from "@/lib/platform/client-address";
 import type { OrderStatus } from "@/lib/db/schema/orders";
 
-export type PopActionResult = { ok: true; status: "awaiting_verification" } | { ok: false; error: string };
+export type PopActionResult = { ok: true; status: "awaiting_verification" } | { ok: false; error: string; stale?: true };
 
 const REFUSALS: Partial<Record<OrderStatus, string>> = {
   expired: "This booking has expired. Please book again to choose a new date.",
@@ -31,7 +31,7 @@ export async function submitPopAction(token: string, text: string): Promise<PopA
   if (status !== "awaiting_payment" && !(status === "awaiting_verification" && detail.order.flaggedAt)) {
     // The page the customer is looking at is stale; refresh so the form disappears.
     refresh();
-    return { ok: false, error: REFUSALS[status] ?? GENERIC_REFUSAL };
+    return { ok: false, error: REFUSALS[status] ?? GENERIC_REFUSAL, stale: true };
   }
   try {
     const { order } = await submitPop(db, detail.order.id, text, now);
@@ -50,7 +50,7 @@ export async function submitPopAction(token: string, text: string): Promise<PopA
     // The status changed between the check and the write (for example the deadline passed).
     if (code === "ORDER_EXPIRED" || code === "INVALID_TRANSITION") {
       refresh();
-      return { ok: false, error: code === "ORDER_EXPIRED" ? REFUSALS.expired! : GENERIC_REFUSAL };
+      return { ok: false, error: code === "ORDER_EXPIRED" ? REFUSALS.expired! : GENERIC_REFUSAL, stale: true };
     }
     return { ok: false, error: "We couldn't submit those payment details. Try again." };
   }
