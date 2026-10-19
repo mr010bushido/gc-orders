@@ -229,4 +229,5 @@ it('ignores a second submit while the action is pending', async () => {
   finish({ ok: true, reference: 'CAKE-2026-0001', accessToken: 'test-token', total: 1560, deposit: 780, lines: [{ label: 'Cake', amount: 1560, kind: 'cake' }], paymentInstructions: { airtelNumber: '+260111111111', mtnNumber: '+260222222222', quote: 'CAKE-2026-0001' } });
   await screen.findByText(/^CAKE-\d{4}-\d{4}$/);
   expect(actionMock).toHaveBeenCalledOnce();
+  expect(screen.getByRole('link', { name: 'Continue' }).getAttribute('href')).toBe('/order/CAKE-2026-0001?t=test-token');
 });
