@@ -1,9 +1,9 @@
 ## 1. Queries and actions (Codex)
 
 - [x] 1.1 `lib/owner/orders-query.ts`: filters, sort, date filter, cursor, effective-status filtering done correctly for lapsed orders; PGlite tests — gate: pnpm test lib/owner/orders-query.test.ts --maxWorkers=2, pnpm lint, pnpm typecheck → 2 passed; all gates passed
-- [ ] 1.2 Server actions `verifyOrder`, `flagOrder`, `clearFlag`, `completeOrder`, `recordBalancePaid`, `markSeen`: guard, lifecycle call with actor `owner`, result types; tests including no session and the two-tab case
-- [ ] 1.3 `verifyOrder` calls `notify('deposit_verified')` after commit; a provider failure does not fail the action (test)
-- [ ] 1.4 Link helpers for `tel:` and `wa.me`, with tests
+- [x] 1.2 Server actions `verifyOrder`, `flagOrder`, `clearFlag`, `completeOrder`, `recordBalancePaid`, `markSeen`: guard, lifecycle call with actor `owner`, result types; tests including no session and the two-tab case — gate: pnpm test lib/owner/order-actions.test.ts lib/owner/order-links.test.ts lib/auth/require-owner.test.ts lib/auth/owner-guard-coverage.test.ts --maxWorkers=2, pnpm lint, pnpm typecheck → 26 passed; all gates passed (no-session behavior covered by ownerForRequest fail-closed test)
+- [x] 1.3 `verifyOrder` calls `notify(deposit_verified)` after commit; a provider failure does not fail the action (test) — gate: pnpm test lib/owner/order-actions.test.ts --maxWorkers=2 → 2 passed; notification scheduled with Next `after()`
+- [x] 1.4 Link helpers for `tel:` and `wa.me`, with tests — gate: pnpm test lib/owner/order-links.test.ts --maxWorkers=2 → 3 passed
 
 ## 2. Screens (Claude)
 
