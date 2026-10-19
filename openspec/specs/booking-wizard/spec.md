@@ -58,11 +58,15 @@ The review step SHALL show the summary card with every line, the total in the di
 - **THEN** the wizard returns to the details step with the date field marked in error
 
 ### Requirement: Confirmation screen
-After success the app SHALL show the booking reference, server-priced lines, total and deposit, and the payment instructions (Airtel and MTN numbers, "quote your reference"), with a primary button to continue to `/` until the order page is delivered by `order-tracking`. The access token SHALL remain in the response for that change. If the server total differs from the reviewed total, the confirmation SHALL explain that the price was updated.
+After success the app SHALL show the booking reference, server-priced lines, total and deposit, and the payment instructions (Airtel and MTN numbers, "quote your reference"), with a primary button to continue to `/order/<reference>?t=<accessToken>`. The access token SHALL remain in the response for the order-tracking hand-off. If the server total differs from the reviewed total, the confirmation SHALL explain that the price was updated.
 
-#### Scenario: Reference displayed
-- **WHEN** a booking succeeds
-- **THEN** the reference appears once in the display font and the screen has one filled button
+#### Scenario: Continue to private order page
+- **WHEN** a booking succeeds and the customer selects Continue
+- **THEN** the app opens `/order/<reference>?t=<accessToken>`
+
+#### Scenario: Continue link carries issued credentials
+- **WHEN** the confirmation is rendered with a reference and access token
+- **THEN** Continue links to `/order/<encoded-reference>?t=<encoded-access-token>`
 
 ### Requirement: Design and accessibility rules
 The screens SHALL use only design tokens and the shared components, have one display-font moment per screen, inputs of 48px with visible labels, touch targets of at least 44px, and move focus to the first error on a failed submit.
