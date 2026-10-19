@@ -11,8 +11,12 @@
     "check:portability": "node scripts/check-portability.mjs",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:seed": "node scripts/seed.ts"
+    "db:migrate": "node --env-file-if-exists=.env.local node_modules/drizzle-kit/bin.cjs migrate",
+    "db:seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env.local scripts/seed.ts",
+    "dev:setup": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev-db.ts setup",
+    "db:up": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev-db.ts up",
+    "db:down": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev-db.ts down",
+    "db:reset": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev-db.ts reset"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
