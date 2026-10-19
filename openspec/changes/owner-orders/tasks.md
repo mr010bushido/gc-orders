@@ -1,6 +1,6 @@
 ## 1. Queries and actions (Codex)
 
-- [ ] 1.1 `lib/owner/orders-query.ts`: filters, sort, date filter, cursor, effective-status filtering done correctly for lapsed orders; PGlite tests
+- [x] 1.1 `lib/owner/orders-query.ts`: filters, sort, date filter, cursor, effective-status filtering done correctly for lapsed orders; PGlite tests — gate: pnpm test lib/owner/orders-query.test.ts --maxWorkers=2, pnpm lint, pnpm typecheck → 2 passed; all gates passed
 - [ ] 1.2 Server actions `verifyOrder`, `flagOrder`, `clearFlag`, `completeOrder`, `recordBalancePaid`, `markSeen`: guard, lifecycle call with actor `owner`, result types; tests including no session and the two-tab case
 - [ ] 1.3 `verifyOrder` calls `notify('deposit_verified')` after commit; a provider failure does not fail the action (test)
 - [ ] 1.4 Link helpers for `tel:` and `wa.me`, with tests
