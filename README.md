@@ -87,6 +87,16 @@ Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` is based on committed
 
 ## Reverse proxy and client address
 
+## Owner login setup
+
+Owner login uses Supabase Auth magic links. In the Supabase project, disable public signups, create the owner's user, configure Resend as the SMTP provider, and allow the preview and production callback URLs (`/owner/auth/callback`) in the Auth redirect URL settings. Set these host environment variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `OWNER_EMAIL`
+
+Set `APP_URL` to the canonical public origin so sign-in links are not built from request host headers. Without the three owner-auth variables above, the app builds normally and `/owner/login` reports that owner login is not configured.
+
 The "find my booking" limit counts lookups per client address, read by `clientAddress()` in `lib/platform/client-address.ts`. It uses `X-Real-IP`, else the right-most `X-Forwarded-For` entry, and never the left-most one, which a client can forge to dodge the limit. With neither header all callers share one bucket, so a missing header makes the limit stricter, not weaker.
 
 - **Vercel** sets both headers itself; no configuration is needed.

@@ -30,7 +30,8 @@ export async function requestOwnerLogin(
 
   if (email === ownerEmail.trim().toLowerCase()) {
     const callback = new URL("/owner/auth/callback", origin);
-    await options.auth.sendMagicLink(email, callback.toString());
+    // A send failure must look like success, or an error would tell a stranger which email is the owner's.
+    await options.auth.sendMagicLink(email, callback.toString()).catch(() => console.error("Owner login link could not be sent"));
   }
   return "sent";
 }

@@ -42,6 +42,13 @@ describe("requestOwnerLogin", () => {
   });
 });
 
+it("answers the same when sending the link fails", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const failing = setup();
+  vi.mocked(failing.auth.sendMagicLink).mockRejectedValue(new Error("smtp down"));
+  await expect(requestOwnerLogin("owner@example.com", new Headers(), "https://cakes.invalid", { ...config, ...failing })).resolves.toBe("sent");
+});
+
 describe("loginOrigin", () => {
   it("prefers APP_URL over a forged host header", () => {
     expect(loginOrigin(new Headers({ host: "attacker.invalid" }), "https://orders.cakes.invalid/")).toBe("https://orders.cakes.invalid");

@@ -14,12 +14,12 @@
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 `/owner/login` page with the email field and the generic confirmation
-- [ ] 2.2 `app/owner/layout.tsx` shell: nav, theme toggle, sign out, sans font only; `/owner` redirects to `/owner/orders`
-- [ ] 2.3 Component tests for the login states (initial, sent, link error)
+- [x] 2.1 `/owner/login` page with accessible initial, sent, link-error, not-configured and rate-limited states — gate: pnpm test app/owner/login/login-form.dom.test.tsx --maxWorkers=2 → 9 passed
+- [x] 2.2 Guarded owner console shell with nav, theme toggle, sign out, sans font only; `/owner` redirects to `/owner/orders`, with an orders placeholder — gate: pnpm typecheck && pnpm lint → passed
+- [x] 2.3 Component tests for the login states (initial, sent, link error, not configured and rate limited) — gate: pnpm test app/owner/login/login-form.dom.test.tsx --maxWorkers=2 → 9 passed
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test with the in-memory `OwnerAuth` fake: logged-out access redirects, owner access renders, another user is refused
-- [ ] 3.2 BLOCKED for a human: in Supabase disable public signups, create the owner user, set Resend SMTP, add the preview and production redirect URLs; record when done
-- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate owner-auth --strict` passes
+- [x] 3.1 Test with the in-memory `OwnerAuth` fake: logged-out access redirects, owner access renders, another user is refused — gate: pnpm test app/owner/owner.integration.test.tsx --maxWorkers=2 → 5 passed
+- [ ] 3.2 HUMAN (not for agents): [ ] Disable public signups in Supabase [ ] Create the owner user [ ] Configure Resend SMTP [ ] Add preview and production `/owner/auth/callback` redirect URLs — instructions recorded in README.md
+- [x] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `env -u DATABASE_URL -u DATABASE_MIGRATION_URL -u NEXT_PUBLIC_SUPABASE_URL -u NEXT_PUBLIC_SUPABASE_ANON_KEY -u OWNER_EMAIL pnpm build`, `pnpm check:portability` pass; `openspec validate owner-auth --strict` passes — all gates passed (735 tests passed, 1 skipped)
