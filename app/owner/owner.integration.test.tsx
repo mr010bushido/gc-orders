@@ -12,10 +12,15 @@ type Fake = ReturnType<typeof makeOwnerAuthFake>;
 // The real guard, adapter-free: requireOwner() runs against the in-memory OwnerAuth fake and a request header we control.
 const request = vi.hoisted(() => ({ headers: new Headers() }));
 vi.mock("next/headers", () => ({ headers: async () => request.headers }));
+vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
+vi.mock("@/lib/db", () => ({ getDb: () => ({}) }));
+vi.mock("@/lib/owner/orders-query", () => ({ listOwnerOrders: async () => ({ orders: [], nextCursor: null }), getOwnerOrderDetail: async () => null }));
 vi.mock("@/components/ThemeToggle", () => ({ ThemeToggle: () => null }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   usePathname: () => "/owner/orders",
+  useRouter: () => ({ push: () => {}, refresh: () => {} }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("@/lib/platform/adapters/supabase/owner-auth", async () => {
   const { makeOwnerAuthFake } = await import("@/lib/platform/fakes");
@@ -55,12 +60,12 @@ it("redirects logged-out visitors from the shell and every page to the login pag
   expect(await redirectTarget(() => signOutOwner())).toBe("/owner/login");
 });
 
-it("renders the shell and orders placeholder for the owner, and /owner goes to orders", async () => {
+it("renders the shell and empty orders list for the owner, and /owner goes to orders", async () => {
   await signInAs("owner@example.com");
   const shell = renderToStaticMarkup(await OwnerLayout({ children: await OwnerOrdersPage() }));
   expect(shell).toContain("Sign out");
   expect(shell).toContain('aria-current="page"');
-  expect(shell).toContain("They arrive in a later change");
+  expect(shell).toContain("No orders match these filters.");
   expect(shell).not.toContain("font-display");
   expect(await redirectTarget(() => OwnerHome())).toBe("/owner/orders");
 });

@@ -5,6 +5,7 @@ import type { OwnerOrderDetail } from "../../lib/owner/orders-query";
 import { OrderDetailSheet } from "../../app/owner/(console)/orders/order-detail-sheet";
 
 vi.mock("../../app/owner/(console)/orders/actions", () => ({ markSeen: vi.fn(), verifyOrder: vi.fn(), flagOrder: vi.fn(), clearFlag: vi.fn(), completeOrder: vi.fn(), recordBalancePaid: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
   id: "00000000-0000-4000-8000-000000000042", reference: "CAKE-2026-0042", status,
@@ -29,10 +30,16 @@ describe("OrderDetailSheet", () => {
   });
 
   it("renders malicious proof and notes as literal text", () => {
-    render(<OrderDetailSheet order={order("awaiting_verification")} onClose={() => {}} />);
-    expect(screen.getByText("<script>alert('pop')</script>")).toBeTruthy();
-    expect(screen.getByText("<img src=x onerror=alert(1)>")).toBeTruthy();
+    const { container } = render(<OrderDetailSheet order={order("awaiting_verification")} onClose={() => {}} />);
+    expect(container.textContent).toContain("<script>alert('pop')</script>");
+    expect(container.textContent).toContain("<img src=x onerror=alert(1)>");
     expect(document.querySelector("script")).toBeNull();
     expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("shows a flag badge without changing the order status", () => {
+    render(<OrderDetailSheet order={{ ...order("awaiting_verification"), flaggedAt: new Date() }} onClose={() => {}} />);
+    expect(screen.getByText("Flagged")).toBeTruthy();
+    expect(screen.getByText("Awaiting verification")).toBeTruthy();
   });
 });

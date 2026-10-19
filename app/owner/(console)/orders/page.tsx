@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { Button } from "../../../../components/ui/Button";
+import { Input } from "../../../../components/ui/Input";
 import { requireOwner } from "../../../../lib/auth/require-owner";
 import { getDb } from "../../../../lib/db";
 import { ORDER_STATUSES, type OrderStatus } from "../../../../lib/db/schema/orders";
@@ -38,8 +40,8 @@ export default async function OwnerOrdersPage({ searchParams = Promise.resolve({
       })}
     </nav>
     <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <form action="/owner/orders" className="flex min-h-11 items-center gap-2"><label htmlFor="event-date" className="text-sm font-medium">Event date</label><input id="event-date" name="date" type="date" defaultValue={params.date} className="h-11 rounded-sm border border-line-strong bg-surface px-2 text-base"/><input type="hidden" name="status" value={status}/><button className="min-h-11 rounded-md border border-ink px-3 text-sm font-semibold">Apply</button>{params.date && <Link className="inline-flex min-h-11 items-center px-2 text-sm text-brand-ink" href="/owner/orders">Clear</Link>}</form>
-      <Link href={`/owner/orders?${new URLSearchParams({ ...(status !== "active" ? { status } : {}), ...(params.date ? { date: params.date } : {}), sort: sort === "asc" ? "desc" : "asc" })}`} className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-brand-ink">Event date {sort === "asc" ? "↑" : "↓"}</Link>
+      <form action="/owner/orders" className="flex min-h-11 flex-wrap items-end gap-2"><Input id="event-date" label="Event date" name="date" type="date" defaultValue={params.date} className="w-auto min-w-40"/><input type="hidden" name="status" value={status}/><Button variant="ghost" type="submit">Apply</Button>{params.date && <Button variant="ghost" href="/owner/orders">Clear</Button>}</form>
+      <Button variant="ghost" href={`/owner/orders?${new URLSearchParams({ ...(status !== "active" ? { status } : {}), ...(params.date ? { date: params.date } : {}), sort: sort === "asc" ? "desc" : "asc" })}`}>Event date {sort === "asc" ? "↑" : "↓"}</Button>
     </div>
     <OrdersList orders={orders} selectedId={selectedId} detail={detail}/>
     {nextCursor && <Link className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center rounded-md border border-ink bg-transparent font-semibold text-ink" href={`/owner/orders?${new URLSearchParams({ ...(status !== "active" ? { status } : {}), ...(params.date ? { date: params.date } : {}), ...(sort !== "asc" ? { sort } : {}), cursor: nextCursor })}`}>Load more</Link>}

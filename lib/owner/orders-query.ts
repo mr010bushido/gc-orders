@@ -13,7 +13,7 @@ export type OwnerOrderDetail = OwnerOrderRow & {
 };
 
 /** Load detail independently of list filters so a shared reference always opens its order. */
-export async function getOwnerOrderDetail(db: Db, reference: string): Promise<OwnerOrderDetail | null> {
+export async function getOwnerOrderDetail(db: Db, reference: string, now = new Date()): Promise<OwnerOrderDetail | null> {
   const [order] = await db.select({
     id: orders.id, reference: orders.reference, status: orders.status, fulfilment: orders.fulfilment,
     eventDate: orders.eventDate, timeWindow: orders.timeWindow, customerName: orders.customerName,
@@ -29,7 +29,8 @@ export async function getOwnerOrderDetail(db: Db, reference: string): Promise<Ow
     db.select().from(popSubmissions).where(eq(popSubmissions.orderId, order.id)).orderBy(asc(popSubmissions.submittedAt)),
     db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id)).orderBy(asc(orderStatusEvents.at)),
   ]);
-  return { ...order, summary: lines.map(line => line.label).join(", ") || "Quote request", lines, submissions, events };
+  const status = order.status === "awaiting_payment" && order.paymentDueAt && order.paymentDueAt <= now ? "expired" : order.status;
+  return { ...order, status, summary: lines.map(line => line.label).join(", ") || "Quote request", lines, submissions, events };
 }
 
 function parseCursor(cursor: string | undefined): { date: string; id: string } | null {

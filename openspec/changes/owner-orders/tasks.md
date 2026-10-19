@@ -8,13 +8,13 @@
 ## 2. Screens (Claude)
 
 - [x] 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more" — added live `awaiting_quote` pill parity with the settled design reference; fixed optional search params for direct page tests — gate: `pnpm test lib/owner/orders-query.test.ts --maxWorkers=2`, `pnpm lint`, `pnpm typecheck` → 2 passed; all gates passed
-- [x] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link; detail lookup is independent of list filters — gate: `pnpm lint`, `pnpm typecheck`, `pnpm test lib/owner/orders-query.test.ts components/ui/OrderCard.test.tsx --maxWorkers=2` → 5 passed; all gates passed (one unused-state lint warning to resolve in 2.3)
-- [x] 2.3 Action bar and dialogs: Verify confirmation, Flag with required note, Complete balance warning, Balance paid method/note form — gate: `pnpm lint`, `pnpm typecheck` → passed (no errors)
-- [x] 2.4 Component tests for all six order statuses including `awaiting_quote`, plus literal plain-text rendering for hostile POP and notes — gate: `pnpm test components/StatusPill.test.tsx components/ui/OrderDetailSheet.test.tsx --maxWorkers=2` → 9 passed; `pnpm lint`, `pnpm typecheck` → passed
+- [x] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link, and separate Flagged badge; detail lookup is independent of list filters and applies effective Expired status to lapsed payment orders — gate: `pnpm lint`, `pnpm typecheck`, `pnpm test lib/owner/orders-query.test.ts components/ui/OrderCard.test.tsx --maxWorkers=2` → 5 passed; all gates passed
+- [x] 2.3 Action bar and dialogs: Verify confirmation, Flag with required note, Complete balance warning (hides sheet actions while confirming), Balance paid method/note form — gate: `pnpm lint`, `pnpm typecheck` → passed (no errors)
+- [x] 2.4 Component tests for all six order statuses including `awaiting_quote`, flag badge, plus literal plain-text rendering for hostile POP and notes — gate: `pnpm test components/StatusPill.test.tsx components/ui/OrderDetailSheet.test.tsx --maxWorkers=2` → 10 passed; `pnpm lint`, `pnpm typecheck` → passed
 - [x] 2.5 Add the Orders item to the owner nav — already present in `app/owner/(console)/owner-nav.tsx`; verified its `/owner/orders` link and active route state in source (no change required)
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: create orders in each status, open each sheet, run verify, flag and complete flows against a PGlite database
-- [ ] 3.2 Check at 375px and 1280px in light and dark and note the result on this line
-- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-orders --strict` passes
+- [x] 3.1 PGlite detail reads for each lifecycle status; flag/clear, verify, complete and balance-paid flows pass. Existing action tests cover two-tab compare-and-set, and owner guard tests cover unauthorized access — gate: `pnpm test lib/owner/owner-orders.integration.test.ts lib/owner/order-actions.test.ts lib/auth/require-owner.test.ts --maxWorkers=2` → 7 passed; `pnpm lint`, `pnpm typecheck` → passed
+- [x] 3.2 Checked the real cards and sheet in a temporary real-component harness at 375×812 and 1280×800, light and dark. No horizontal overflow; all status pills and sheet content fit; Verify is the sole filled action. Literal hostile POP stayed visible as text. Fixed timestamp rendering to Africa/Lusaka after the first run exposed a hydration mismatch. Next dev logged a script-tag warning for the hostile-text fixture; no page failure after correcting the harness route.
+- [x] 3.3 `pnpm lint` passed; `pnpm typecheck` passed; `pnpm test --maxWorkers=2` → 77 files passed, 1 skipped; 766 passed, 1 skipped; `pnpm check:portability` passed; env-cleared `pnpm build` passed; `openspec validate owner-orders --strict` valid

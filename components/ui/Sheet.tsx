@@ -10,6 +10,7 @@ type SheetProps = {
   title: string;
   reference?: string;
   status?: OrderStatus;
+  flagged?: boolean;
   /** Ghost and primary buttons, laid out 1fr / 2fr. Pass them with `block`. */
   actions?: ReactNode;
   children: ReactNode;
@@ -17,7 +18,7 @@ type SheetProps = {
 };
 
 // The native modal <dialog> gives focus trapping, Escape and an inert page for free.
-export function Sheet({ open, onClose, title, reference, status, actions, children, className }: SheetProps) {
+export function Sheet({ open, onClose, title, reference, status, flagged = false, actions, children, className }: SheetProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const isOpen = useRef(open);
@@ -60,7 +61,7 @@ export function Sheet({ open, onClose, title, reference, status, actions, childr
           <div className="min-w-0 flex-1">
             {reference && <p className="text-xs text-ink-soft tabular-nums">{reference}</p>}
             <h2 id={titleId} className="text-lg font-semibold text-ink">{title}</h2>
-            {status && <div className="mt-1.5"><StatusPill status={status} size="sm" /></div>}
+            {(status || flagged) && <div className="mt-1.5 flex items-center gap-2">{status && <StatusPill status={status} size="sm" />}{flagged && <span className="rounded-full bg-warn-bg px-2.5 py-1 text-xs font-medium text-warn-ink">Flagged</span>}</div>}
           </div>
           <button
             type="button"
