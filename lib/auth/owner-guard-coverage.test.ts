@@ -42,7 +42,9 @@ function exportedCallables(source: ts.SourceFile): Callable[] {
 
 function callsRequireOwnerFirst(body: ts.Node | null): boolean {
   if (!body || !ts.isBlock(body)) return false;
-  const first = body.statements[0];
+  const first = body.statements.find((statement) =>
+    !ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression),
+  );
   if (!first || !ts.isExpressionStatement(first) || !ts.isAwaitExpression(first.expression)) return false;
   const awaited = first.expression.expression;
   return ts.isCallExpression(awaited) && ts.isIdentifier(awaited.expression) && awaited.expression.text === "requireOwner";
@@ -103,6 +105,7 @@ describe("owner route guard coverage", () => {
       ["orders/route.ts", "export async function POST() { await requireOwner(); return new Response(); }"],
       ["orders/page.tsx", "export default async function Page() { await requireOwner(); return null; }"],
       ["orders/layout.tsx", "export default async function Layout() { await requireOwner(); return null; }"],
+      ["orders/directive.ts", '"use server"; export async function update() { "use strict"; await requireOwner(); }'],
     ]);
     expect(findUnguardedOwnerHandlers(fixtures)).toEqual([]);
   });
