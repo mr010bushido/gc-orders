@@ -40,15 +40,12 @@ function exportedCallables(source: ts.SourceFile): Callable[] {
   return found;
 }
 
-function callsRequireOwner(node: ts.Node | null): boolean {
-  if (!node) return false;
-  let guarded = false;
-  const inspect = (child: ts.Node) => {
-    if (ts.isCallExpression(child) && ts.isIdentifier(child.expression) && child.expression.text === "requireOwner") guarded = true;
-    ts.forEachChild(child, inspect);
-  };
-  inspect(node);
-  return guarded;
+function callsRequireOwnerFirst(body: ts.Node | null): boolean {
+  if (!body || !ts.isBlock(body)) return false;
+  const first = body.statements[0];
+  if (!first || !ts.isExpressionStatement(first) || !ts.isAwaitExpression(first.expression)) return false;
+  const awaited = first.expression.expression;
+  return ts.isCallExpression(awaited) && ts.isIdentifier(awaited.expression) && awaited.expression.text === "requireOwner";
 }
 
 function findUnguardedOwnerHandlers(files: SourceMap): string[] {
@@ -68,7 +65,7 @@ function findUnguardedOwnerHandlers(files: SourceMap): string[] {
       return false;
     });
     for (const { name, body } of checked) {
-      if (!callsRequireOwner(body)) violations.push(`${normalized}:${name}`);
+      if (!callsRequireOwnerFirst(body)) violations.push(`${normalized}:${name}`);
     }
   }
   return violations;
@@ -98,6 +95,25 @@ describe("owner route guard coverage", () => {
   it("accepts a handler that calls requireOwner", () => {
     const fixture = new Map([["orders/actions.ts", '"use server"; export async function ok() { await requireOwner(); }']]);
     expect(findUnguardedOwnerHandlers(fixture)).toEqual([]);
+  });
+
+  it("accepts first-statement guards in actions, route handlers, pages and layouts", () => {
+    const fixtures = new Map([
+      ["orders/actions.ts", '"use server"; export const update = async () => { await requireOwner(); return true; };'],
+      ["orders/route.ts", "export async function POST() { await requireOwner(); return new Response(); }"],
+      ["orders/page.tsx", "export default async function Page() { await requireOwner(); return null; }"],
+      ["orders/layout.tsx", "export default async function Layout() { await requireOwner(); return null; }"],
+    ]);
+    expect(findUnguardedOwnerHandlers(fixtures)).toEqual([]);
+  });
+
+  it.each([
+    ["a guard in unreachable code", '"use server"; export async function ok() { if (false) await requireOwner(); }'],
+    ["a guard after a private read", '"use server"; export async function ok() { const rows = await readPrivateOrders(); await requireOwner(); return rows; }'],
+    ["an unawaited guard", '"use server"; export async function ok() { requireOwner(); }'],
+    ["a nested guard", '"use server"; export async function ok() { { await requireOwner(); } }'],
+  ])("rejects %s", (_label, code) => {
+    expect(findUnguardedOwnerHandlers(new Map([["orders/actions.ts", code]]))).toEqual(["orders/actions.ts:ok"]);
   });
 
   it("requires every protected exported action, route handler, page and layout to call requireOwner", () => {
