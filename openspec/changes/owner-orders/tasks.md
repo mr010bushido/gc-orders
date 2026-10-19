@@ -7,7 +7,7 @@
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more"
+- [ ] BLOCKED: What shared status pill should represent `awaiting_quote` without changing `StatusPill.tsx`? — 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more"
 - [ ] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link
 - [ ] 2.3 Action bar and dialogs: Verify confirmation, Flag with note, Complete warning, Balance paid form
 - [ ] 2.4 Component tests for each status and for plain-text POP rendering
