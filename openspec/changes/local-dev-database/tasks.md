@@ -12,4 +12,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build` (with no DATABASE_URL) pass, `pnpm check:portability` passes, `openspec validate local-dev-database --strict` passes
+- [x] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build` (with no DATABASE_URL) pass, `pnpm check:portability` passes, `openspec validate local-dev-database --strict` passes — gate (DATABASE_URL and DATABASE_MIGRATION_URL unset): `pnpm lint` → clean; `pnpm typecheck` → clean; `pnpm test --maxWorkers=2` → 55 files passed, 1 skipped; 619 tests passed, 1 skipped (the Postgres integration test, which needs TEST_DATABASE_URL); `pnpm build` → success; `pnpm check:portability` → passed; `openspec validate local-dev-database --strict` → valid
