@@ -9,6 +9,11 @@ const routeVerbs = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 type SourceMap = Map<string, string>;
 type Callable = { name: string; body: ts.Node | null };
+const projectDirectory = process.cwd();
+const configPath = ts.findConfigFile(projectDirectory, ts.sys.fileExists, "tsconfig.json")!;
+const config = ts.readConfigFile(configPath, ts.sys.readFile);
+const compilerOptions = ts.parseJsonConfigFileContent(config.config, ts.sys, projectDirectory).options;
+const realGuardPath = join(projectDirectory, "lib/auth/require-owner.ts");
 
 const isExported = (node: ts.Node) =>
   ts.canHaveModifiers(node) && Boolean(ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
@@ -40,14 +45,60 @@ function exportedCallables(source: ts.SourceFile): Callable[] {
   return found;
 }
 
-function callsRequireOwnerFirst(body: ts.Node | null): boolean {
+// Aliased named imports are supported: the scanner follows the imported binding name.
+function guardImport(source: ts.SourceFile): string | null {
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    for (const element of bindings.elements) {
+      if (element.propertyName?.text !== "requireOwner" && element.name.text !== "requireOwner") continue;
+      const resolved = ts.resolveModuleName(statement.moduleSpecifier.text, source.fileName, compilerOptions, ts.sys).resolvedModule;
+      if (resolved && resolved.resolvedFileName.replace(/\\/g, "/").replace(/\.js$/, ".ts") === realGuardPath.replace(/\\/g, "/")) {
+        return element.name.text;
+      }
+    }
+  }
+  return null;
+}
+
+function hasShadowOrRebind(source: ts.SourceFile, alias: string): boolean {
+  let invalid = false;
+  const containsAlias = (node: ts.Node): boolean =>
+    ts.isIdentifier(node) ? node.text === alias : Boolean(node.forEachChild(containsAlias));
+  const visit = (node: ts.Node) => {
+    if (node !== source && ((ts.isIdentifier(node) && node.text === alias && isBindingName(node)) ||
+      (ts.isBinaryExpression(node) && containsAlias(node.left) &&
+       node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) ||
+      ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+       (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) && containsAlias(node.operand)))) {
+      invalid = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return invalid;
+}
+
+function isBindingName(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  const bindingName = (name: ts.BindingName | undefined) => name !== undefined && containsIdentifier(name, node);
+  return (ts.isParameter(parent) && bindingName(parent.name)) ||
+    ((ts.isVariableDeclaration(parent) || ts.isFunctionDeclaration(parent) || ts.isClassDeclaration(parent) || ts.isFunctionExpression(parent)) && bindingName(parent.name));
+}
+
+function containsIdentifier(root: ts.Node, target: ts.Identifier): boolean {
+  return root === target || Boolean(root.forEachChild((child) => containsIdentifier(child, target)));
+}
+
+function callsRequireOwnerFirst(body: ts.Node | null, alias: string | null): boolean {
   if (!body || !ts.isBlock(body)) return false;
   const first = body.statements.find((statement) =>
     !ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression),
   );
   if (!first || !ts.isExpressionStatement(first) || !ts.isAwaitExpression(first.expression)) return false;
   const awaited = first.expression.expression;
-  return ts.isCallExpression(awaited) && ts.isIdentifier(awaited.expression) && awaited.expression.text === "requireOwner";
+  return Boolean(alias && ts.isCallExpression(awaited) && ts.isIdentifier(awaited.expression) && awaited.expression.text === alias);
 }
 
 function findUnguardedOwnerHandlers(files: SourceMap): string[] {
@@ -55,7 +106,9 @@ function findUnguardedOwnerHandlers(files: SourceMap): string[] {
   for (const [path, contents] of files) {
     const normalized = path.replaceAll("\\", "/");
     if (publicHandlers.has(normalized)) continue;
-    const source = ts.createSourceFile(normalized, contents, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const source = ts.createSourceFile(join(ownerRoot, normalized), contents, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const alias = guardImport(source);
+    const validGuardBinding = Boolean(alias && !hasShadowOrRebind(source, alias));
     const isActionModule = source.statements.some((statement) =>
       ts.isExpressionStatement(statement) && ts.isStringLiteral(statement.expression) && statement.expression.text === "use server",
     );
@@ -67,7 +120,7 @@ function findUnguardedOwnerHandlers(files: SourceMap): string[] {
       return false;
     });
     for (const { name, body } of checked) {
-      if (!callsRequireOwnerFirst(body)) violations.push(`${normalized}:${name}`);
+      if (!validGuardBinding || !callsRequireOwnerFirst(body, alias)) violations.push(`${normalized}:${name}`);
     }
   }
   return violations;
@@ -95,17 +148,17 @@ describe("owner route guard coverage", () => {
   });
 
   it("accepts a handler that calls requireOwner", () => {
-    const fixture = new Map([["orders/actions.ts", '"use server"; export async function ok() { await requireOwner(); }']]);
+    const fixture = new Map([["orders/actions.ts", '"use server"; import { requireOwner } from "@/lib/auth/require-owner"; export async function ok() { await requireOwner(); }']]);
     expect(findUnguardedOwnerHandlers(fixture)).toEqual([]);
   });
 
   it("accepts first-statement guards in actions, route handlers, pages and layouts", () => {
     const fixtures = new Map([
-      ["orders/actions.ts", '"use server"; export const update = async () => { await requireOwner(); return true; };'],
-      ["orders/route.ts", "export async function POST() { await requireOwner(); return new Response(); }"],
-      ["orders/page.tsx", "export default async function Page() { await requireOwner(); return null; }"],
-      ["orders/layout.tsx", "export default async function Layout() { await requireOwner(); return null; }"],
-      ["orders/directive.ts", '"use server"; export async function update() { "use strict"; await requireOwner(); }'],
+      ["orders/actions.ts", '"use server"; import { requireOwner as guard } from "@/lib/auth/require-owner"; export const update = async () => { await guard(); return true; };'],
+      ["orders/route.ts", 'import { requireOwner } from "@/lib/auth/require-owner"; export async function POST() { await requireOwner(); return new Response(); }'],
+      ["orders/page.tsx", 'import { requireOwner } from "@/lib/auth/require-owner"; export default async function Page() { await requireOwner(); return null; }'],
+      ["orders/layout.tsx", 'import { requireOwner } from "@/lib/auth/require-owner"; export default async function Layout() { await requireOwner(); return null; }'],
+      ["orders/directive.ts", '"use server"; import { requireOwner } from "@/lib/auth/require-owner"; export async function update() { "use strict"; await requireOwner(); }'],
     ]);
     expect(findUnguardedOwnerHandlers(fixtures)).toEqual([]);
   });
@@ -115,6 +168,16 @@ describe("owner route guard coverage", () => {
     ["a guard after a private read", '"use server"; export async function ok() { const rows = await readPrivateOrders(); await requireOwner(); return rows; }'],
     ["an unawaited guard", '"use server"; export async function ok() { requireOwner(); }'],
     ["a nested guard", '"use server"; export async function ok() { { await requireOwner(); } }'],
+  ])("rejects %s", (_label, code) => {
+    expect(findUnguardedOwnerHandlers(new Map([["orders/actions.ts", code]]))).toEqual(["orders/actions.ts:ok"]);
+  });
+
+  it.each([
+    ["a local no-op guard", '"use server"; async function requireOwner() {} export async function ok() { await requireOwner(); }'],
+    ["an import from another module", '"use server"; import { requireOwner } from "./fake-guard"; export async function ok() { await requireOwner(); }'],
+    ["no guard import", '"use server"; export async function ok() { await requireOwner(); }'],
+    ["a parameter shadow", '"use server"; import { requireOwner } from "@/lib/auth/require-owner"; export async function ok(requireOwner: () => Promise<void>) { await requireOwner(); }'],
+    ["an inner-scope shadow", '"use server"; import { requireOwner } from "@/lib/auth/require-owner"; export async function ok() { function inner(requireOwner: () => Promise<void>) { return requireOwner(); } await requireOwner(); }'],
   ])("rejects %s", (_label, code) => {
     expect(findUnguardedOwnerHandlers(new Map([["orders/actions.ts", code]]))).toEqual(["orders/actions.ts:ok"]);
   });
