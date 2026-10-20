@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import type { makeOwnerAuthFake } from "@/lib/platform/fakes";
 import { createTestDb } from "@/lib/db/test-db";
 import { settings } from "@/lib/db/schema";
 import * as adapter from "@/lib/platform/adapters/supabase/owner-auth";
 import { manageCatalogueItem, saveFeesAndRules, savePaymentAndContact, savePrices, saveTimeWindows } from "./actions";
+import SettingsPage from "./page";
 
 const request = vi.hoisted(() => ({ headers: new Headers(), db: undefined as unknown, dbCalls: 0 }));
 vi.mock("next/headers", () => ({ headers: async () => request.headers }));
@@ -64,4 +66,14 @@ it("returns field errors for invalid saves and persists valid settings only for 
     .resolves.toEqual({ ok: true });
   expect(request.dbCalls).toBe(3);
   expect(await test.db.select().from(settings)).toHaveLength(9);
+});
+
+it("shows settings section navigation and the new-bookings notice on every section", async () => {
+  await signInAs("owner@example.com");
+  const page = renderToStaticMarkup(await SettingsPage());
+  expect(page).toContain('aria-label="Settings sections"');
+  for (const section of ["Prices", "Sizes", "Fees and rules", "Time windows", "Payment and contact"]) {
+    expect(page).toContain(section);
+  }
+  expect(page.match(/Changes apply to new bookings/g)).toHaveLength(5);
 });
