@@ -1,7 +1,7 @@
 # owner-availability Specification
 
 ## Purpose
-TBD - created by archiving change owner-availability. Update Purpose after archive.
+Let the owner manage booking availability through capacity suggestions, manual date blocks and reopening, without changing existing orders.
 ## Requirements
 ### Requirement: Capacity suggestions list
 `/owner/dates` SHALL list each capacity suggestion with the date, the confirmed order count, the number of unpaid or unverified orders for the date, and actions "Close date" and "Keep open". It SHALL show an empty state when there are none.
@@ -53,4 +53,3 @@ All reads and actions SHALL call `requireOwner()`. The date picker on this scree
 #### Scenario: Owner variant
 - **WHEN** the block form's picker renders
 - **THEN** the month name has the sans font class and not the display class
-
