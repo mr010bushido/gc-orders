@@ -11,4 +11,4 @@
 ## 3. Integration (Claude owns this check)
 
 - [x] 3.1 Test: confirm 10 orders for a date, see the suggestion, close it, and verify `isDateOpen` is false and the booking action refuses it — gate: `pnpm test lib/owner/availability-actions.test.ts` → 5 passed
-- [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-availability --strict` passes
+- [x] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-availability --strict` passes — gate: lint passed; typecheck passed; `pnpm test --maxWorkers=2` → 81 files passed, 1 skipped; build passed; strict validation passed; portability passed
