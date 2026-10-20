@@ -10,5 +10,5 @@
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: confirm 10 orders for a date, see the suggestion, close it, and verify `isDateOpen` is false and the booking action refuses it
+- [x] 3.1 Test: confirm 10 orders for a date, see the suggestion, close it, and verify `isDateOpen` is false and the booking action refuses it — gate: `pnpm test lib/owner/availability-actions.test.ts` → 5 passed
 - [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-availability --strict` passes

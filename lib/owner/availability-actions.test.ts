@@ -5,7 +5,7 @@ import type { OrderStatus } from "../db/schema/orders";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "../orders/fixtures";
 import { createOrder } from "../orders/orders";
-import { getCapacitySuggestions, isDateOpen } from "../availability/availability";
+import { assertDateOpen, getCapacitySuggestions, isDateOpen } from "../availability/availability";
 import { AvailabilityActionError, blockDateForOwner, closeSuggestedDateForOwner, keepDateOpenForOwner, reopenDateForOwner } from "./availability-actions";
 
 const databases: Awaited<ReturnType<typeof createTestDb>>[] = [];
@@ -20,10 +20,16 @@ async function book(db: Awaited<ReturnType<typeof createTestDb>>["db"], date: st
 it("closes a capacity date and keeps it out of suggestions", async () => {
   const test = await createTestDb(); databases.push(test);
   for (let i = 0; i < 10; i++) await book(test.db, "2026-11-14");
+  expect((await getCapacitySuggestions(test.db, "2026-10-18")).map(row => row.date)).toContain("2026-11-14");
   await closeSuggestedDateForOwner(deps(test.db), "2026-11-14");
   expect(await isDateOpen(test.db, "2026-11-14")).toBe(false);
   expect((await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2026-11-14")))[0]).toMatchObject({ reason: "capacity", note: "" });
   expect((await getCapacitySuggestions(test.db, "2026-10-18")).map(row => row.date)).not.toContain("2026-11-14");
+  await expect(test.db.transaction(async tx => {
+    await assertDateOpen(tx, "2026-11-14");
+    return createOrder(tx, orderInput({ eventDate: "2026-11-14" }), BOOKED_AT);
+  })).rejects.toMatchObject({ code: "DATE_UNAVAILABLE" });
+  expect(await test.db.select().from(orders).where(eq(orders.eventDate, "2026-11-14"))).toHaveLength(10);
 });
 
 it("records keeping a suggestion open until another confirmed order arrives", async () => {
