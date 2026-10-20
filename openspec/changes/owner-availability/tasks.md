@@ -1,7 +1,7 @@
 ## 1. Actions (Codex)
 
 - [x] 1.1 Queries for the screen: suggestions with confirmed and pending counts, closed dates with reasons — gate: `pnpm test lib/owner/availability-query.test.ts` → 1 passed
-- [ ] 1.2 Server actions `closeSuggestedDate`, `keepDateOpen`, `reopenDate`, `blockDate` with `requireOwner()`, past-date and note-length validation; tests for each scenario
+- [x] 1.2 Server actions `closeSuggestedDate`, `keepDateOpen`, `reopenDate`, `blockDate` with `requireOwner()`, past-date and note-length validation; tests for each scenario — gate: `pnpm test lib/owner/availability-actions.test.ts lib/auth/owner-guard-coverage.test.ts` → 22 passed; `pnpm typecheck` and `pnpm lint` passed
 
 ## 2. Screen (Claude)
 
