@@ -5,7 +5,7 @@ import type { OrderStatus } from "../db/schema/orders";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "../orders/fixtures";
 import { createOrder } from "../orders/orders";
-import { assertDateOpen, AvailabilityError, closeDate, getCapacitySuggestions, getClosedDates, isDateOpen, keepOpen, openDate } from "./availability";
+import { assertDateOpen, AvailabilityError, closeDate, getCapacitySuggestions, getClosedDates, isDateOpen, keepOpen, openDate, todayInLusaka } from "./availability";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
 beforeAll(async () => { test = await createTestDb(); });
@@ -13,6 +13,10 @@ afterAll(async () => { await test.close(); });
 
 const decidedAt = new Date("2026-10-17T08:00:00Z");
 const TODAY = "2026-10-18";
+
+it("gets today in Lusaka independently of the host timezone", () => {
+  expect(todayInLusaka(new Date("2026-10-18T22:30:00Z"))).toBe("2026-10-19");
+});
 
 /** Stores `n` orders for `eventDate` and forces their status; the lifecycle itself is tested elsewhere. */
 async function book(eventDate: string, status: OrderStatus, n = 1) {

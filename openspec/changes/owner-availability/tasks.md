@@ -5,7 +5,7 @@
 
 ## 2. Screen (Claude)
 
-- [ ] 2.1 `/owner/dates`: suggestions, closed dates, block form, empty states, links to the orders list
+- [x] 2.1 `/owner/dates`: suggestions, closed dates, block form, empty states, links to the orders list — gate: targeted DOM and availability tests → 23 passed; `pnpm typecheck` and `pnpm lint` passed
 - [ ] 2.2 Add the Dates item to the owner nav; component tests
 
 ## 3. Integration (Claude owns this check)

@@ -38,6 +38,12 @@ export async function isDateOpen(db: Db, date: string): Promise<boolean> {
 
 // Unverified and unpaid orders never count: only a date the owner has actually confirmed work for can fill up.
 const COUNTED = ["confirmed", "completed"] as const;
+const LUSAKA_OFFSET = 2 * 60 * 60 * 1000;
+
+/** Current Lusaka calendar date, independent of the server timezone. */
+export function todayInLusaka(now = new Date()): string {
+  return new Date(now.getTime() + LUSAKA_OFFSET).toISOString().slice(0, 10);
+}
 
 export type CapacitySuggestion = { date: string; confirmedCount: number; capacity: number };
 
