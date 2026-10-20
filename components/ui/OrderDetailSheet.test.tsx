@@ -52,6 +52,10 @@ describe("OrderDetailSheet", () => {
       expect(balancePaid.className).toContain("border-ink");
       expect(balancePaid.className).not.toContain("bg-brand");
       expect(view.container.querySelectorAll("button.bg-brand")).toHaveLength(1);
+      const footer = completed.parentElement as HTMLElement;
+      expect(balancePaid.parentElement).toBe(footer);
+      expect(footer.className).toContain("grid-cols-[1fr_2fr]");
+      expect(Array.from(footer.children)).toEqual([balancePaid, completed]);
 
       if (!balancePaidAt) {
         fireEvent.click(completed);

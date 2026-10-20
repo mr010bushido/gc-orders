@@ -43,8 +43,8 @@ export function OrderDetailSheet({ order, onClose }: { order: OwnerOrderDetail |
     {order.flaggedAt ? <Button variant="ghost" disabled={busy} onClick={() => void act(() => clearFlag(order.id))}>Clear flag</Button> : <span />}
     <Button block disabled={busy} onClick={() => { if (window.confirm(`Verify ${formatKwacha(order.deposit)} deposit for ${order.reference}?`)) void act(() => verifyOrder(order.id)); }}>Verify {formatKwacha(order.deposit)} deposit</Button>
   </> : order.status === "confirmed" ? <>
-    <Button block disabled={busy} onClick={() => order.balancePaidAt ? void act(() => completeOrder(order.id)) : setConfirmComplete(true)}>Mark completed</Button>
     <Button variant="ghost" type="submit" form="balance-form" disabled={busy || Boolean(order.balancePaidAt)}>Balance paid</Button>
+    <Button block disabled={busy} onClick={() => order.balancePaidAt ? void act(() => completeOrder(order.id)) : setConfirmComplete(true)}>Mark completed</Button>
   </> : undefined;
   return <Sheet open onClose={onClose} title={order.customerName ?? "Order"} reference={order.reference} status={order.status} flagged={Boolean(order.flaggedAt)} actions={confirmComplete ? undefined : actions}>
     <div className="space-y-5 py-4 text-sm">
