@@ -38,6 +38,12 @@ export async function isDateOpen(db: Db, date: string): Promise<boolean> {
 
 // Unverified and unpaid orders never count: only a date the owner has actually confirmed work for can fill up.
 const COUNTED = ["confirmed", "completed"] as const;
+const LUSAKA_OFFSET = 2 * 60 * 60 * 1000;
+
+/** Current Lusaka calendar date, independent of the server timezone. */
+export function todayInLusaka(now = new Date()): string {
+  return new Date(now.getTime() + LUSAKA_OFFSET).toISOString().slice(0, 10);
+}
 
 export type CapacitySuggestion = { date: string; confirmedCount: number; capacity: number };
 
@@ -74,6 +80,15 @@ export async function closeDate(db: Db, date: string, reason: CloseReason, note:
   const row = { state: "closed", reason, note: note.trim(), confirmedCountAtDecision: null, decidedAt: now } as const;
   await db.insert(dateDecisions).values({ eventDate: checkDate(date), ...row })
     .onConflictDoUpdate({ target: dateDecisions.eventDate, set: row });
+}
+
+/** Closes an open or undecided date. Returns false without changing a date that is already closed. */
+export async function closeDateIfOpen(db: Db, date: string, reason: CloseReason, note: string, now: Date): Promise<boolean> {
+  const row = { state: "closed", reason, note: note.trim(), confirmedCountAtDecision: null, decidedAt: now } as const;
+  const closed = await db.insert(dateDecisions).values({ eventDate: checkDate(date), ...row })
+    .onConflictDoUpdate({ target: dateDecisions.eventDate, set: row, setWhere: eq(dateDecisions.state, "open") })
+    .returning({ id: dateDecisions.id });
+  return closed.length > 0;
 }
 
 /** Reopens a closed date by removing its row. Returns false if it was not closed. */
