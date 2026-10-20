@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // Later owner items (pricing, settings, ...) add a row here.
-const items = [{ href: "/owner/orders", label: "Orders" }];
+const items = [{ href: "/owner/orders", label: "Orders" }, { href: "/owner/dates", label: "Dates" }];
 
 export function OwnerNav() {
   const pathname = usePathname();
