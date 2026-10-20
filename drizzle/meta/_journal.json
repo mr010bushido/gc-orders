@@ -57,6 +57,13 @@
       "when": 1792521535748,
       "tag": "0007_awesome_randall",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792521773601,
+      "tag": "0008_stale_living_mummy",
+      "breakpoints": true
     }
   ]
 }
