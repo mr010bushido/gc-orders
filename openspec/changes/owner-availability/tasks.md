@@ -1,6 +1,6 @@
 ## 1. Actions (Codex)
 
-- [ ] 1.1 Queries for the screen: suggestions with confirmed and pending counts, closed dates with reasons
+- [x] 1.1 Queries for the screen: suggestions with confirmed and pending counts, closed dates with reasons — gate: `pnpm test lib/owner/availability-query.test.ts` → 1 passed
 - [ ] 1.2 Server actions `closeSuggestedDate`, `keepDateOpen`, `reopenDate`, `blockDate` with `requireOwner()`, past-date and note-length validation; tests for each scenario
 
 ## 2. Screen (Claude)
