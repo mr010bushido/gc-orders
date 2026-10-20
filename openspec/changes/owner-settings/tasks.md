@@ -1,6 +1,6 @@
 ## 1. Write functions (Codex)
 
-- [ ] 1.1 `lib/catalogue/admin.ts`: update prices and multipliers with validation and `updated_at`; tests for bounds and hundredths conversion
+- [x] 1.1 `lib/catalogue/admin.ts`: update prices and multipliers with validation and `updated_at`; tests for bounds and hundredths conversion — gate: `pnpm test lib/catalogue/admin.test.ts lib/db/migrations.test.ts` (4 passed) and `pnpm typecheck` (passed)
 - [ ] 1.2 Add, rename, reprice, hide for flavours, frostings, add-ons and dessert types; duplicate-name and `LAST_ACTIVE_ITEM` rules; tests
 - [ ] 1.3 Settings writes for fees and rules, time windows (order and overlap checks), payment numbers (normalised), map link (https) and alert phone; tests
 - [ ] 1.4 Server actions per section with `requireOwner()`, field-error result types and a test that an existing order is unchanged after edits

@@ -50,6 +50,13 @@
       "when": 1792301525753,
       "tag": "0006_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792521535748,
+      "tag": "0007_awesome_randall",
+      "breakpoints": true
     }
   ]
 }

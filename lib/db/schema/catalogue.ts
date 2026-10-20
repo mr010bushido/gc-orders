@@ -6,6 +6,7 @@ export const flavourGroups = pgTable("flavour_groups", {
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
   basePrice: integer("base_price").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => [check("flavour_groups_positive_price", sql`${table.basePrice} > 0`)]).enableRLS();
@@ -34,6 +35,7 @@ export const sizeMultipliers = pgTable("size_multipliers", {
   multiplier: integer("multiplier").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   check("size_multipliers_positive_size", sql`${table.size} > 0`),
   check("size_multipliers_positive_multiplier", sql`${table.multiplier} > 0`),
@@ -46,6 +48,7 @@ export const addons = pgTable("addons", {
   price: integer("price").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [check("addons_nonnegative_price", sql`${table.price} >= 0`)]).enableRLS();
 
 export const dessertTypes = pgTable("dessert_types", {
@@ -56,6 +59,7 @@ export const dessertTypes = pgTable("dessert_types", {
   flavourSuggestions: text("flavour_suggestions").array().notNull().default(sql`'{}'::text[]`),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [check("dessert_types_positive_price", sql`${table.price} > 0`)]).enableRLS();
 
 export const settings = pgTable("settings", {
