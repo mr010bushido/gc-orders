@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { OwnerOrderDetail } from "../../lib/owner/orders-query";
 import { OrderDetailSheet } from "../../app/owner/(console)/orders/order-detail-sheet";
@@ -41,5 +41,27 @@ describe("OrderDetailSheet", () => {
     render(<OrderDetailSheet order={{ ...order("awaiting_verification"), flaggedAt: new Date() }} onClose={() => {}} />);
     expect(screen.getByText("Flagged")).toBeTruthy();
     expect(screen.getByText("Awaiting verification")).toBeTruthy();
+  });
+
+  it("makes completion the sole filled action for confirmed orders with unpaid or paid balance", () => {
+    for (const balancePaidAt of [null, new Date("2026-10-18T11:00:00Z")]) {
+      const view = render(<OrderDetailSheet order={{ ...order("confirmed"), balancePaidAt }} onClose={() => {}} />);
+      const completed = screen.getByRole("button", { name: "Mark completed" });
+      const balancePaid = screen.getByRole("button", { name: "Balance paid" });
+      expect(completed.className).toContain("bg-brand");
+      expect(balancePaid.className).toContain("border-ink");
+      expect(balancePaid.className).not.toContain("bg-brand");
+      expect(view.container.querySelectorAll("button.bg-brand")).toHaveLength(1);
+
+      if (!balancePaidAt) {
+        fireEvent.click(completed);
+        expect(screen.getByRole("alertdialog").textContent).toContain("is still due");
+        expect(screen.getByRole("button", { name: "Complete anyway" }).className).toContain("bg-brand");
+        expect(view.container.querySelectorAll("button.bg-brand")).toHaveLength(1);
+      } else {
+        expect(balancePaid).toHaveProperty("disabled", true);
+      }
+      view.unmount();
+    }
   });
 });

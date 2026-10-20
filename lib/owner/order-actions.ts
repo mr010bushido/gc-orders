@@ -1,5 +1,5 @@
 import type { Db } from "../db";
-import { getOrder, type Order } from "../orders/orders";
+import type { Order } from "../orders/orders";
 import { clearFlag as clearOrderFlag, complete, markBalancePaid, markSeen, setFlag, transition } from "../orders/transitions";
 import type { BalanceMethod } from "../db/schema/orders";
 import type { NotifyOrder } from "../notify/notify";
@@ -26,10 +26,17 @@ async function run(deps: OwnerOrderDeps, fn: (now: Date) => Promise<Order | { or
 }
 
 export async function verifyOrderForOwner(deps: OwnerOrderDeps, id: string): Promise<ActionResult> {
-  const result = await run(deps, now => transition(deps.db, id, "verify", "owner", now));
-  if (result.ok && deps.notifyVerified) {
-    const detail = await getOrder(deps.db, id);
-    if (detail) void Promise.resolve(deps.notifyVerified({ ...detail.order, id: detail.order.id, customerPhone: detail.order.customerPhone, customerEmail: detail.order.customerEmail })).catch(() => undefined);
+  let committedOrder: Order | undefined;
+  const result = await run(deps, async now => {
+    committedOrder = await transition(deps.db, id, "verify", "owner", now);
+    return committedOrder;
+  });
+  if (result.ok && committedOrder && deps.notifyVerified) {
+    try {
+      void Promise.resolve(deps.notifyVerified(committedOrder)).catch(() => undefined);
+    } catch {
+      // A synchronous scheduler failure cannot undo the already committed verification.
+    }
   }
   return result;
 }
