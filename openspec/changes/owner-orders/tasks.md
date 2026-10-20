@@ -1,20 +1,20 @@
 ## 1. Queries and actions (Codex)
 
-- [ ] 1.1 `lib/owner/orders-query.ts`: filters, sort, date filter, cursor, effective-status filtering done correctly for lapsed orders; PGlite tests
-- [ ] 1.2 Server actions `verifyOrder`, `flagOrder`, `clearFlag`, `completeOrder`, `recordBalancePaid`, `markSeen`: guard, lifecycle call with actor `owner`, result types; tests including no session and the two-tab case
-- [ ] 1.3 `verifyOrder` calls `notify('deposit_verified')` after commit; a provider failure does not fail the action (test)
-- [ ] 1.4 Link helpers for `tel:` and `wa.me`, with tests
+- [x] 1.1 `lib/owner/orders-query.ts`: filters, sort, date filter, cursor, effective-status filtering done correctly for lapsed orders; PGlite tests — gate: pnpm test lib/owner/orders-query.test.ts --maxWorkers=2, pnpm lint, pnpm typecheck → 2 passed; all gates passed
+- [x] 1.2 Server actions `verifyOrder`, `flagOrder`, `clearFlag`, `completeOrder`, `recordBalancePaid`, `markSeen`: guard, lifecycle call with actor `owner`, result types; tests including no session and the two-tab case — gate: pnpm test lib/owner/order-actions.test.ts lib/owner/order-links.test.ts lib/auth/require-owner.test.ts lib/auth/owner-guard-coverage.test.ts --maxWorkers=2, pnpm lint, pnpm typecheck → 26 passed; all gates passed (no-session behavior covered by ownerForRequest fail-closed test)
+- [x] 1.3 `verifyOrder` calls `notify(deposit_verified)` after commit; a provider failure does not fail the action (test) — gate: pnpm test lib/owner/order-actions.test.ts --maxWorkers=2 → 2 passed; notification scheduled with Next `after()`
+- [x] 1.4 Link helpers for `tel:` and `wa.me`, with tests — gate: pnpm test lib/owner/order-links.test.ts --maxWorkers=2 → 3 passed
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more"
-- [ ] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link
-- [ ] 2.3 Action bar and dialogs: Verify confirmation, Flag with note, Complete warning, Balance paid form
-- [ ] 2.4 Component tests for each status and for plain-text POP rendering
-- [ ] 2.5 Add the Orders item to the owner nav
+- [x] 2.1 `/owner/orders` list with chips, sort, date filter, New highlight and "Load more" — added live `awaiting_quote` pill parity with the settled design reference; fixed optional search params for direct page tests — gate: `pnpm test lib/owner/orders-query.test.ts --maxWorkers=2`, `pnpm lint`, `pnpm typecheck` → 2 passed; all gates passed
+- [x] 2.2 Order sheet: details, lines, POP text and history, timeline, deep link, and separate Flagged badge; detail lookup is independent of list filters and applies effective Expired status to lapsed payment orders — gate: `pnpm lint`, `pnpm typecheck`, `pnpm test lib/owner/orders-query.test.ts components/ui/OrderCard.test.tsx --maxWorkers=2` → 5 passed; all gates passed
+- [x] 2.3 Action bar and dialogs: Verify confirmation, Flag with required note, Complete balance warning (hides sheet actions while confirming), Balance paid method/note form — gate: `pnpm lint`, `pnpm typecheck` → passed (no errors)
+- [x] 2.4 Component tests for all six order statuses including `awaiting_quote`, flag badge, plus literal plain-text rendering for hostile POP and notes — gate: `pnpm test components/StatusPill.test.tsx components/ui/OrderDetailSheet.test.tsx --maxWorkers=2` → 10 passed; `pnpm lint`, `pnpm typecheck` → passed
+- [x] 2.5 Add the Orders item to the owner nav — already present in `app/owner/(console)/owner-nav.tsx`; verified its `/owner/orders` link and active route state in source (no change required)
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: create orders in each status, open each sheet, run verify, flag and complete flows against a PGlite database
-- [ ] 3.2 Check at 375px and 1280px in light and dark and note the result on this line
-- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-orders --strict` passes
+- [x] 3.1 PGlite detail reads for each lifecycle status; flag/clear, verify, complete and balance-paid flows pass. Existing action tests cover two-tab compare-and-set, and owner guard tests cover unauthorized access — gate: `pnpm test lib/owner/owner-orders.integration.test.ts lib/owner/order-actions.test.ts lib/auth/require-owner.test.ts --maxWorkers=2` → 7 passed; `pnpm lint`, `pnpm typecheck` → passed
+- [x] 3.2 Checked the real cards and sheet in a temporary real-component harness at 375×812 and 1280×800, light and dark. No horizontal overflow; all status pills and sheet content fit; Verify is the sole filled action. Literal hostile POP stayed visible as text. Fixed timestamp rendering to Africa/Lusaka after the first run exposed a hydration mismatch. Next dev logged a script-tag warning for the hostile-text fixture; no page failure after correcting the harness route.
+- [x] 3.3 `pnpm lint` passed; `pnpm typecheck` passed; `pnpm test --maxWorkers=2` → 77 files passed, 1 skipped; 766 passed, 1 skipped; `pnpm check:portability` passed; env-cleared `pnpm build` passed; `openspec validate owner-orders --strict` valid — re-run after review fixes on 354f734: Review fixes on 354f734: `verifyOrderForOwner` notifies from the committed transition result (no post-commit reread) and a throwing or rejecting notifier cannot fail the action; confirmed sheet makes Mark completed the sole filled primary with Balance paid ghost; all six exported guarded actions tested without owner session (null and non-owner) against real PGlite with unchanged order row, history and no `after()` — regression tests fail on 354f734 source (verified) — gate: `pnpm test --maxWorkers=2` → 77 files passed, 1 skipped; 770 passed, 1 skipped; `pnpm lint`, `pnpm typecheck`, `pnpm check:portability`, env-cleared `pnpm build`, `openspec validate owner-orders --strict`, `git diff --check` → passed — Review fix r2 on 7d31e23: confirmed-order sheet footer now renders ghost Balance paid before filled Mark completed to match the Sheet 1fr/2fr action bar (DESIGN.md:60); regression asserts footer child order and fails on 7d31e23 source (verified) — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` → 4 passed; `pnpm test --maxWorkers=2` → 77 files passed, 1 skipped; 770 passed, 1 skipped; `pnpm lint`, `pnpm typecheck`, `pnpm check:portability`, env-cleared `pnpm build`, `openspec validate owner-orders --strict`, `git diff --check` → passed

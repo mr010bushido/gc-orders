@@ -1,7 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { makeOwnerAuthFake } from "@/lib/platform/fakes";
+import { createTestDb } from "@/lib/db/test-db";
+import { orderStatusEvents, orders } from "@/lib/db/schema";
+import { BOOKED_AT, orderInput } from "@/lib/orders/fixtures";
+import { createOrder } from "@/lib/orders/orders";
 import * as adapter from "@/lib/platform/adapters/supabase/owner-auth";
+import { clearFlag, completeOrder, flagOrder, markSeen, recordBalancePaid, verifyOrder } from "./(console)/orders/actions";
 import { signOutOwner } from "./actions";
 import OwnerHome from "./page";
 import OwnerLayout from "./(console)/layout";
@@ -10,12 +16,18 @@ import OwnerOrdersPage from "./(console)/orders/page";
 type Fake = ReturnType<typeof makeOwnerAuthFake>;
 
 // The real guard, adapter-free: requireOwner() runs against the in-memory OwnerAuth fake and a request header we control.
-const request = vi.hoisted(() => ({ headers: new Headers() }));
+const request = vi.hoisted(() => ({ headers: new Headers(), db: undefined as unknown, testDb: undefined as unknown, after: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => request.headers }));
+vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {}, after: request.after }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getDb: () => request.db ?? ({}) }));
+vi.mock("@/lib/owner/orders-query", () => ({ listOwnerOrders: async () => ({ orders: [], nextCursor: null }), getOwnerOrderDetail: async () => null }));
 vi.mock("@/components/ThemeToggle", () => ({ ThemeToggle: () => null }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   usePathname: () => "/owner/orders",
+  useRouter: () => ({ push: () => {}, refresh: () => {} }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("@/lib/platform/adapters/supabase/owner-auth", async () => {
   const { makeOwnerAuthFake } = await import("@/lib/platform/fakes");
@@ -45,8 +57,45 @@ async function redirectTarget(run: () => Promise<unknown>): Promise<string | nul
 beforeEach(() => {
   vi.stubEnv("OWNER_EMAIL", "Owner@Example.com");
   request.headers = new Headers();
+  request.db = undefined;
+  request.testDb = undefined;
+  request.after.mockClear();
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  const test = request.testDb as Awaited<ReturnType<typeof createTestDb>> | undefined;
+  request.db = undefined;
+  request.testDb = undefined;
+  if (test && "close" in test) await test.close();
+});
+
+it("guards every exported order action before it can mutate the real test database", async () => {
+  const test = await createTestDb();
+  request.db = test.db;
+  request.testDb = test;
+  const { order } = await createOrder(test.db, orderInput(), BOOKED_AT);
+  await test.db.update(orders).set({ status: "awaiting_verification" }).where(eq(orders.id, order.id));
+  const beforeOrder = (await test.db.select().from(orders).where(eq(orders.id, order.id)))[0];
+  const beforeEvents = await test.db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id));
+  const actions = [
+    () => verifyOrder(order.id),
+    () => flagOrder(order.id, "Review payment"),
+    () => clearFlag(order.id),
+    () => completeOrder(order.id),
+    () => recordBalancePaid(order.id, "cash", "Received"),
+    () => markSeen(order.id),
+  ];
+
+  for (const authenticateAs of [null, "stranger@example.com"]) {
+    request.headers = new Headers();
+    if (authenticateAs) await signInAs(authenticateAs);
+    for (const action of actions) expect(await redirectTarget(action)).toBe("/owner/login");
+  }
+
+  expect(await test.db.select().from(orders).where(eq(orders.id, order.id))).toEqual([beforeOrder]);
+  expect(await test.db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id))).toEqual(beforeEvents);
+  expect(request.after).not.toHaveBeenCalled();
+});
 
 it("redirects logged-out visitors from the shell and every page to the login page", async () => {
   expect(await redirectTarget(() => OwnerLayout({ children: null }))).toBe("/owner/login");
@@ -55,12 +104,12 @@ it("redirects logged-out visitors from the shell and every page to the login pag
   expect(await redirectTarget(() => signOutOwner())).toBe("/owner/login");
 });
 
-it("renders the shell and orders placeholder for the owner, and /owner goes to orders", async () => {
+it("renders the shell and empty orders list for the owner, and /owner goes to orders", async () => {
   await signInAs("owner@example.com");
   const shell = renderToStaticMarkup(await OwnerLayout({ children: await OwnerOrdersPage() }));
   expect(shell).toContain("Sign out");
   expect(shell).toContain('aria-current="page"');
-  expect(shell).toContain("They arrive in a later change");
+  expect(shell).toContain("No orders match these filters.");
   expect(shell).not.toContain("font-display");
   expect(await redirectTarget(() => OwnerHome())).toBe("/owner/orders");
 });

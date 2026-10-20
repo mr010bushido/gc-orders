@@ -1,8 +1,9 @@
 export type OrderStatus =
-  | 'new' | 'awaiting_payment' | 'awaiting_verification' | 'confirmed' | 'completed' | 'expired';
+  | 'new' | 'awaiting_quote' | 'awaiting_payment' | 'awaiting_verification' | 'confirmed' | 'completed' | 'expired';
 
 const MAP: Record<OrderStatus, { label: string; pill: string; dot: string }> = {
   new:                   { label: 'New',                   pill: 'bg-gold-wash text-gold-ink',          dot: 'bg-gold' },
+  awaiting_quote:        { label: 'Awaiting quote',        pill: 'bg-gold-wash text-gold-ink',          dot: 'bg-gold' },
   awaiting_payment:      { label: 'Awaiting payment',      pill: 'bg-warn-bg text-warn-ink',            dot: 'bg-warn-dot' },
   awaiting_verification: { label: 'Awaiting verification', pill: 'bg-info-bg text-info-ink',            dot: 'border-[1.5px] border-ink-mute' },
   confirmed:             { label: 'Confirmed',             pill: 'bg-ok-bg text-ok-ink',                dot: 'bg-ok-dot' },
