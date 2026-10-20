@@ -5,7 +5,7 @@ import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, siz
 import {
   CatalogueAdminError, addAddon, addDessertType, addFlavour, addFrosting, hideAddon, hideDessertType, hideFlavour, hideFrosting, hideSize,
   multiplierHundredths, renameAddon, renameDessertType, renameFlavour, renameFrosting, updateAddonPrice,
-  savePaymentSettings, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
+  savePaymentSettings, savePricesSection, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
   updateDessertTypePrice, updateFlavourGroupPrice, updateSizeMultiplier,
 } from "./admin";
 import { resolveSettings } from "./settings";
@@ -158,5 +158,13 @@ describe("catalogue price writes", () => {
       airtel_number: "+260977659782", mtn_number: "+260966222440", owner_alert_phone: "+260977123456",
       pickup_map_url: "https://example.com/pickup",
     });
+  });
+
+  it("rolls back the whole Prices and Sizes section if any referenced item is missing", async () => {
+    const { db } = await seeded();
+    await expect(savePricesSection(db, {
+      flavourGroupPrices: { classic: "1350" }, addonPrices: { stale_key: "120" }, dessertPrices: {}, sizeMultipliers: {},
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect((await db.select().from(flavourGroups).where(eq(flavourGroups.key, "classic")))[0].basePrice).toBe(1300);
   });
 });

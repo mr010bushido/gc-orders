@@ -193,6 +193,40 @@ export async function updateDessertFlavourSuggestions(db: Db, key: string, input
   if (!updated) throw new CatalogueAdminError("flavourSuggestions", "NOT_FOUND", "This dessert type no longer exists.");
 }
 
+export type PriceSectionInput = {
+  flavourGroupPrices: Record<string, unknown>;
+  addonPrices: Record<string, unknown>;
+  dessertPrices: Record<string, unknown>;
+  sizeMultipliers: Record<string, unknown>;
+};
+
+function entries(value: unknown, field: string): [string, unknown][] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new CatalogueAdminError(field, "INVALID_SECTION", "Enter all prices in this section.");
+  }
+  return Object.entries(value as Record<string, unknown>);
+}
+
+export async function savePricesSection(db: Db, input: PriceSectionInput) {
+  const groups = entries(input?.flavourGroupPrices, "flavourGroupPrices").map(([key, value]) => [key, priceValue(value, `flavourGroupPrices.${key}`)] as const);
+  const addonPrices = entries(input?.addonPrices, "addonPrices").map(([key, value]) => [key, priceValue(value, `addonPrices.${key}`)] as const);
+  const dessertPrices = entries(input?.dessertPrices, "dessertPrices").map(([key, value]) => [key, priceValue(value, `dessertPrices.${key}`)] as const);
+  const sizes = entries(input?.sizeMultipliers, "sizeMultipliers").map(([key, value]) => {
+    if (!/^[1-9]\d*$/.test(key) || !Number.isSafeInteger(Number(key))) {
+      throw new CatalogueAdminError(`sizeMultipliers.${key}`, "INVALID_SIZE", "Choose a valid cake size.");
+    }
+    multiplierHundredths(value, `sizeMultipliers.${key}`);
+    return [Number(key), value] as const;
+  });
+  await db.transaction(async tx => {
+    const txDb = tx as unknown as Db;
+    for (const [key, price] of groups) await updateFlavourGroupPrice(txDb, key, price);
+    for (const [key, price] of addonPrices) await updateAddonPrice(txDb, key, price);
+    for (const [key, price] of dessertPrices) await updateDessertTypePrice(txDb, key, price);
+    for (const [size, multiplier] of sizes) await updateSizeMultiplier(txDb, size, multiplier);
+  });
+}
+
 const RULE_KEYS = [
   "delivery_fee", "rush_rate_percent", "rush_window_hours", "dessert_min_quantity", "dessert_lead_days",
   "dessert_surcharge_percent", "max_tiers", "capacity_per_day", "payment_expiry_hours",
@@ -263,19 +297,29 @@ export async function saveTimeWindowSettings(db: Db, input: SectionInput<typeof 
   await saveSettingValues(db, values);
 }
 
-export async function savePaymentSettings(db: Db, input: { airtel_number: unknown; mtn_number: unknown; pickup_map_url: unknown; owner_alert_phone: unknown }) {
-  const airtel = typeof input.airtel_number === "string" ? normaliseZambianMobile(input.airtel_number) : null;
-  const mtn = typeof input.mtn_number === "string" ? normaliseZambianMobile(input.mtn_number) : null;
-  const alertInput = typeof input.owner_alert_phone === "string" ? input.owner_alert_phone.trim() : "";
+export async function savePaymentSettings(db: Db, input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new CatalogueAdminError("_form", "INVALID_SECTION", "Enter all payment and contact settings.");
+  }
+  const fields = input as Record<string, unknown>;
+  for (const key of ["airtel_number", "mtn_number", "pickup_map_url", "owner_alert_phone"]) {
+    if (!Object.hasOwn(fields, key)) throw new CatalogueAdminError(key, "REQUIRED", "This setting is required.");
+  }
+  if (Object.keys(fields).some(key => !["airtel_number", "mtn_number", "pickup_map_url", "owner_alert_phone"].includes(key))) {
+    throw new CatalogueAdminError("_form", "UNKNOWN_SETTING", "This setting cannot be changed here.");
+  }
+  const airtel = typeof fields.airtel_number === "string" ? normaliseZambianMobile(fields.airtel_number) : null;
+  const mtn = typeof fields.mtn_number === "string" ? normaliseZambianMobile(fields.mtn_number) : null;
+  const alertInput = typeof fields.owner_alert_phone === "string" ? fields.owner_alert_phone.trim() : "";
   const alert = alertInput ? normaliseZambianMobile(alertInput) : null;
   if (!airtel) throw new CatalogueAdminError("airtel_number", "INVALID_PHONE", "Enter a valid Zambian mobile number.");
   if (!mtn) throw new CatalogueAdminError("mtn_number", "INVALID_PHONE", "Enter a valid Zambian mobile number.");
   if (alertInput && !alert) throw new CatalogueAdminError("owner_alert_phone", "INVALID_PHONE", "Enter a valid Zambian mobile number or leave this blank.");
-  if (typeof input.pickup_map_url !== "string") {
+  if (typeof fields.pickup_map_url !== "string") {
     throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link.");
   }
   let url: URL;
-  try { url = new URL(input.pickup_map_url.trim()); }
+  try { url = new URL(fields.pickup_map_url.trim()); }
   catch { throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link."); }
   if (url.protocol !== "https:" || !url.hostname) {
     throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link.");
