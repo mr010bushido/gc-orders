@@ -1,10 +1,9 @@
 import { z } from "zod";
 import type { Db } from "../db";
-import { closeDate, keepOpen, openDate } from "../availability/availability";
+import { closeDate, closeDateIfOpen, keepOpen, openDate, todayInLusaka } from "../availability/availability";
 import { countOrdersForDate } from "./availability-query";
 
 const DATE = z.iso.date();
-const LUSAKA_OFFSET = 2 * 60 * 60 * 1000;
 const MAX_NOTE_LENGTH = 200;
 
 export type AvailabilityActionErrorCode = "DATE_INVALID" | "DATE_IN_PAST" | "NOTE_TOO_LONG";
@@ -19,14 +18,14 @@ export type AvailabilityActionDeps = { db: Db; now?: () => Date };
 
 function validateDate(date: string, now: Date) {
   if (!DATE.safeParse(date).success) throw new AvailabilityActionError("DATE_INVALID");
-  const today = new Date(now.getTime() + LUSAKA_OFFSET).toISOString().slice(0, 10);
+  const today = todayInLusaka(now);
   if (date < today) throw new AvailabilityActionError("DATE_IN_PAST");
 }
 
 export async function closeSuggestedDateForOwner({ db, now = () => new Date() }: AvailabilityActionDeps, date: string) {
   const instant = now();
   validateDate(date, instant);
-  await closeDate(db, date, "capacity", "", instant);
+  return closeDateIfOpen(db, date, "capacity", "", instant);
 }
 
 export async function keepDateOpenForOwner({ db, now = () => new Date() }: AvailabilityActionDeps, date: string) {

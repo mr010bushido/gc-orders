@@ -17,6 +17,8 @@ it("adds awaiting counts to suggestions and returns closed dates with reason and
     await test.db.update(orders).set({ status: "confirmed", paymentDueAt: null }).where(eq(orders.id, order.id));
   }
   for (let i = 0; i < 3; i++) await createOrder(test.db, orderInput({ eventDate: "2027-01-14" }), BOOKED_AT);
+  const { order: expiredOrder } = await createOrder(test.db, orderInput({ eventDate: "2027-01-14" }), BOOKED_AT);
+  await test.db.update(orders).set({ status: "expired", paymentDueAt: null }).where(eq(orders.id, expiredOrder.id));
   await closeDate(test.db, "2027-02-25", "manual", "Christmas", BOOKED_AT);
 
   const result = await getOwnerAvailability(test.db, "2026-10-18");

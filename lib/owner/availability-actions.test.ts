@@ -41,6 +41,22 @@ it("records keeping a suggestion open until another confirmed order arrives", as
   expect((await getCapacitySuggestions(test.db, "2026-10-18")).map(row => row.date)).toContain("2026-11-15");
 });
 
+it("does not overwrite a date that was closed after the suggestion was loaded", async () => {
+  const test = await createTestDb(); databases.push(test);
+  await blockDateForOwner(deps(test.db), "2026-12-25", "Christmas");
+  expect(await closeSuggestedDateForOwner(deps(test.db), "2026-12-25")).toBe(false);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2026-12-25")))
+    .toMatchObject([{ state: "closed", reason: "manual", note: "Christmas" }]);
+});
+
+it("does not keep a closed date open", async () => {
+  const test = await createTestDb(); databases.push(test);
+  await blockDateForOwner(deps(test.db), "2026-12-25", "Christmas");
+  expect(await keepDateOpenForOwner(deps(test.db), "2026-12-25")).toBe(false);
+  expect(await test.db.select().from(dateDecisions).where(eq(dateDecisions.eventDate, "2026-12-25")))
+    .toMatchObject([{ state: "closed", reason: "manual", note: "Christmas" }]);
+});
+
 it("reopens a closed date", async () => {
   const test = await createTestDb(); databases.push(test);
   await blockDateForOwner(deps(test.db), "2026-12-25", "Christmas");

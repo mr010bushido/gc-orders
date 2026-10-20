@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireOwner } from "../../../../lib/auth/require-owner";
 import { getDb } from "../../../../lib/db";
-import { AvailabilityActionError, blockDateForOwner, closeSuggestedDateForOwner, keepDateOpenForOwner, reopenDateForOwner } from "../../../../lib/owner/availability-actions";
+import { AvailabilityActionError, type AvailabilityActionErrorCode, blockDateForOwner, closeSuggestedDateForOwner, keepDateOpenForOwner, reopenDateForOwner } from "../../../../lib/owner/availability-actions";
 
-type Result = { ok: true; existingOrderCount?: number } | { ok: false; code: string };
+export type AvailabilityResultCode = AvailabilityActionErrorCode | "DATE_STATE_CHANGED" | "ACTION_FAILED";
+type Result = { ok: true; existingOrderCount?: number } | { ok: false; code: AvailabilityResultCode };
 
 async function run(action: () => Promise<void | boolean | { existingOrderCount: number }>): Promise<Result> {
   try {
@@ -14,7 +15,9 @@ async function run(action: () => Promise<void | boolean | { existingOrderCount: 
     revalidatePath("/owner/dates");
     return { ok: true, ...(value && typeof value === "object" ? value : {}) };
   } catch (error) {
-    return { ok: false, code: error instanceof AvailabilityActionError ? error.code : "ACTION_FAILED" };
+    if (error instanceof AvailabilityActionError) return { ok: false, code: error.code };
+    console.error("Owner availability action failed", error);
+    return { ok: false, code: "ACTION_FAILED" };
   }
 }
 

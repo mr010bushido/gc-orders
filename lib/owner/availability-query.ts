@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, ne } from "drizzle-orm";
 import type { Db } from "../db";
 import { dateDecisions, orders } from "../db/schema";
 import { getCapacitySuggestions } from "../availability/availability";
@@ -23,8 +23,8 @@ export async function getOwnerAvailability(db: Db, today: string) {
   };
 }
 
-/** Count all existing orders, regardless of status, for the block-date notice. */
+/** Count existing orders except expired orders for the block-date notice. */
 export async function countOrdersForDate(db: Db, date: string): Promise<number> {
-  const [row] = await db.select({ count: count() }).from(orders).where(eq(orders.eventDate, date));
+  const [row] = await db.select({ count: count() }).from(orders).where(and(eq(orders.eventDate, date), ne(orders.status, "expired")));
   return row.count;
 }

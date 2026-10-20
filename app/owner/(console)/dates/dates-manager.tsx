@@ -57,7 +57,7 @@ export function DatesManager({ today, suggestions, closedDates }: Props) {
         {suggestions.map(({ date, confirmedCount, capacity, awaitingCount }) => <li key={date} className="rounded-md border border-line bg-surface p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <Link href={ordersHref(date)} className="font-semibold text-ink underline decoration-line-strong underline-offset-4">{dateLabel(date)}</Link>
+              <Link href={ordersHref(date)} className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-line-strong underline-offset-4">{dateLabel(date)}</Link>
               <p className="mt-1 text-sm text-ink-soft">{confirmedCount} confirmed, {awaitingCount} awaiting · capacity {capacity}</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -75,7 +75,7 @@ export function DatesManager({ today, suggestions, closedDates }: Props) {
         {closedDates.map(({ date, reason, note: closedNote }) => <li key={date} className="rounded-md border border-line bg-surface p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <Link href={ordersHref(date)} className="font-semibold text-ink underline decoration-line-strong underline-offset-4">{dateLabel(date)}</Link>
+              <Link href={ordersHref(date)} className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-line-strong underline-offset-4">{dateLabel(date)}</Link>
               <p className="mt-1 text-sm text-ink-soft">{reason === "capacity" ? "Capacity" : "Manual block"}{closedNote ? ` · ${closedNote}` : ""}</p>
             </div>
             <Button variant="ghost" disabled={isPending} onClick={() => run(reopenDate, date, "Date reopened to bookings.")}>Reopen</Button>
