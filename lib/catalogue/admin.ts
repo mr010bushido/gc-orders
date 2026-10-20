@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "../db";
-import { addons, dessertTypes, flavourGroups, flavours, frostings, sizeMultipliers } from "../db/schema";
+import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, sizeMultipliers } from "../db/schema";
+import { normaliseZambianMobile } from "../phone";
+import { checkSetting, type SettingKey } from "./settings";
 
 export class CatalogueAdminError extends Error {
   constructor(readonly field: string, readonly code: string, message: string) {
@@ -189,4 +191,99 @@ export async function updateDessertFlavourSuggestions(db: Db, key: string, input
     .set({ flavourSuggestions: input.map(value => (value as string).trim()), updatedAt: new Date() })
     .where(eq(dessertTypes.key, key)).returning({ key: dessertTypes.key });
   if (!updated) throw new CatalogueAdminError("flavourSuggestions", "NOT_FOUND", "This dessert type no longer exists.");
+}
+
+const RULE_KEYS = [
+  "delivery_fee", "rush_rate_percent", "rush_window_hours", "dessert_min_quantity", "dessert_lead_days",
+  "dessert_surcharge_percent", "max_tiers", "capacity_per_day", "payment_expiry_hours",
+] as const satisfies readonly SettingKey[];
+
+const TIME_KEYS = [
+  "morning_start_hour", "morning_end_hour", "afternoon_start_hour", "afternoon_end_hour", "evening_start_hour", "evening_end_hour",
+] as const satisfies readonly SettingKey[];
+
+type SectionInput<K extends readonly SettingKey[]> = Record<K[number], unknown>;
+
+async function saveSettingValues(db: Db, values: readonly { key: SettingKey; value: string | number | null }[]) {
+  const updatedAt = new Date();
+  await db.transaction(async tx => {
+    for (const { key, value } of values) {
+      await tx.insert(settings).values({ key, value, updatedAt }).onConflictDoUpdate({
+        target: settings.key,
+        set: { value, updatedAt },
+      });
+    }
+  });
+}
+
+function validateSection<K extends readonly SettingKey[]>(input: unknown, keys: K): { key: K[number]; value: string | number | null }[] {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new CatalogueAdminError("_form", "INVALID_SECTION", "Enter all settings in this section.");
+  }
+  const object = input as Record<string, unknown>;
+  for (const key of keys) {
+    if (!Object.hasOwn(object, key)) throw new CatalogueAdminError(key, "REQUIRED", "This setting is required.");
+  }
+  const extra = Object.keys(object).find(key => !(keys as readonly string[]).includes(key));
+  if (extra) throw new CatalogueAdminError(extra, "UNKNOWN_SETTING", "This setting cannot be changed here.");
+  return keys.map(key => {
+    try {
+      const raw = object[key];
+      const value = typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
+      return { key, value: checkSetting(key, value) };
+    } catch (error) {
+      throw new CatalogueAdminError(key, "OUT_OF_RANGE", (error as Error).message);
+    }
+  });
+}
+
+export async function saveRulesSettings(db: Db, input: SectionInput<typeof RULE_KEYS>) {
+  await saveSettingValues(db, validateSection(input, RULE_KEYS));
+}
+
+function minutes(time: string) {
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+export async function saveTimeWindowSettings(db: Db, input: SectionInput<typeof TIME_KEYS>) {
+  const values = validateSection(input, TIME_KEYS);
+  const times = Object.fromEntries(values.map(entry => [entry.key, entry.value])) as Record<(typeof TIME_KEYS)[number], string>;
+  const windows = ["morning", "afternoon", "evening"] as const;
+  let previousEnd = -1;
+  for (const window of windows) {
+    const startKey = `${window}_start_hour` as (typeof TIME_KEYS)[number];
+    const endKey = `${window}_end_hour` as (typeof TIME_KEYS)[number];
+    const start = minutes(times[startKey]);
+    const end = minutes(times[endKey]);
+    if (start >= end) throw new CatalogueAdminError(endKey, "WINDOW_ORDER", "The end time must be after the start time.");
+    if (start < previousEnd) throw new CatalogueAdminError(startKey, "WINDOWS_OVERLAP", "Time windows must not overlap and stay in morning, afternoon, evening order.");
+    previousEnd = end;
+  }
+  await saveSettingValues(db, values);
+}
+
+export async function savePaymentSettings(db: Db, input: { airtel_number: unknown; mtn_number: unknown; pickup_map_url: unknown; owner_alert_phone: unknown }) {
+  const airtel = typeof input.airtel_number === "string" ? normaliseZambianMobile(input.airtel_number) : null;
+  const mtn = typeof input.mtn_number === "string" ? normaliseZambianMobile(input.mtn_number) : null;
+  const alertInput = typeof input.owner_alert_phone === "string" ? input.owner_alert_phone.trim() : "";
+  const alert = alertInput ? normaliseZambianMobile(alertInput) : null;
+  if (!airtel) throw new CatalogueAdminError("airtel_number", "INVALID_PHONE", "Enter a valid Zambian mobile number.");
+  if (!mtn) throw new CatalogueAdminError("mtn_number", "INVALID_PHONE", "Enter a valid Zambian mobile number.");
+  if (alertInput && !alert) throw new CatalogueAdminError("owner_alert_phone", "INVALID_PHONE", "Enter a valid Zambian mobile number or leave this blank.");
+  if (typeof input.pickup_map_url !== "string") {
+    throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link.");
+  }
+  let url: URL;
+  try { url = new URL(input.pickup_map_url.trim()); }
+  catch { throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link."); }
+  if (url.protocol !== "https:" || !url.hostname) {
+    throw new CatalogueAdminError("pickup_map_url", "INVALID_URL", "Enter an HTTPS pickup map link.");
+  }
+  await saveSettingValues(db, [
+    { key: "airtel_number", value: airtel },
+    { key: "mtn_number", value: mtn },
+    { key: "pickup_map_url", value: url.toString() },
+    { key: "owner_alert_phone", value: alert },
+  ]);
 }

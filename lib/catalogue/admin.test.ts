@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTestDb } from "../db/test-db";
-import { addons, dessertTypes, flavourGroups, flavours, frostings, sizeMultipliers } from "../db/schema";
+import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, sizeMultipliers } from "../db/schema";
 import {
   CatalogueAdminError, addAddon, addDessertType, addFlavour, addFrosting, hideAddon, hideDessertType, hideFlavour, hideFrosting, hideSize,
   multiplierHundredths, renameAddon, renameDessertType, renameFlavour, renameFrosting, updateAddonPrice,
-  updateDessertFlavourSuggestions, updateDessertTypePrice, updateFlavourGroupPrice, updateSizeMultiplier,
+  savePaymentSettings, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
+  updateDessertTypePrice, updateFlavourGroupPrice, updateSizeMultiplier,
 } from "./admin";
+import { resolveSettings } from "./settings";
 import { seedCatalogue } from "./seed";
 
 const databases: Awaited<ReturnType<typeof createTestDb>>[] = [];
@@ -105,5 +107,56 @@ describe("catalogue price writes", () => {
     const sizes = (await db.select().from(sizeMultipliers)).map(item => item.size);
     for (const size of sizes.slice(0, -1)) await hideSize(db, size);
     await expect(hideSize(db, sizes.at(-1)!)).rejects.toMatchObject({ code: "LAST_ACTIVE_ITEM" });
+  });
+
+  it("saves rule settings together using registry bounds and preserves values after an invalid save", async () => {
+    const { db } = await seeded();
+    const values = {
+      delivery_fee: "200", rush_rate_percent: "15", rush_window_hours: "36", dessert_min_quantity: "24",
+      dessert_lead_days: "3", dessert_surcharge_percent: "12", max_tiers: "4", capacity_per_day: "15", payment_expiry_hours: "18",
+    };
+    await expect(saveRulesSettings(db, { ...values, max_tiers: "9" })).rejects.toMatchObject({ field: "max_tiers", code: "OUT_OF_RANGE" });
+    await saveRulesSettings(db, values);
+    expect(resolveSettings(await db.select({ key: settings.key, value: settings.value }).from(settings))).toMatchObject({
+      delivery_fee: 200, rush_rate_percent: 15, rush_window_hours: 36, dessert_min_quantity: 24,
+      dessert_lead_days: 3, dessert_surcharge_percent: 12, max_tiers: 4, capacity_per_day: 15, payment_expiry_hours: 18,
+    });
+  });
+
+  it("validates all ordered time windows before atomically saving HH:MM values", async () => {
+    const { db } = await seeded();
+    const valid = {
+      morning_start_hour: "08:00", morning_end_hour: "11:30",
+      afternoon_start_hour: "12:00", afternoon_end_hour: "16:30",
+      evening_start_hour: "17:00", evening_end_hour: "20:00",
+    };
+    await expect(saveTimeWindowSettings(db, { ...valid, afternoon_start_hour: "11:00" })).rejects.toMatchObject({
+      field: "afternoon_start_hour", code: "WINDOWS_OVERLAP",
+    });
+    expect(resolveSettings(await db.select({ key: settings.key, value: settings.value }).from(settings)).morning_start_hour).toBeNull();
+    await expect(saveTimeWindowSettings(db, { ...valid, evening_end_hour: "16:00" })).rejects.toMatchObject({
+      field: "evening_end_hour", code: "WINDOW_ORDER",
+    });
+    await saveTimeWindowSettings(db, valid);
+    expect(resolveSettings(await db.select({ key: settings.key, value: settings.value }).from(settings))).toMatchObject(valid);
+  });
+
+  it("normalises payment and alert phones and accepts only HTTPS pickup links", async () => {
+    const { db } = await seeded();
+    const payment = {
+      airtel_number: "0977 659 782", mtn_number: "0966 222 440",
+      pickup_map_url: "https://example.com/pickup", owner_alert_phone: "0977 123 456",
+    };
+    await expect(savePaymentSettings(db, { ...payment, pickup_map_url: "http://example.com" })).rejects.toMatchObject({
+      field: "pickup_map_url", code: "INVALID_URL",
+    });
+    await expect(savePaymentSettings(db, { ...payment, mtn_number: "123" })).rejects.toMatchObject({
+      field: "mtn_number", code: "INVALID_PHONE",
+    });
+    await savePaymentSettings(db, payment);
+    expect(resolveSettings(await db.select({ key: settings.key, value: settings.value }).from(settings))).toMatchObject({
+      airtel_number: "+260977659782", mtn_number: "+260966222440", owner_alert_phone: "+260977123456",
+      pickup_map_url: "https://example.com/pickup",
+    });
   });
 });

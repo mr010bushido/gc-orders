@@ -1,11 +1,12 @@
 type IntegerSetting = { type: "integer"; default: number | null; min: number; max?: number; nullable?: true };
 type TextSetting = { type: "text"; default: string | null };
-type Setting = IntegerSetting | TextSetting;
+type TimeSetting = { type: "time"; default: string | null };
+type Setting = IntegerSetting | TextSetting | TimeSetting;
 
 // Business bounds only where agreed (max tiers 1–5). Other numbers are only checked for technical validity:
 // a non-negative safe integer (positive where the pricing maths divides or needs one item). Window hours stay
 // unset until the owner configures them; customer booking must not go live before they are set.
-const hour = { type: "integer", default: null, min: 0, max: 24, nullable: true } as const;
+const time = { type: "time", default: null } as const;
 
 export const SETTINGS = {
   max_tiers: { type: "integer", default: 3, min: 1, max: 5 },
@@ -17,12 +18,12 @@ export const SETTINGS = {
   dessert_surcharge_percent: { type: "integer", default: 20, min: 0 },
   capacity_per_day: { type: "integer", default: 10, min: 0 },
   payment_expiry_hours: { type: "integer", default: 24, min: 0 },
-  morning_start_hour: hour,
-  morning_end_hour: hour,
-  afternoon_start_hour: hour,
-  afternoon_end_hour: hour,
-  evening_start_hour: hour,
-  evening_end_hour: hour,
+  morning_start_hour: time,
+  morning_end_hour: time,
+  afternoon_start_hour: time,
+  afternoon_end_hour: time,
+  evening_start_hour: time,
+  evening_end_hour: time,
   airtel_number: { type: "text", default: "+260776597882" },
   mtn_number: { type: "text", default: "+260966222440" },
   pickup_map_url: { type: "text", default: "https://maps.app.goo.gl/TXkVWRMSbxbA88K26?g_st=ac" },
@@ -30,7 +31,7 @@ export const SETTINGS = {
 } as const satisfies Record<string, Setting>;
 
 export type SettingKey = keyof typeof SETTINGS;
-export type Settings = { readonly [K in SettingKey]: (typeof SETTINGS)[K] extends { type: "text" } ? string | null
+export type Settings = { readonly [K in SettingKey]: (typeof SETTINGS)[K] extends { type: "text" | "time" } ? string | null
   : (typeof SETTINGS)[K] extends { nullable: true } ? number | null : number };
 
 export function isSettingKey(key: string): key is SettingKey {
@@ -41,6 +42,14 @@ export function isSettingKey(key: string): key is SettingKey {
 export function checkSetting(key: string, value: unknown): number | string | null {
   if (!isSettingKey(key)) throw new RangeError(`unknown setting ${key}`);
   const setting: Setting = SETTINGS[key];
+  if (setting.type === "time") {
+    if (value === null) return null;
+    if (Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 24) {
+      return `${String(value).padStart(2, "0")}:00`;
+    }
+    if (typeof value === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$|^24:00$/.test(value)) return value;
+    throw new RangeError(`${key} must be a 24-hour time in HH:MM format`);
+  }
   if (setting.type === "text") {
     if (value === null || typeof value === "string") return value;
     throw new RangeError(`${key} must be text`);
