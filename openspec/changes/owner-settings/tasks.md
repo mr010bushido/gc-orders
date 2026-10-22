@@ -14,6 +14,6 @@
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: change a base price in settings, load the booking form data and the quote, and confirm both use it while an existing order keeps its price
+- [x] 3.1 Integration test: change a base price through the settings action, load the booking catalogue and quote rules, and confirm both use it while an existing order keeps its snapshot — gate: `pnpm test --maxWorkers=2 'app/owner/(console)/settings/actions.integration.test.ts'` (4 passed), `pnpm typecheck` (passed), `pnpm lint` (passed)
 - [ ] 3.2 Check at 375px and 1280px in light and dark and note the result on this line
 - [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-settings --strict` passes

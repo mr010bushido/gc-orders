@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { makeOwnerAuthFake } from "@/lib/platform/fakes";
 import { createTestDb } from "@/lib/db/test-db";
-import { settings } from "@/lib/db/schema";
+import { orderLines, orders, settings } from "@/lib/db/schema";
+import { getCatalogue } from "@/lib/catalogue/catalogue";
+import { toPricingRules } from "@/lib/catalogue/pricing-rules";
+import { seedCatalogue } from "@/lib/catalogue/seed";
+import { priceBasket } from "@/lib/basket-pricing";
+import { createBooking } from "@/lib/booking/create-booking";
 import * as adapter from "@/lib/platform/adapters/supabase/owner-auth";
 import { manageCatalogueItem, saveFeesAndRules, savePaymentAndContact, savePrices, saveTimeWindows } from "./actions";
 import SettingsPage from "./page";
@@ -66,6 +72,30 @@ it("returns field errors for invalid saves and persists valid settings only for 
     .resolves.toEqual({ ok: true });
   expect(request.dbCalls).toBe(3);
   expect(await test.db.select().from(settings)).toHaveLength(9);
+});
+
+it("uses a settings price for the booking catalogue and quote while preserving an existing order", async () => {
+  await signInAs("owner@example.com");
+  await seedCatalogue(test.db);
+  const now = new Date("2026-10-17T08:00:00Z");
+  const request = {
+    cake: { flavour: "vanilla", frosting: "american_buttercream", tierSizes: [8], addons: [] },
+    fulfilment: "pickup", eventDate: "2026-11-30", timeWindow: "afternoon",
+    name: "Mwila Banda", phone: "0977 123 456", email: "mwila@example.com",
+  };
+  const existing = await createBooking(test.db, request, now);
+  expect(existing).toMatchObject({ ok: true, total: 1040 });
+  if (!existing.ok) return;
+  const [orderBefore] = await test.db.select().from(orders).where(eq(orders.reference, existing.reference));
+  const linesBefore = await test.db.select().from(orderLines).where(eq(orderLines.orderId, orderBefore.id));
+
+  await expect(savePrices({ flavourGroupPrices: { classic: "1350" }, addonPrices: {}, dessertPrices: {}, sizeMultipliers: {} })).resolves.toEqual({ ok: true });
+
+  const bookingCatalogue = await getCatalogue(test.db);
+  expect(bookingCatalogue.flavourGroups.find(group => group.key === "classic")?.basePrice).toBe(1350);
+  expect(priceBasket({ cake: { flavourGroup: "classic", tierSizes: [8], addons: [] }, delivery: false, eventDate: request.eventDate }, now, toPricingRules(bookingCatalogue)).total).toBe(1080);
+  expect(await test.db.select().from(orders).where(eq(orders.id, orderBefore.id))).toEqual([orderBefore]);
+  expect(await test.db.select().from(orderLines).where(eq(orderLines.orderId, orderBefore.id))).toEqual(linesBefore);
 });
 
 it("shows settings section navigation and the new-bookings notice on every section", async () => {
