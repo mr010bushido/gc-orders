@@ -64,4 +64,4 @@ Denied: `deploy-to-vercel`, every `gsd-*` skill, `openspec-propose`, `openspec-a
 - Any `BLOCKED:` lines.
 - Overall progress as `N/M`.
 
-When the last task is ticked, say `M/M`, list the gates, and recommend opening a PR into `develop`. The user pushes and opens it.
+When the last task is ticked, say `M/M`, list the gates, and recommend opening a PR into `develop`. The orchestrator pushes and opens it.
