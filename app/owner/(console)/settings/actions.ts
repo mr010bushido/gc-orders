@@ -7,6 +7,7 @@ import {
   addAddon, addDessertType, addFlavour, addFrosting, CatalogueAdminError, hideAddon, hideDessertType,
   hideFlavour, hideFrosting, hideSize, renameAddon, renameDessertType, renameFlavour, renameFrosting,
   savePaymentSettings, savePricesSection, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
+  showAddon, showDessertType, showFlavour, showFrosting, showSize,
   type PriceSectionInput,
 } from "../../../../lib/catalogue/admin";
 
@@ -54,9 +55,9 @@ export type CatalogueItemAction =
   | { kind: "addon"; operation: "add"; name: unknown; price: unknown }
   | { kind: "dessert"; operation: "add"; name: unknown; price: unknown; flavourSuggestions?: unknown }
   | { kind: Exclude<CatalogueItemKind, "size">; operation: "rename"; key: string; name: unknown }
-  | { kind: Exclude<CatalogueItemKind, "size">; operation: "hide"; key: string }
+  | { kind: Exclude<CatalogueItemKind, "size">; operation: "hide" | "show"; key: string }
   | { kind: "dessert"; operation: "suggestions"; key: string; flavourSuggestions: unknown }
-  | { kind: "size"; operation: "hide"; size: number };
+  | { kind: "size"; operation: "hide" | "show"; size: number };
 
 export async function manageCatalogueItem(value: unknown): Promise<SettingsActionResult> {
   await requireOwner();
@@ -69,9 +70,9 @@ export async function manageCatalogueItem(value: unknown): Promise<SettingsActio
       throw new CatalogueAdminError("_form", "INVALID_ACTION", "Choose a valid catalogue action.");
     }
     const validAction = [
-      "flavour:add", "flavour:rename", "flavour:hide", "frosting:add", "frosting:rename", "frosting:hide",
-      "addon:add", "addon:rename", "addon:hide", "dessert:add", "dessert:rename", "dessert:hide",
-      "dessert:suggestions", "size:hide",
+      "flavour:add", "flavour:rename", "flavour:hide", "flavour:show", "frosting:add", "frosting:rename", "frosting:hide", "frosting:show",
+      "addon:add", "addon:rename", "addon:hide", "addon:show", "dessert:add", "dessert:rename", "dessert:hide", "dessert:show",
+      "dessert:suggestions", "size:hide", "size:show",
     ].includes(`${input.kind}:${input.operation}`);
     if (!validAction) throw new CatalogueAdminError("_form", "INVALID_ACTION", "Choose a valid catalogue action.");
     const db = getDb();
@@ -79,21 +80,26 @@ export async function manageCatalogueItem(value: unknown): Promise<SettingsActio
       case "flavour":
         if (input.operation === "add") return addFlavour(db, input);
         if (input.operation === "rename") return renameFlavour(db, input.key, input.name);
+        if (input.operation === "show") return showFlavour(db, input.key);
         return hideFlavour(db, input.key);
       case "frosting":
         if (input.operation === "add") return addFrosting(db, input.name);
         if (input.operation === "rename") return renameFrosting(db, input.key, input.name);
+        if (input.operation === "show") return showFrosting(db, input.key);
         return hideFrosting(db, input.key);
       case "addon":
         if (input.operation === "add") return addAddon(db, input);
         if (input.operation === "rename") return renameAddon(db, input.key, input.name);
+        if (input.operation === "show") return showAddon(db, input.key);
         return hideAddon(db, input.key);
       case "dessert":
         if (input.operation === "add") return addDessertType(db, input);
         if (input.operation === "rename") return renameDessertType(db, input.key, input.name);
         if (input.operation === "suggestions") return updateDessertFlavourSuggestions(db, input.key, input.flavourSuggestions);
+        if (input.operation === "show") return showDessertType(db, input.key);
         return hideDessertType(db, input.key);
       case "size":
+        if (input.operation === "show") return showSize(db, input.size);
         return hideSize(db, input.size);
     }
   });

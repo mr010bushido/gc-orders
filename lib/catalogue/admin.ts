@@ -142,6 +142,10 @@ export const hideFlavour = (db: Db, key: string) => setItemActive(db, flavours, 
 export const hideFrosting = (db: Db, key: string) => setItemActive(db, frostings, key, false, true);
 export const hideAddon = (db: Db, key: string) => setItemActive(db, addons, key, false, false);
 export const hideDessertType = (db: Db, key: string) => setItemActive(db, dessertTypes, key, false, true);
+export const showFlavour = (db: Db, key: string) => setItemActive(db, flavours, key, true, true);
+export const showFrosting = (db: Db, key: string) => setItemActive(db, frostings, key, true, true);
+export const showAddon = (db: Db, key: string) => setItemActive(db, addons, key, true, false);
+export const showDessertType = (db: Db, key: string) => setItemActive(db, dessertTypes, key, true, true);
 
 export async function hideSize(db: Db, size: number) {
   await db.transaction(async tx => {
@@ -156,6 +160,12 @@ export async function hideSize(db: Db, size: number) {
     if (activeSizes.length <= 1) throw new CatalogueAdminError("active", "LAST_ACTIVE_ITEM", "At least one active option must remain.");
     await tx.update(sizeMultipliers).set({ active: false, updatedAt: new Date() }).where(eq(sizeMultipliers.size, size));
   });
+}
+
+export async function showSize(db: Db, size: number) {
+  const [updated] = await db.update(sizeMultipliers).set({ active: true, updatedAt: new Date() })
+    .where(eq(sizeMultipliers.size, size)).returning({ size: sizeMultipliers.size });
+  if (!updated) throw new CatalogueAdminError("active", "NOT_FOUND", "This cake size no longer exists.");
 }
 
 export async function addFrosting(db: Db, name: unknown) { return addSimpleItem(db, frostings, name); }
