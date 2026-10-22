@@ -23,11 +23,20 @@ pnpm install --frozen-lockfile            # install with Node.js 24
 pnpm dev                                 # local development
 pnpm lint                                # ESLint
 pnpm typecheck                           # generate Next types, then tsc --noEmit
-pnpm test                                # all Vitest tests
-pnpm test lib/pricing.test.ts             # pricing tests
+pnpm test --maxWorkers=2                 # all Vitest tests (default concurrency times out on PGlite tests)
+pnpm test lib/pricing.test.ts             # one file
+pnpm test -t "rush fee"                  # tests matching a name
 pnpm build                               # production build
-openspec validate scaffold-nextjs-app --strict
+pnpm check:portability                   # forbidden platform imports, schema refs, Vercel Cron
+openspec validate <change> --strict
+
+pnpm dev:setup                           # first run: .env.local, Postgres container (Docker), migrate, seed
+pnpm db:up / pnpm db:down                # start/stop the dev database (port 5435), data kept
+pnpm db:generate                         # after editing lib/db/schema*; commit the drizzle/ output
+pnpm db:migrate / pnpm db:seed           # a human runs migrations deliberately; builds never do
 ```
+
+Vitest has two projects: `dom` (jsdom) for `components/**/*.test.tsx` and `app/**/*.dom.test.tsx`, and `node` for everything else. DB tests use `createTestDb()` (`lib/db/test-db.ts`), an in-process PGlite with the committed migrations applied; `TEST_DATABASE_URL` (port 5436, `docker compose --profile test up -d --wait postgres-test`) enables the real-Postgres tests, which skip otherwise. Builds and the default test suite need no database or env vars. README.md covers the local database, migration rules, owner-login env vars and the reverse-proxy client-address setup.
 
 CI (`.github/workflows/ci.yml`) installs with the frozen pnpm lockfile, then runs lint, typecheck, Vitest and the Next.js build on every PR and on pushes to `main`, `develop`, `release/**` and `hotfix/**`.
 
@@ -54,9 +63,21 @@ Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` starts from the commi
 - **Link to files on `develop` or `main`,** never on a feature branch, in Linear issues and docs. Feature branches are deleted after merge, which breaks the links.
 - **Delete the branch after merging,** then run `/opsx:archive` for its change. Set the Linear issue to Done once the archive PR merges.
 
-## Code
+## Architecture
 
-`lib/pricing.ts` is the pure pricing engine, called as `quote(input, now)` and covered by `lib/pricing.test.ts`:
+Next.js App Router. Routes are thin: `app/**/actions.ts` server actions (`"use server"`) call `getDb()` and delegate to domain modules in `lib/`, passing `new Date()` explicitly so the domain code stays testable. Customer side: `app/book` (booking wizard), `app/order` (find a booking, track it, paste POP). Owner side: `app/owner/(console)` (orders, dates), behind `requireOwner()` (`lib/auth/require-owner.ts`); `proxy.ts` refreshes the Supabase session on `/owner/*`. `app/api/health` and `app/api/jobs/[name]` (jobs from `lib/platform/jobs.ts`, guarded by `JOBS_SECRET`). `app/dev/components` is a component gallery.
+
+- `lib/db/`: Drizzle schema split by domain under `lib/db/schema/`, lazy `getDb()`. Server code takes the shared `Db` type, never a driver. Migrations live in `drizzle/`.
+- `lib/catalogue/`: the price list and settings live in the database (seeded from `defaults.ts` / `settings.ts`). `toPricingRules()` turns the active catalogue into the rules the pricing functions take.
+- `lib/booking/`: `createBooking()` validates (zod schema in `schema.ts`), prices and inserts the order. Notifications are sent afterwards from the action via `after()`.
+- `lib/orders/`: references, token access, and the order lifecycle. `transitions.ts` holds the allowed status changes (`TRANSITIONS`) plus POP submission, flags, balance and completion. Status changes go through it.
+- `lib/notify/`: email/SMS templates and sending, logged to the notifications table.
+- `lib/availability/`, `lib/owner/`: date availability, and the owner console's queries and actions.
+- `lib/platform/`: portability interfaces (see Portability guardrails) with in-memory fakes in `fakes.ts`; the Supabase adapters are under `adapters/supabase/`.
+
+### Pricing
+
+`lib/pricing.ts` prices a cake as `quote(input, now, rules)`, and `lib/basket-pricing.ts` prices a whole basket (cakes plus desserts) as `priceBasket(input, now, rules)`. Both are pure. `rules` default to the PRD constants but in the app come from the catalogue. The cake rules:
 
 - cake = flavour base × the sum of the tier-size multipliers (8"=0.80 … 16"=1.73, 1–3 tiers)
 - a 20% rush fee on the **cake only** when the event is less than 48h away
@@ -65,7 +86,7 @@ Bootstrap exception: `feature/jms-162-scaffold-nextjs-app` starts from the commi
 
 `eventDate` is a `YYYY-MM-DD` calendar date. The earliest date is tomorrow in Africa/Lusaka, and the rush window ends at 00:00 UTC+2 on the event date regardless of the server timezone. Amounts use integer hundredths internally, and the deposit uses the unrounded total.
 
-The PRD requires the prices and multipliers to become owner-editable config, so the module-level constants are temporary.
+Database money columns hold whole Kwacha as `integer`.
 
 ## Design system rules that are easy to break
 
@@ -86,6 +107,20 @@ The PRD requires the prices and multipliers to become owner-editable config, so 
 - **Parallel work uses separate worktrees and branches.**
 - **Codex can run the project gates.** A spike for JMS-163 (2026-10-17) ran `pnpm install --frozen-lockfile`, lint, typecheck, test and build in a Codex worktree: all passed (38 tests). The install used cached packages, so a fresh network install is unproven: the first backend change that adds a dependency confirms Codex can install it, or marks the task BLOCKED.
 - **Review is independent of the author.** An implementer's own gates do not replace review; see the PR review policy. Review automation is not configured yet (`pr-review-workflow` will add it). Never claim an unattended review service is running, and a passing review never authorizes a merge.
+
+## Graphify-first task context
+
+Before planning or delegating each new codebase task, the coordinator SHALL query Graphify for the task's relevant symbols, files and relationships. If `graphify-out/graph.json` is missing or out of date for the checkout, refresh it first (`graphify update .` for code changes; use the full `/graphify .` workflow when documents, papers or images matter). Use the graph to guide targeted source and spec reads, then prepare a concise handoff with the task, relevant paths and relationships, authoritative spec references, acceptance criteria and constraints. Do not forward the full conversation or graph output as a substitute for that brief. Source files and settled specs remain authoritative; verify graph findings against them. Keep generated `graphify-out/` artifacts local unless the user asks to share them. If Graphify is unavailable, say so and use targeted repository search as a fallback.
+
+## Codex usage (shared ChatGPT quota)
+
+Codex bills to the user's ChatGPT subscription, and that quota runs out. Claude is the main agent and spends Claude tokens on everything except writing code.
+
+- **Claude does the thinking:** reading, exploring, planning, OpenSpec proposals, classifying work, verifying gates, and review. Don't hand these to Codex.
+- **Codex only writes code for a well-scoped task:** a `delegate_task` implementer run (provider `codex_cc288b17-ab76-45a0-87ce-7db26aa41373`), or `/codex-bridge:codex-execute` for an approved plan. Pass `--budget 3` by default and `--serial` when quota is low.
+- **Choose the model, cheapest first:** `gpt-6-luna` for mechanical work (renames, boilerplate, simple tests), `gpt-5.6-terra` for ordinary features, `gpt-6-sol` only for auth, security, migrations, money or other risky logic. Never `gpt-6-astra` for writing. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model.
+- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss). Ordinary plans get Claude's own review.
+- **On a Codex usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): don't retry and don't escalate the model. Tell the user, then finish the work with Claude unless the user says to wait for the reset.
 
 ## Limits for every agent
 

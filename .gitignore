@@ -6,3 +6,7 @@ coverage/
 next-env.d.ts
 .env*
 .vercel/
+
+# Claude Code
+.claude/settings.local.json
+graphify-out/
