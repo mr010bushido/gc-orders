@@ -1,11 +1,12 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const flavourGroups = pgTable("flavour_groups", {
   id: uuid("id").defaultRandom().primaryKey(),
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
   basePrice: integer("base_price").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => [check("flavour_groups_positive_price", sql`${table.basePrice} > 0`)]).enableRLS();
@@ -18,7 +19,11 @@ export const flavours = pgTable("flavours", {
   diet: text("diet").$type<"standard" | "vegan" | "diabetic">().notNull().default("standard"),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
-}, (table) => [check("flavours_diet", sql`${table.diet} in ('standard', 'vegan', 'diabetic')`)]).enableRLS();
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("flavours_diet", sql`${table.diet} in ('standard', 'vegan', 'diabetic')`),
+  uniqueIndex("flavours_name_ci_unique").on(sql`lower(${table.name})`),
+]).enableRLS();
 
 export const frostings = pgTable("frostings", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -26,7 +31,8 @@ export const frostings = pgTable("frostings", {
   name: text("name").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
-}).enableRLS();
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("frostings_name_ci_unique").on(sql`lower(${table.name})`)]).enableRLS();
 
 export const sizeMultipliers = pgTable("size_multipliers", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -34,6 +40,7 @@ export const sizeMultipliers = pgTable("size_multipliers", {
   multiplier: integer("multiplier").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   check("size_multipliers_positive_size", sql`${table.size} > 0`),
   check("size_multipliers_positive_multiplier", sql`${table.multiplier} > 0`),
@@ -46,7 +53,11 @@ export const addons = pgTable("addons", {
   price: integer("price").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
-}, (table) => [check("addons_nonnegative_price", sql`${table.price} >= 0`)]).enableRLS();
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("addons_nonnegative_price", sql`${table.price} >= 0`),
+  uniqueIndex("addons_name_ci_unique").on(sql`lower(${table.name})`),
+]).enableRLS();
 
 export const dessertTypes = pgTable("dessert_types", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -56,7 +67,11 @@ export const dessertTypes = pgTable("dessert_types", {
   flavourSuggestions: text("flavour_suggestions").array().notNull().default(sql`'{}'::text[]`),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
-}, (table) => [check("dessert_types_positive_price", sql`${table.price} > 0`)]).enableRLS();
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("dessert_types_positive_price", sql`${table.price} > 0`),
+  uniqueIndex("dessert_types_name_ci_unique").on(sql`lower(${table.name})`),
+]).enableRLS();
 
 export const settings = pgTable("settings", {
   id: uuid("id").defaultRandom().primaryKey(),

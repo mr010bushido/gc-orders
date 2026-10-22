@@ -29,10 +29,14 @@ describe("settings registry", () => {
     expect(() => checkSetting("dessert_min_quantity", 0)).toThrow(RangeError);
   });
 
-  it("accepts unset or 0–24 window hours", () => {
+  it("accepts unset HH:MM windows and converts stored legacy hour integers", () => {
     expect(checkSetting("morning_start_hour", null)).toBeNull();
-    expect(checkSetting("morning_start_hour", 8)).toBe(8);
+    expect(checkSetting("morning_start_hour", 8)).toBe("08:00");
+    expect(checkSetting("morning_start_hour", "08:30")).toBe("08:30");
+    expect(checkSetting("evening_end_hour", "24:00")).toBe("24:00");
     expect(() => checkSetting("morning_start_hour", 25)).toThrow(RangeError);
+    expect(() => checkSetting("morning_start_hour", "24:01")).toThrow(RangeError);
+    expect(() => checkSetting("morning_start_hour", "8:30")).toThrow(RangeError);
   });
 
   it("accepts text or null for text settings and rejects unknown keys", () => {

@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { count, eq, sql } from "drizzle-orm";
+import { count, sql } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { priceBasket } from "../basket-pricing";
 import { getCatalogue } from "../catalogue/catalogue";
+import { updateFlavourGroupPrice } from "../catalogue/admin";
 import { toPricingRules } from "../catalogue/pricing-rules";
 import { seedCatalogue } from "../catalogue/seed";
-import { flavourGroups, orderLines, orders, orderStatusEvents, referenceCounters, settings } from "../db/schema";
+import { orderLines, orders, orderStatusEvents, referenceCounters, settings } from "../db/schema";
 import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "./fixtures";
 import { createOrder, getOrder, OrderError } from "./orders";
@@ -49,7 +50,7 @@ it("starts a quote request as awaiting_quote with no deadline", async () => {
 it("keeps the snapshot when the catalogue price changes", async () => {
   await seedCatalogue(test.db);
   const { order } = await createOrder(test.db, orderInput({}, toPricingRules(await getCatalogue(test.db))), BOOKED_AT);
-  await test.db.update(flavourGroups).set({ basePrice: 1500 }).where(eq(flavourGroups.key, "classic"));
+  await updateFlavourGroupPrice(test.db, "classic", 1500);
   const repriced = priceBasket({ cake: { flavourGroup: "classic", tierSizes: [8], addons: [] }, delivery: false, eventDate: "2026-10-30" }, BOOKED_AT, toPricingRules(await getCatalogue(test.db)));
   expect(repriced.total).toBe(1200);
   const stored = await getOrder(test.db, order.id);
