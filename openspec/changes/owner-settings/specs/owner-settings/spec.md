@@ -1,15 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Edit prices and multipliers
-The owner SHALL be able to change a flavour group's base price, an add-on's price, a dessert type's price and a size multiplier. Prices SHALL be whole Kwacha of at least 1. Multipliers SHALL be entered as decimals between 0.10 and 5.00 and stored in hundredths.
+The owner SHALL be able to change a flavour group's base price, an add-on's price, a dessert type's price and a size multiplier. Add-on prices SHALL be whole Kwacha of at least 0; other prices SHALL be whole Kwacha of at least 1. Multipliers SHALL be entered as decimals between 0.10 and 5.00 and stored in hundredths.
 
 #### Scenario: Change a base price
 - **WHEN** the owner sets the classic base price to K1,350 and saves
 - **THEN** the next quote for a classic 10" cake is K1,350
 
 #### Scenario: Invalid price
-- **WHEN** the owner enters `12.5` or `0` as a price
+- **WHEN** the owner enters `12.5` or `0` as a base price
 - **THEN** the save is rejected with a field error and nothing changes
+
+#### Scenario: Included add-on
+- **WHEN** the owner saves the prices section with Chocolate drip at K0
+- **THEN** the save succeeds
 
 #### Scenario: Multiplier entry
 - **WHEN** the owner enters `1.2` for 12"

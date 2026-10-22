@@ -11,13 +11,13 @@ export class CatalogueAdminError extends Error {
   }
 }
 
-function priceValue(value: unknown, field: string): number {
-  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 1) return value;
-  if (typeof value === "string" && /^[1-9]\d*$/.test(value)) {
+function priceValue(value: unknown, field: string, min = 1): number {
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= min) return value;
+  if (typeof value === "string" && (min === 0 ? /^(?:0|[1-9]\d*)$/ : /^[1-9]\d*$/).test(value)) {
     const parsed = Number(value);
-    if (Number.isSafeInteger(parsed)) return parsed;
+    if (Number.isSafeInteger(parsed) && parsed >= min) return parsed;
   }
-  throw new CatalogueAdminError(field, "INVALID_PRICE", "Enter a whole Kwacha amount of at least K1.");
+  throw new CatalogueAdminError(field, "INVALID_PRICE", `Enter a whole Kwacha amount of at least K${min}.`);
 }
 
 export function multiplierHundredths(value: unknown, field = "multiplier"): number {
@@ -40,7 +40,7 @@ export async function updateFlavourGroupPrice(db: Db, key: string, value: unknow
 }
 
 export async function updateAddonPrice(db: Db, key: string, value: unknown) {
-  const price = priceValue(value, "price");
+  const price = priceValue(value, "price", 0);
   const [updated] = await db.update(addons).set({ price, updatedAt: new Date() })
     .where(eq(addons.key, key)).returning({ key: addons.key });
   if (!updated) throw new CatalogueAdminError("price", "NOT_FOUND", "This catalogue item no longer exists.");
@@ -172,7 +172,7 @@ export async function addFrosting(db: Db, name: unknown) { return addSimpleItem(
 export async function addAddon(db: Db, input: { name: unknown; price: unknown }) {
   const name = itemName(input.name);
   const key = itemKey(name);
-  const price = priceValue(input.price, "price");
+  const price = priceValue(input.price, "price", 0);
   await assertUniqueName(db, addons, name);
   await assertUnusedKey(db, addons, key);
   await db.insert(addons).values({ key, name, price });
@@ -219,7 +219,7 @@ function entries(value: unknown, field: string): [string, unknown][] {
 
 export async function savePricesSection(db: Db, input: PriceSectionInput) {
   const groups = entries(input?.flavourGroupPrices, "flavourGroupPrices").map(([key, value]) => [key, priceValue(value, `flavourGroupPrices.${key}`)] as const);
-  const addonPrices = entries(input?.addonPrices, "addonPrices").map(([key, value]) => [key, priceValue(value, `addonPrices.${key}`)] as const);
+  const addonPrices = entries(input?.addonPrices, "addonPrices").map(([key, value]) => [key, priceValue(value, `addonPrices.${key}`, 0)] as const);
   const dessertPrices = entries(input?.dessertPrices, "dessertPrices").map(([key, value]) => [key, priceValue(value, `dessertPrices.${key}`)] as const);
   const sizes = entries(input?.sizeMultipliers, "sizeMultipliers").map(([key, value]) => {
     if (!/^[1-9]\d*$/.test(key) || !Number.isSafeInteger(Number(key))) {

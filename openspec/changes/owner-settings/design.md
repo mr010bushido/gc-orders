@@ -13,7 +13,7 @@ The catalogue tables and the settings registry (types, defaults, bounds) exist a
 ## Decisions
 
 - **One form per section, one save.** Each section posts its fields together and validates them together, so half-saved states cannot arise within a section.
-- **Validation lives in `lib/catalogue/admin.ts`** and is shared with the form for inline errors. Prices are whole Kwacha of 1 or more. Multipliers are entered as decimals (`1.20`) and stored in hundredths between 0.10 and 5.00. Percentages and counts follow the registry bounds.
+- **Validation lives in `lib/catalogue/admin.ts`** and is shared with the form for inline errors. Add-on prices are whole Kwacha of at least 0 (an included add-on such as Chocolate drip is K0); other prices are whole Kwacha of 1 or more. Multipliers are entered as decimals (`1.20`) and stored in hundredths between 0.10 and 5.00. Percentages and counts follow the registry bounds.
 - **Cannot remove the last choice.** Hiding the last active flavour, frosting, size or dessert type is rejected with `LAST_ACTIVE_ITEM`, because the booking form would have nothing to offer. Hiding the last add-on is allowed.
 - **Adding a flavour** needs a name and a price group; it appends to the end of the list. Duplicate names within a list are rejected case-insensitively.
 - **Phone fields** use `normaliseZambianMobile` and show the national format with spaces. The pickup link must be an `https` URL.

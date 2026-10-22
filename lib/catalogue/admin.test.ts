@@ -46,6 +46,34 @@ describe("catalogue price writes", () => {
     expect((await db.select().from(dessertTypes).where(eq(dessertTypes.key, "cupcakes")))[0].price).toBe(35);
   });
 
+  it("saves the full seeded price form when an included add-on remains K0", async () => {
+    const { db } = await seeded();
+    const [group, ...otherGroups] = await db.select().from(flavourGroups);
+    const input = {
+      flavourGroupPrices: Object.fromEntries([group, ...otherGroups].map(item => [item.key, String(item.basePrice)])),
+      addonPrices: Object.fromEntries((await db.select().from(addons)).map(item => [item.key, String(item.price)])),
+      dessertPrices: Object.fromEntries((await db.select().from(dessertTypes)).map(item => [item.key, String(item.price)])),
+      sizeMultipliers: Object.fromEntries((await db.select().from(sizeMultipliers)).map(item => [String(item.size), (item.multiplier / 100).toFixed(2)])),
+    };
+    input.flavourGroupPrices[group.key] = String(group.basePrice + 1);
+
+    await expect(savePricesSection(db, input)).resolves.toBeUndefined();
+    expect((await db.select().from(flavourGroups).where(eq(flavourGroups.key, group.key)))[0].basePrice).toBe(group.basePrice + 1);
+    expect((await db.select().from(addons).where(eq(addons.key, "chocolate_drip")))[0].price).toBe(0);
+  });
+
+  it("rejects negative and fractional add-on prices when updating or adding", async () => {
+    const { db } = await seeded();
+    for (const invalid of [-1, 1.5, "-1", "1.5", "1e2", "0x10", " 5", "00"]) {
+      await expect(updateAddonPrice(db, "chocolate_drip", invalid)).rejects.toMatchObject({
+        field: "price", code: "INVALID_PRICE", message: "Enter a whole Kwacha amount of at least K0.",
+      });
+      await expect(addAddon(db, { name: `Invalid ${invalid}`, price: invalid })).rejects.toMatchObject({
+        field: "price", code: "INVALID_PRICE",
+      });
+    }
+  });
+
   it("parses decimal multipliers exactly into integer hundredths", async () => {
     expect(multiplierHundredths("1.2")).toBe(120);
     expect(multiplierHundredths("0.10")).toBe(10);
