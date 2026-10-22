@@ -17,6 +17,7 @@ type PriceValues = {
 };
 
 type Props = { catalogue: FullCatalogue; updatedAt?: Partial<Record<SettingKey, string>> };
+type ResultScope = "prices" | "sizes" | "rules" | "windows" | "payment";
 
 const ruleFields = [
   ["delivery_fee", "Delivery fee (ZMW)"], ["rush_rate_percent", "Rush rate (%)"], ["rush_window_hours", "Rush window (hours)"],
@@ -109,6 +110,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
   const [timeValues, setTimeValues] = useState(() => Object.fromEntries(timeFields.map(([key]) => [key, catalogue.settings[key] ?? ""])));
   const [paymentValues, setPaymentValues] = useState(() => Object.fromEntries(paymentFields.map(([key]) => [key, catalogue.settings[key] ?? ""])));
   const [result, setResult] = useState<SettingsActionResult | null>(null);
+  const [resultScope, setResultScope] = useState<ResultScope | null>(null);
   const [newFlavour, setNewFlavour] = useState({ name: "", group: catalogue.flavourGroups[0]?.key ?? "", diet: "standard" });
   const [newFrosting, setNewFrosting] = useState("");
   const [newAddon, setNewAddon] = useState({ name: "", price: "1" });
@@ -130,12 +132,16 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await savePrices({ ...prices, sizeMultipliers: {} });
       setResult(next);
+      setResultScope("prices");
     });
   };
 
-  const submitSettings = (event: FormEvent<HTMLFormElement>, action: (input: Record<string, unknown>) => Promise<SettingsActionResult>, values: Record<string, string>) => {
+  const submitSettings = (event: FormEvent<HTMLFormElement>, action: (input: Record<string, unknown>) => Promise<SettingsActionResult>, values: Record<string, string>, scope: ResultScope) => {
     event.preventDefault();
-    startTransition(async () => setResult(await action(values)));
+    startTransition(async () => {
+      setResult(await action(values));
+      setResultScope(scope);
+    });
   };
 
   const submitSizes = (event: FormEvent<HTMLFormElement>) => {
@@ -143,6 +149,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await savePrices({ flavourGroupPrices: {}, addonPrices: {}, dessertPrices: {}, sizeMultipliers: prices.sizeMultipliers });
       setResult(next);
+      setResultScope("sizes");
     });
   };
 
@@ -150,6 +157,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await manageCatalogueItem(input);
       setResult(next);
+      setResultScope("prices");
     });
   };
 
@@ -158,6 +166,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await manageCatalogueItem(input);
       setResult(next);
+      setResultScope("prices");
       if (next.ok) {
         reset();
       }
@@ -216,7 +225,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
               </div>)}
             </div>
           </fieldset>
-          <ResultMessage result={result} success="Prices saved. They apply to new bookings." />
+          {resultScope === "prices" && <ResultMessage result={result} success="Prices saved. They apply to new bookings." />}
           <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save prices"}</Button>
         </form>
 
@@ -283,7 +292,6 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
               <Button variant="ghost" disabled={pending || !newDessert.name.trim()}>Add dessert</Button>
             </form>
           </fieldset>
-          <ResultMessage result={result} success="Catalogue item updated." />
         </div>
       </Section>
 
@@ -299,29 +307,29 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
               <Button variant="ghost" disabled={pending} onClick={() => runItemAction({ kind: "size", operation: item.active ? "hide" : "show", size: item.size })}>{item.active ? "Hide" : "Show"}</Button>
             </div>)}
           </div>
-          <ResultMessage result={result} success="Size multipliers saved." />
+          {resultScope === "sizes" && <ResultMessage result={result} success="Size multipliers saved." />}
           <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save sizes"}</Button>
         </form>
       </Section>
 
       <Section id="rules" label="Fees and rules">
-        <form onSubmit={event => submitSettings(event, saveFeesAndRules, ruleValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+        <form onSubmit={event => submitSettings(event, saveFeesAndRules, ruleValues, "rules")} className="grid max-w-3xl gap-4 sm:grid-cols-2">
           {ruleFields.map(([key, label]) => <div key={key}><Input label={label} inputMode="numeric" value={ruleValues[key]} onChange={event => { setResult(null); setRuleValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
-          <ResultMessage result={result} success="Fees and rules saved." />
+          {resultScope === "rules" && <ResultMessage result={result} success="Fees and rules saved." />}
           <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save fees and rules"}</Button>
         </form>
       </Section>
       <Section id="windows" label="Time windows">
-        <form onSubmit={event => submitSettings(event, saveTimeWindows, timeValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+        <form onSubmit={event => submitSettings(event, saveTimeWindows, timeValues, "windows")} className="grid max-w-3xl gap-4 sm:grid-cols-2">
           {timeFields.map(([key, label]) => <div key={key}><Input label={label} type="time" value={timeValues[key]} onChange={event => { setResult(null); setTimeValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
-          <ResultMessage result={result} success="Time windows saved." />
+          {resultScope === "windows" && <ResultMessage result={result} success="Time windows saved." />}
           <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save time windows"}</Button>
         </form>
       </Section>
       <Section id="payment" label="Payment and contact">
-        <form onSubmit={event => submitSettings(event, savePaymentAndContact, paymentValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+        <form onSubmit={event => submitSettings(event, savePaymentAndContact, paymentValues, "payment")} className="grid max-w-3xl gap-4 sm:grid-cols-2">
           {paymentFields.map(([key, label]) => <div key={key}><Input label={label} type={key === "pickup_map_url" ? "url" : "tel"} value={paymentValues[key]} onChange={event => { setResult(null); setPaymentValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
-          <ResultMessage result={result} success="Payment and contact details saved." />
+          {resultScope === "payment" && <ResultMessage result={result} success="Payment and contact details saved." />}
           <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save payment and contact"}</Button>
         </form>
       </Section>
