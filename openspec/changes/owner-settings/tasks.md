@@ -16,4 +16,4 @@
 
 - [x] 3.1 Integration test: change a base price through the settings action, load the booking catalogue and quote rules, and confirm both use it while an existing order keeps its snapshot — gate: `pnpm test --maxWorkers=2 'app/owner/(console)/settings/actions.integration.test.ts'` (4 passed), `pnpm typecheck` (passed), `pnpm lint` (passed)
 - [ ] 3.2 Check at 375px and 1280px in light and dark and note the result on this line
-- [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate owner-settings --strict` passes
+- [ ] BLOCKED: Can the build environment reach `fonts.googleapis.com` or provide cached Cormorant Garamond and Inter fonts? — `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (803 passed, 1 skipped), and `openspec validate owner-settings --strict` passed; `pnpm build` is blocked fetching the existing `next/font/google` fonts (the baseline `app/layout.tsx` imports these fonts)
