@@ -84,6 +84,20 @@ async function assertUniqueName(db: Db, table: EditableItemTable, name: string, 
   }
 }
 
+export async function translateUniqueNameViolation<T>(write: () => Promise<T>): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    const cause = (error as { cause?: unknown } | null)?.cause;
+    const candidates = [error, cause].filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
+    if (candidates.some(value => value.code === "23505" && [value.constraint, value.constraint_name, value.message]
+      .some(part => typeof part === "string" && /(?:^|\b)[a-z0-9_]+_name_ci_unique\b/i.test(part)))) {
+      throw new CatalogueAdminError("name", "DUPLICATE_NAME", "A catalogue item already has this name.");
+    }
+    throw error;
+  }
+}
+
 async function assertUnusedKey(db: Db, table: EditableItemTable, key: string) {
   const [match] = await db.select({ key: table.key }).from(table).where(eq(table.key, key)).limit(1);
   if (match) throw new CatalogueAdminError("name", "DUPLICATE_KEY", "This name conflicts with an existing catalogue key.");
@@ -92,7 +106,7 @@ async function assertUnusedKey(db: Db, table: EditableItemTable, key: string) {
 async function renameItem(db: Db, table: EditableItemTable, key: string, input: unknown) {
   const name = itemName(input);
   await assertUniqueName(db, table, name, key);
-  const [updated] = await db.update(table).set({ name, updatedAt: new Date() }).where(eq(table.key, key)).returning({ key: table.key });
+  const [updated] = await translateUniqueNameViolation(() => db.update(table).set({ name, updatedAt: new Date() }).where(eq(table.key, key)).returning({ key: table.key }));
   if (!updated) throw new CatalogueAdminError("name", "NOT_FOUND", "This catalogue item no longer exists.");
 }
 
@@ -113,7 +127,7 @@ async function addSimpleItem(db: Db, table: typeof frostings | typeof addons, in
   const key = itemKey(name);
   await assertUniqueName(db, table, name);
   await assertUnusedKey(db, table, key);
-  await db.insert(table).values({ key, name });
+  await translateUniqueNameViolation(() => db.insert(table).values({ key, name }));
   return key;
 }
 
@@ -129,7 +143,7 @@ export async function addFlavour(db: Db, input: { name: unknown; group: unknown;
   const key = itemKey(name);
   await assertUniqueName(db, flavours, name);
   await assertUnusedKey(db, flavours, key);
-  await db.insert(flavours).values({ key, name, groupId: group.id, diet });
+  await translateUniqueNameViolation(() => db.insert(flavours).values({ key, name, groupId: group.id, diet }));
   return key;
 }
 
@@ -175,7 +189,7 @@ export async function addAddon(db: Db, input: { name: unknown; price: unknown })
   const price = priceValue(input.price, "price", 0);
   await assertUniqueName(db, addons, name);
   await assertUnusedKey(db, addons, key);
-  await db.insert(addons).values({ key, name, price });
+  await translateUniqueNameViolation(() => db.insert(addons).values({ key, name, price }));
   return key;
 }
 
@@ -189,7 +203,7 @@ export async function addDessertType(db: Db, input: { name: unknown; price: unkn
   }
   await assertUniqueName(db, dessertTypes, name);
   await assertUnusedKey(db, dessertTypes, key);
-  await db.insert(dessertTypes).values({ key, name, price, flavourSuggestions: suggestions.map(value => (value as string).trim()) });
+  await translateUniqueNameViolation(() => db.insert(dessertTypes).values({ key, name, price, flavourSuggestions: suggestions.map(value => (value as string).trim()) }));
   return key;
 }
 

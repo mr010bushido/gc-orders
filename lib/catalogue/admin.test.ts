@@ -4,7 +4,7 @@ import { createTestDb } from "../db/test-db";
 import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, sizeMultipliers } from "../db/schema";
 import {
   CatalogueAdminError, addAddon, addDessertType, addFlavour, addFrosting, hideAddon, hideDessertType, hideFlavour, hideFrosting, hideSize,
-  multiplierHundredths, renameAddon, renameDessertType, renameFlavour, renameFrosting, updateAddonPrice,
+  multiplierHundredths, renameAddon, renameDessertType, renameFlavour, renameFrosting, translateUniqueNameViolation, updateAddonPrice,
   showAddon, showDessertType, showFlavour, showFrosting, showSize,
   savePaymentSettings, savePricesSection, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
   updateDessertTypePrice, updateFlavourGroupPrice, updateSizeMultiplier,
@@ -162,6 +162,21 @@ describe("catalogue price writes", () => {
     const sizes = (await db.select().from(sizeMultipliers)).map(item => item.size);
     for (const size of sizes.slice(0, -1)) await hideSize(db, size);
     await expect(hideSize(db, sizes.at(-1)!)).rejects.toMatchObject({ code: "LAST_ACTIVE_ITEM" });
+  });
+
+  it("maps the test database's case-insensitive name index violation to DUPLICATE_NAME", async () => {
+    const { db } = await seeded();
+    const [group] = await db.select({ id: flavourGroups.id }).from(flavourGroups).where(eq(flavourGroups.key, "classic"));
+    let violation: unknown;
+    try {
+      await db.insert(flavours).values({ key: "vanilla_variant", name: "vAnIlLa", groupId: group.id, diet: "standard" });
+    } catch (error) {
+      violation = error;
+    }
+    expect(violation).toBeTruthy();
+    await expect(translateUniqueNameViolation(() => Promise.reject(violation))).rejects.toMatchObject({
+      field: "name", code: "DUPLICATE_NAME", message: "A catalogue item already has this name.",
+    });
   });
 
   it("saves rule settings together using registry bounds and preserves values after an invalid save", async () => {

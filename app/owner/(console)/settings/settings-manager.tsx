@@ -17,7 +17,7 @@ type PriceValues = {
 };
 
 type Props = { catalogue: FullCatalogue; updatedAt?: Partial<Record<SettingKey, string>> };
-type ResultScope = "prices" | "sizes" | "rules" | "windows" | "payment";
+type ResultScope = "prices" | "catalogue" | "sizes" | "rules" | "windows" | "payment";
 
 const ruleFields = [
   ["delivery_fee", "Delivery fee (ZMW)"], ["rush_rate_percent", "Rush rate (%)"], ["rush_window_hours", "Rush window (hours)"],
@@ -62,9 +62,9 @@ function Section({ id, label, children }: { id: string; label: string; children:
   </section>;
 }
 
-function ResultMessage({ result, success }: { result: SettingsActionResult | null; success: string }) {
+function ResultMessage({ result, success, showFieldErrors = false }: { result: SettingsActionResult | null; success: string; showFieldErrors?: boolean }) {
   if (!result) return null;
-  if (!result.ok && !result.errors._form) return null;
+  if (!result.ok && !showFieldErrors && !result.errors._form) return null;
   return result.ok
     ? <p role="status" className="text-sm text-ok-ink">{success}</p>
     : <p role="alert" className="text-sm text-err-ink">{Object.values(result.errors)[0]?.message ?? "Review the fields and try again."}</p>;
@@ -157,7 +157,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await manageCatalogueItem(input);
       setResult(next);
-      setResultScope("prices");
+      setResultScope("catalogue");
     });
   };
 
@@ -166,7 +166,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
     startTransition(async () => {
       const next = await manageCatalogueItem(input);
       setResult(next);
-      setResultScope("prices");
+      setResultScope("catalogue");
       if (next.ok) {
         reset();
       }
@@ -230,6 +230,7 @@ export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
         </form>
 
         <div className="space-y-7 border-t border-line pt-6">
+          {resultScope === "catalogue" && <ResultMessage result={result} success="Catalogue updated." showFieldErrors />}
           <fieldset className="space-y-3">
             <legend className="font-semibold">Flavours</legend>
             {catalogue.flavourGroups.map(group => <div key={group.key} className="space-y-2">

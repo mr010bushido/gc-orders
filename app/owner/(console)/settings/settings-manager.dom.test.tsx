@@ -53,3 +53,10 @@ it("sends show and hide actions for catalogue choices", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Show" }));
   await waitFor(() => expect(actions.manageCatalogueItem).toHaveBeenCalledWith({ kind: "flavour", operation: "show", key: catalogue.flavours[0].key }));
 });
+
+it("announces catalogue action errors regardless of their field", async () => {
+  actions.manageCatalogueItem.mockResolvedValue({ ok: false, errors: { active: { code: "LAST_ACTIVE_ITEM", message: "Keep at least one frosting available." } } });
+  render(<SettingsManager catalogue={defaultCatalogue()} />);
+  fireEvent.click(screen.getAllByRole("button", { name: "Hide" })[0]);
+  expect((await screen.findByRole("alert")).textContent).toBe("Keep at least one frosting available.");
+});
