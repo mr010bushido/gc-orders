@@ -5,6 +5,7 @@ import { addons, dessertTypes, flavourGroups, flavours, frostings, settings, siz
 import {
   CatalogueAdminError, addAddon, addDessertType, addFlavour, addFrosting, hideAddon, hideDessertType, hideFlavour, hideFrosting, hideSize,
   multiplierHundredths, renameAddon, renameDessertType, renameFlavour, renameFrosting, updateAddonPrice,
+  showAddon, showDessertType, showFlavour, showFrosting, showSize,
   savePaymentSettings, savePricesSection, saveRulesSettings, saveTimeWindowSettings, updateDessertFlavourSuggestions,
   updateDessertTypePrice, updateFlavourGroupPrice, updateSizeMultiplier,
 } from "./admin";
@@ -84,6 +85,32 @@ describe("catalogue price writes", () => {
     expect((await db.select().from(dessertTypes).where(eq(dessertTypes.key, dessert)))[0]).toMatchObject({
       name: "Mini lemon tarts", price: 45, flavourSuggestions: ["Lemon", "Berry"], active: false,
     });
+  });
+
+  it("shows hidden flavours, frostings, add-ons, desserts and sizes", async () => {
+    const { db } = await seeded();
+    const flavour = (await db.select().from(flavours))[0];
+    const frosting = (await db.select().from(frostings))[0];
+    const addon = (await db.select().from(addons))[0];
+    const dessert = (await db.select().from(dessertTypes))[0];
+    const size = (await db.select().from(sizeMultipliers))[0];
+    await hideFlavour(db, flavour.key);
+    await hideFrosting(db, frosting.key);
+    await hideAddon(db, addon.key);
+    await hideDessertType(db, dessert.key);
+    await hideSize(db, size.size);
+
+    await showFlavour(db, flavour.key);
+    await showFrosting(db, frosting.key);
+    await showAddon(db, addon.key);
+    await showDessertType(db, dessert.key);
+    await showSize(db, size.size);
+
+    expect((await db.select().from(flavours).where(eq(flavours.key, flavour.key)))[0].active).toBe(true);
+    expect((await db.select().from(frostings).where(eq(frostings.key, frosting.key)))[0].active).toBe(true);
+    expect((await db.select().from(addons).where(eq(addons.key, addon.key)))[0].active).toBe(true);
+    expect((await db.select().from(dessertTypes).where(eq(dessertTypes.key, dessert.key)))[0].active).toBe(true);
+    expect((await db.select().from(sizeMultipliers).where(eq(sizeMultipliers.size, size.size)))[0].active).toBe(true);
   });
 
   it("rejects duplicate names case-insensitively and hiding each last required choice", async () => {

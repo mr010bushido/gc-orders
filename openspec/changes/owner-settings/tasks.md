@@ -8,7 +8,7 @@
 ## 2. Screens (Claude)
 
 - [x] 2.1 `/owner/settings` section navigation and the "applies to new bookings" notice — gate: settings page integration test (3 passed), `pnpm typecheck`, `pnpm lint`, `openspec validate owner-settings --strict` (all passed)
-- [ ] 2.2 Prices and Sizes sections (grouped flavour list, hide toggle, add form, multipliers as decimals)
+- [ ] BLOCKED: Can this worktree Git metadata be made writable so the required task commit can be created? — Prices and Sizes sections (grouped flavour list, hide toggle, add form, multipliers as decimals); show/hide coverage added for all item kinds and sizes — gate: `pnpm test --maxWorkers=2 lib/catalogue/admin.test.ts 'app/owner/(console)/settings/settings-manager.dom.test.tsx'` (12 passed), `pnpm typecheck` (passed), `pnpm lint` (passed)
 - [ ] 2.3 Fees and rules, Time windows, Payment and contact sections with inline errors and a previous-value comparison before saving prices
 - [ ] 2.4 Add the Settings item to the owner nav; component tests
 
