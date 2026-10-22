@@ -20,7 +20,8 @@ If there is no change name, make no edits and return asking for one. If the bran
 1. Confirm you are in a worktree on that branch, not on `main` or `develop`.
 2. Run `openspec instructions apply --change <name> --json`. Read every file under `contextFiles`.
 3. If the state is `all_done`, make no edits and return "ready for PR". If it is `blocked`, return the message.
-4. Work the pending tasks in order. Do not load `openspec-apply-change`; its interactive pauses stall a background run.
+4. Before planning each pending task, query Graphify for that task. Refresh the code graph with `graphify update .` if it is missing or stale; use the full `/graphify .` workflow when document content is relevant. Follow graph-discovered paths into source and specs, which remain authoritative. If Graphify is unavailable, tell the coordinator and use targeted repository search as a fallback.
+5. Work the pending tasks in order. Do not copy the full conversation or graph dump into working context. Do not load `openspec-apply-change`; its interactive pauses stall a background run.
 
 ## For each task
 
