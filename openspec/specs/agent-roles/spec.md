@@ -56,7 +56,7 @@ No agent SHALL, unless the user explicitly authorizes the specific action: commi
 - **THEN** it commits to its own branch and stops, without pushing, opening a PR or merging
 
 ### Requirement: Skill allow-list and deny-list
-Every unattended agent SHALL be denied the `deploy-to-vercel` skill, the `gsd-*` skills, `openspec-propose` and `openspec-archive-change`. Implementers MAY load the `openspec-*` implementation skills, and the skills that match their ownership: `impeccable`, `web-design-guidelines`, `webapp-testing`, `vercel-react-best-practices` and `vercel-composition-patterns` for frontend work; `security-review`, `api-security-review` and `secrets-scan` for backend work.
+Every unattended agent SHALL be denied the `deploy-to-vercel` skill, the `gsd-*` skills, `openspec-propose` and `openspec-archive-change`. Implementers MAY load the `openspec-*` implementation skills, and the skills that match their ownership: `impeccable`, `web-design-guidelines`, `webapp-testing`, `vercel-react-best-practices` and `vercel-composition-patterns` for frontend work; `security-review`, `api-security-review` and `secrets-scan` for backend work. The orchestrator MAY load `herdr` and `herdr-delegate` to dispatch implementer and reviewer workers in Herdr panes; implementers SHALL NOT load them.
 
 #### Scenario: Agent wants to deploy
 - **WHEN** an implementer believes a change needs a deployment to be verified
@@ -65,6 +65,10 @@ Every unattended agent SHALL be denied the `deploy-to-vercel` skill, the `gsd-*`
 #### Scenario: Backend agent loads a design skill
 - **WHEN** a backend task has no UI work
 - **THEN** the agent does not load the frontend design skills
+
+#### Scenario: Implementer wants to dispatch another agent
+- **WHEN** an implementer considers handing part of its task to another agent
+- **THEN** it does not load `herdr-delegate` and reports the need to the orchestrator instead
 
 ### Requirement: Portability guardrails
 Agents SHALL follow these rules in application code: use plain Postgres through Drizzle with migrations kept in the repository; enforce authorization in server code, treating RLS as defense in depth and not calling the Supabase Data API; reach auth, image storage and scheduled jobs through interfaces owned by this repository; and avoid Vercel-only runtime features such as `@vercel/*` storage APIs and Vercel Cron.
@@ -137,4 +141,11 @@ The orchestrating agent, whether Claude or Codex, MAY push `feature/*` branches 
 #### Scenario: Release requested
 - **WHEN** work is ready for a release or a PR into `main`
 - **THEN** the orchestrator does not open or merge it and asks the user
+
+### Requirement: Dispatch skill ships with the repository
+The `herdr-delegate` skill SHALL live in the repository at `.agents/skills/herdr-delegate/SKILL.md`, with `.claude/skills/herdr-delegate` as a relative symlink to that directory, so Claude and Codex orchestrators in any checkout read the same text.
+
+#### Scenario: Fresh worktree
+- **WHEN** an orchestrator starts in a new worktree of the repository
+- **THEN** `.agents/skills/herdr-delegate/SKILL.md` is present and `.claude/skills/herdr-delegate/SKILL.md` resolves to the same file
 
