@@ -64,7 +64,7 @@ On every exit the agent SHALL return the change name, branch, tasks ticked this 
 
 #### Scenario: Run completes all tasks
 - **WHEN** the last pending task is ticked
-- **THEN** the return says `M/M`, lists the gates, and recommends opening a PR into `develop`, which stays with the user
+- **THEN** the return says `M/M`, lists the gates, and recommends opening a PR into `develop`, which the orchestrator pushes and opens
 
 ### Requirement: Unattended-run safety
 The agent SHALL NOT use interactive prompts, and SHALL NOT read production secrets. It SHALL commit only to its own branch.
