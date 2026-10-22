@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Repository guidance for GPT/Codex and other coding agents. It mirrors the applicable project rules in `CLAUDE.md`. The sections on agent ownership, limits, skills, implementing a change and portability are shared word for word with `CLAUDE.md`, so change both together.
+Repository guidance for GPT/Codex and other coding agents. It mirrors the applicable project rules in `CLAUDE.md`. The sections on agent ownership, Graphify-first task context, Codex usage, limits, skills, implementing a change and portability are shared word for word with `CLAUDE.md`, so change both together.
 
 ## Product and sources of truth
 
@@ -24,6 +24,20 @@ Sources, in precedence order:
 - **Parallel work uses separate worktrees and branches.**
 - **Codex can run the project gates.** A spike for JMS-163 (2026-10-17) ran `pnpm install --frozen-lockfile`, lint, typecheck, test and build in a Codex worktree: all passed (38 tests). The install used cached packages, so a fresh network install is unproven: the first backend change that adds a dependency confirms Codex can install it, or marks the task BLOCKED.
 - **Review is independent of the author.** An implementer's own gates do not replace review; see the PR review policy. Review automation is not configured yet (`pr-review-workflow` will add it). Never claim an unattended review service is running, and a passing review authorizes a merge only together with the other merge conditions in "Limits for every agent".
+
+## Graphify-first task context
+
+Before planning or delegating each new codebase task, the coordinator SHALL query Graphify for the task's relevant symbols, files and relationships. If `graphify-out/graph.json` is missing or out of date for the checkout, refresh it first (`graphify update .` for code changes; use the full `/graphify .` workflow when documents, papers or images matter). Use the graph to guide targeted source and spec reads, then prepare a concise handoff with the task, relevant paths and relationships, authoritative spec references, acceptance criteria and constraints. Do not forward the full conversation or graph output as a substitute for that brief. Source files and settled specs remain authoritative; verify graph findings against them. Keep generated `graphify-out/` artifacts local unless the user asks to share them. If Graphify is unavailable, say so and use targeted repository search as a fallback.
+
+## Codex usage (shared ChatGPT quota)
+
+Codex bills to the user's ChatGPT subscription, and that quota runs out. Claude is the main agent and spends Claude tokens on everything except writing code.
+
+- **Claude does the thinking:** reading, exploring, planning, OpenSpec proposals, classifying work, verifying gates, and review. Don't hand these to Codex.
+- **Codex only writes code for a well-scoped task:** a `delegate_task` implementer run (provider `codex_cc288b17-ab76-45a0-87ce-7db26aa41373`), or `/codex-bridge:codex-execute` for an approved plan. Pass `--budget 3` by default and `--serial` when quota is low.
+- **Choose the model, cheapest first:** `gpt-6-luna` for mechanical work (renames, boilerplate, simple tests), `gpt-5.6-terra` for ordinary features, `gpt-6-sol` only for auth, security, migrations, money or other risky logic. Never `gpt-6-astra` for writing. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model.
+- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss). Ordinary plans get Claude's own review.
+- **On a Codex usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): don't retry and don't escalate the model. Tell the user, then finish the work with Claude unless the user says to wait for the reset.
 
 ## Limits for every agent
 
