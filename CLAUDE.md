@@ -145,6 +145,7 @@ Implementers also do not push, open or update PRs. They commit to their own bran
 
 - **Denied to every unattended agent:** `deploy-to-vercel`, all `gsd-*` skills, `openspec-propose` and `openspec-archive-change`. Previews come from the Vercel Git integration, so no agent deploys.
 - **Implementers may load:** the `openspec-*` implementation skills, plus skills that match their ownership: `impeccable`, `web-design-guidelines`, `webapp-testing`, `vercel-react-best-practices` and `vercel-composition-patterns` for frontend work; `security-review`, `api-security-review` and `secrets-scan` for backend work. Backend tasks with no UI work do not load the frontend design skills.
+- **The orchestrator may load:** `herdr` and `herdr-delegate`, to dispatch implementer and reviewer workers in Herdr panes. The repository ships `herdr-delegate` at `.agents/skills/herdr-delegate/`, with `.claude/skills/herdr-delegate` linked to it. Implementers do not load either one; they report a need to dispatch to the orchestrator.
 
 ## Implementing an OpenSpec change
 
