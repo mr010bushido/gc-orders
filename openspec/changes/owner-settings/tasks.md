@@ -10,7 +10,7 @@
 - [x] 2.1 `/owner/settings` section navigation and the "applies to new bookings" notice — gate: settings page integration test (3 passed), `pnpm typecheck`, `pnpm lint`, `openspec validate owner-settings --strict` (all passed)
 - [x] 2.2 Prices and Sizes sections (grouped flavour list, hide toggle, add form, multipliers as decimals); show/hide coverage added for all item kinds and sizes — gate: `pnpm test --maxWorkers=2 lib/catalogue/admin.test.ts 'app/owner/(console)/settings/settings-manager.dom.test.tsx'` (12 passed), `pnpm typecheck` (passed), `pnpm lint` (passed)
 - [x] 2.3 Fees and rules, Time windows, Payment and contact sections with inline errors and a previous-value comparison before saving prices — gate: `pnpm test --maxWorkers=2 'app/owner/(console)/settings/settings-manager.dom.test.tsx' 'app/owner/(console)/settings/actions.integration.test.ts'` (6 passed), `pnpm typecheck`, `pnpm lint`, `openspec validate owner-settings --strict` (all passed)
-- [ ] 2.4 Add the Settings item to the owner nav; component tests
+- [x] 2.4 Settings was already listed in the owner nav; added component coverage for its active route — gate: `pnpm test --maxWorkers=2 'app/owner/(console)/owner-nav.dom.test.tsx'` (2 passed), `pnpm lint` (passed)
 
 ## 3. Integration (Claude owns this check)
 
