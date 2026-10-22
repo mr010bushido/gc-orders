@@ -3,8 +3,10 @@
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { Button } from "../../../../components/ui/Button";
 import { Input } from "../../../../components/ui/Input";
+import { formatKwacha } from "../../../../components/ui/format";
 import type { FullCatalogue } from "../../../../lib/catalogue/catalogue";
-import { manageCatalogueItem, savePrices, type CatalogueItemAction, type SettingsActionResult } from "./actions";
+import type { SettingKey } from "../../../../lib/catalogue/settings";
+import { manageCatalogueItem, saveFeesAndRules, savePaymentAndContact, savePrices, saveTimeWindows, type CatalogueItemAction, type SettingsActionResult } from "./actions";
 import { SettingsNotice } from "./settings-notice";
 
 type PriceValues = {
@@ -14,7 +16,27 @@ type PriceValues = {
   sizeMultipliers: Record<string, string>;
 };
 
-type Props = { catalogue: FullCatalogue };
+type Props = { catalogue: FullCatalogue; updatedAt?: Partial<Record<SettingKey, string>> };
+
+const ruleFields = [
+  ["delivery_fee", "Delivery fee (ZMW)"], ["rush_rate_percent", "Rush rate (%)"], ["rush_window_hours", "Rush window (hours)"],
+  ["dessert_min_quantity", "Minimum dessert quantity"], ["dessert_lead_days", "Dessert lead time (days)"],
+  ["dessert_surcharge_percent", "Dessert surcharge (%)"], ["max_tiers", "Maximum cake tiers"],
+  ["capacity_per_day", "Orders per day"], ["payment_expiry_hours", "Payment expiry (hours)"],
+] as const satisfies readonly (readonly [SettingKey, string])[];
+const timeFields = [
+  ["morning_start_hour", "Morning starts"], ["morning_end_hour", "Morning ends"],
+  ["afternoon_start_hour", "Afternoon starts"], ["afternoon_end_hour", "Afternoon ends"],
+  ["evening_start_hour", "Evening starts"], ["evening_end_hour", "Evening ends"],
+] as const satisfies readonly (readonly [SettingKey, string])[];
+const paymentFields = [
+  ["airtel_number", "Airtel number"], ["mtn_number", "MTN number"],
+  ["pickup_map_url", "Pickup map link"], ["owner_alert_phone", "Owner alert phone (optional)"],
+] as const satisfies readonly (readonly [SettingKey, string])[];
+
+function UpdatedAt({ value }: { value?: string }) {
+  return <p className="mt-1 text-xs text-ink-soft">{value ? `Last changed ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lusaka" }).format(new Date(value))}` : "Not changed yet"}</p>;
+}
 
 const priceValues = (catalogue: FullCatalogue): PriceValues => ({
   flavourGroupPrices: Object.fromEntries(catalogue.flavourGroups.map(item => [item.key, String(item.basePrice)])),
@@ -41,6 +63,7 @@ function Section({ id, label, children }: { id: string; label: string; children:
 
 function ResultMessage({ result, success }: { result: SettingsActionResult | null; success: string }) {
   if (!result) return null;
+  if (!result.ok && !result.errors._form) return null;
   return result.ok
     ? <p role="status" className="text-sm text-ok-ink">{success}</p>
     : <p role="alert" className="text-sm text-err-ink">{Object.values(result.errors)[0]?.message ?? "Review the fields and try again."}</p>;
@@ -56,13 +79,10 @@ function RenameControl({ kind, itemKey, name, disabled, onSave }: {
   const [value, setValue] = useState(name);
   return <details className="min-w-24">
     <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm text-brand-ink underline underline-offset-4">Edit name</summary>
-    <form className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end" onSubmit={event => {
-      event.preventDefault();
-      onSave({ kind, operation: "rename", key: itemKey, name: value });
-    }}>
+    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
       <Input label="Name" value={value} onChange={event => setValue(event.target.value)} />
-      <Button variant="ghost" disabled={disabled || !value.trim()}>Save name</Button>
-    </form>
+      <Button variant="ghost" disabled={disabled || !value.trim()} onClick={() => onSave({ kind, operation: "rename", key: itemKey, name: value })}>Save name</Button>
+    </div>
   </details>;
 }
 
@@ -75,19 +95,19 @@ function SuggestionsControl({ itemKey, suggestions, disabled, onSave }: {
   const [value, setValue] = useState(suggestions.join(", "));
   return <details className="min-w-36">
     <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm text-brand-ink underline underline-offset-4">Edit flavours</summary>
-    <form className="mt-2 flex flex-col gap-2" onSubmit={event => {
-      event.preventDefault();
-      onSave({ kind: "dessert", operation: "suggestions", key: itemKey, flavourSuggestions: value.split(",").map(item => item.trim()).filter(Boolean) });
-    }}>
+    <div className="mt-2 flex flex-col gap-2">
       <Input label="Flavour suggestions" helper="Separate names with commas" value={value} onChange={event => setValue(event.target.value)} />
-      <Button variant="ghost" disabled={disabled}>Save flavours</Button>
-    </form>
+      <Button variant="ghost" disabled={disabled} onClick={() => onSave({ kind: "dessert", operation: "suggestions", key: itemKey, flavourSuggestions: value.split(",").map(item => item.trim()).filter(Boolean) })}>Save flavours</Button>
+    </div>
   </details>;
 }
 
-export function SettingsManager({ catalogue }: Props) {
+export function SettingsManager({ catalogue, updatedAt = {} }: Props) {
   const [pending, startTransition] = useTransition();
   const [prices, setPrices] = useState(() => priceValues(catalogue));
+  const [ruleValues, setRuleValues] = useState(() => Object.fromEntries(ruleFields.map(([key]) => [key, String(catalogue.settings[key])])));
+  const [timeValues, setTimeValues] = useState(() => Object.fromEntries(timeFields.map(([key]) => [key, catalogue.settings[key] ?? ""])));
+  const [paymentValues, setPaymentValues] = useState(() => Object.fromEntries(paymentFields.map(([key]) => [key, catalogue.settings[key] ?? ""])));
   const [result, setResult] = useState<SettingsActionResult | null>(null);
   const [newFlavour, setNewFlavour] = useState({ name: "", group: catalogue.flavourGroups[0]?.key ?? "", diet: "standard" });
   const [newFrosting, setNewFrosting] = useState("");
@@ -95,15 +115,27 @@ export function SettingsManager({ catalogue }: Props) {
   const [newDessert, setNewDessert] = useState({ name: "", price: "1", flavourSuggestions: "" });
 
   const changeValue = (field: keyof PriceValues, key: string, value: string) => {
+    setResult(null);
     setPrices(current => ({ ...current, [field]: { ...current[field], [key]: value } }));
   };
 
   const submitPrices = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const changes = [
+      ...catalogue.flavourGroups.map(item => [`${item.name} base price`, item.basePrice, prices.flavourGroupPrices[item.key]] as const),
+      ...catalogue.addons.map(item => [`${item.name} price`, item.price, prices.addonPrices[item.key]] as const),
+      ...catalogue.dessertTypes.map(item => [`${item.name} price`, item.price, prices.dessertPrices[item.key]] as const),
+    ].filter(([, oldValue, newValue]) => String(oldValue) !== newValue);
+    if (changes.length && !window.confirm(`Review these price changes before saving:\n${changes.map(([name, oldValue, newValue]) => `${name}: ${formatKwacha(oldValue)} → ${/^\d+$/.test(newValue) ? formatKwacha(Number(newValue)) : newValue}`).join("\n")}`)) return;
     startTransition(async () => {
       const next = await savePrices({ ...prices, sizeMultipliers: {} });
       setResult(next);
     });
+  };
+
+  const submitSettings = (event: FormEvent<HTMLFormElement>, action: (input: Record<string, unknown>) => Promise<SettingsActionResult>, values: Record<string, string>) => {
+    event.preventDefault();
+    startTransition(async () => setResult(await action(values)));
   };
 
   const submitSizes = (event: FormEvent<HTMLFormElement>) => {
@@ -272,9 +304,27 @@ export function SettingsManager({ catalogue }: Props) {
         </form>
       </Section>
 
-      <Section id="rules" label="Fees and rules"><p className="text-sm text-ink-soft">Settings will appear here.</p></Section>
-      <Section id="windows" label="Time windows"><p className="text-sm text-ink-soft">Settings will appear here.</p></Section>
-      <Section id="payment" label="Payment and contact"><p className="text-sm text-ink-soft">Settings will appear here.</p></Section>
+      <Section id="rules" label="Fees and rules">
+        <form onSubmit={event => submitSettings(event, saveFeesAndRules, ruleValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+          {ruleFields.map(([key, label]) => <div key={key}><Input label={label} inputMode="numeric" value={ruleValues[key]} onChange={event => { setResult(null); setRuleValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
+          <ResultMessage result={result} success="Fees and rules saved." />
+          <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save fees and rules"}</Button>
+        </form>
+      </Section>
+      <Section id="windows" label="Time windows">
+        <form onSubmit={event => submitSettings(event, saveTimeWindows, timeValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+          {timeFields.map(([key, label]) => <div key={key}><Input label={label} type="time" value={timeValues[key]} onChange={event => { setResult(null); setTimeValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
+          <ResultMessage result={result} success="Time windows saved." />
+          <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save time windows"}</Button>
+        </form>
+      </Section>
+      <Section id="payment" label="Payment and contact">
+        <form onSubmit={event => submitSettings(event, savePaymentAndContact, paymentValues)} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+          {paymentFields.map(([key, label]) => <div key={key}><Input label={label} type={key === "pickup_map_url" ? "url" : "tel"} value={paymentValues[key]} onChange={event => { setResult(null); setPaymentValues(current => ({ ...current, [key]: event.target.value })); }} error={priceError(key)} /><UpdatedAt value={updatedAt[key]} /></div>)}
+          <ResultMessage result={result} success="Payment and contact details saved." />
+          <Button variant="ghost" type="submit" disabled={pending}>{pending ? "Saving…" : "Save payment and contact"}</Button>
+        </form>
+      </Section>
     </div>
   </main>;
 }
