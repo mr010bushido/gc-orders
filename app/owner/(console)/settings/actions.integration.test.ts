@@ -98,6 +98,18 @@ it("uses a settings price for the booking catalogue and quote while preserving a
   expect(await test.db.select().from(orderLines).where(eq(orderLines.orderId, orderBefore.id))).toEqual(linesBefore);
 });
 
+it("rejects extra catalogue action properties without changing the item", async () => {
+  await signInAs("owner@example.com");
+  await seedCatalogue(test.db);
+
+  await expect(manageCatalogueItem({ kind: "addon", operation: "hide", key: "chocolate_drip", price: 0 }))
+    .resolves.toMatchObject({ ok: false, errors: { _form: { code: "INVALID_ACTION" } } });
+  expect((await getCatalogue(test.db, { includeInactive: true })).addons.find(item => item.key === "chocolate_drip")?.active).toBe(true);
+
+  await expect(manageCatalogueItem({ kind: "addon", operation: "hide", key: "chocolate_drip" })).resolves.toEqual({ ok: true });
+  expect((await getCatalogue(test.db, { includeInactive: true })).addons.find(item => item.key === "chocolate_drip")?.active).toBe(false);
+});
+
 it("shows settings section navigation and the new-bookings notice on every section", async () => {
   await signInAs("owner@example.com");
   const page = renderToStaticMarkup(await SettingsPage());

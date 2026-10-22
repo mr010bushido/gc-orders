@@ -69,12 +69,31 @@ export async function manageCatalogueItem(value: unknown): Promise<SettingsActio
     if (!("kind" in input) || !("operation" in input)) {
       throw new CatalogueAdminError("_form", "INVALID_ACTION", "Choose a valid catalogue action.");
     }
-    const validAction = [
-      "flavour:add", "flavour:rename", "flavour:hide", "flavour:show", "frosting:add", "frosting:rename", "frosting:hide", "frosting:show",
-      "addon:add", "addon:rename", "addon:hide", "addon:show", "dessert:add", "dessert:rename", "dessert:hide", "dessert:show",
-      "dessert:suggestions", "size:hide", "size:show",
-    ].includes(`${input.kind}:${input.operation}`);
-    if (!validAction) throw new CatalogueAdminError("_form", "INVALID_ACTION", "Choose a valid catalogue action.");
+    const actionProperties: Record<string, readonly string[]> = {
+      "flavour:add": ["kind", "operation", "name", "group", "diet"],
+      "flavour:rename": ["kind", "operation", "key", "name"],
+      "flavour:hide": ["kind", "operation", "key"],
+      "flavour:show": ["kind", "operation", "key"],
+      "frosting:add": ["kind", "operation", "name"],
+      "frosting:rename": ["kind", "operation", "key", "name"],
+      "frosting:hide": ["kind", "operation", "key"],
+      "frosting:show": ["kind", "operation", "key"],
+      "addon:add": ["kind", "operation", "name", "price"],
+      "addon:rename": ["kind", "operation", "key", "name"],
+      "addon:hide": ["kind", "operation", "key"],
+      "addon:show": ["kind", "operation", "key"],
+      "dessert:add": ["kind", "operation", "name", "price", "flavourSuggestions"],
+      "dessert:rename": ["kind", "operation", "key", "name"],
+      "dessert:hide": ["kind", "operation", "key"],
+      "dessert:show": ["kind", "operation", "key"],
+      "dessert:suggestions": ["kind", "operation", "key", "flavourSuggestions"],
+      "size:hide": ["kind", "operation", "size"],
+      "size:show": ["kind", "operation", "size"],
+    };
+    const allowedProperties = actionProperties[`${input.kind}:${input.operation}`];
+    if (!allowedProperties || Object.keys(input).some(key => !allowedProperties.includes(key))) {
+      throw new CatalogueAdminError("_form", "INVALID_ACTION", "Choose a valid catalogue action.");
+    }
     const db = getDb();
     switch (input.kind) {
       case "flavour":
