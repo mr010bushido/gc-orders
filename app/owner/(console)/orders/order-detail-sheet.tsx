@@ -20,7 +20,7 @@ function formatTimestamp(value: Date) {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lusaka" }).format(value);
 }
 
-export function OrderDetailSheet({ order, onClose }: { order: OwnerOrderDetail | null; onClose: () => void }) {
+export function OrderDetailSheet({ order, images = [], onClose }: { order: OwnerOrderDetail | null; images?: { id: string; url: string; width: number; height: number }[]; onClose: () => void }) {
   const [message, setMessage] = useState("");
   const [note, setNote] = useState("");
   const [method, setMethod] = useState<BalanceMethod>("cash");
@@ -54,6 +54,16 @@ export function OrderDetailSheet({ order, onClose }: { order: OwnerOrderDetail |
       </section>
       <section><h3 className="font-semibold">Event</h3><p>{formatEventDate(order.eventDate)} · {order.timeWindow}</p><p className="capitalize">{order.fulfilment}{order.fulfilment === "delivery" && order.deliveryAddress ? ` · ${order.deliveryAddress}` : ""}</p></section>
       <section><h3 className="font-semibold">Design notes</h3><p className="whitespace-pre-wrap"><PlainText value={order.designNotes || "None"}/></p><p>Topper: <span className="whitespace-pre-wrap"><PlainText value={order.topperMessage || "None"}/></span></p></section>
+      {images.length > 0 && <section aria-label="Reference photos">
+        <h3 className="font-semibold">Reference photos</h3>
+        <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {images.map((image, index) => <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="block rounded-sm border border-line">
+            {/* Signed URLs are used directly so image optimization cannot expose or cache them. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={image.url} alt={`Reference photo ${index + 1} for ${order.reference}`} width={image.width} height={image.height} className="aspect-square w-full rounded-sm object-cover" />
+          </a>)}
+        </div>
+      </section>}
       <section><h3 className="font-semibold">Items</h3><ul className="divide-y divide-line">{order.lines.map(line => <li key={line.id} className="flex justify-between gap-3 py-2"><span>{line.quantity} × {line.label}</span><span className="tabular-nums">{formatKwacha(line.amount)}</span></li>)}</ul><dl className="mt-2 space-y-1"><div className="flex justify-between"><dt>Total</dt><dd>{formatKwacha(order.total)}</dd></div><div className="flex justify-between"><dt>Deposit</dt><dd>{formatKwacha(order.deposit)}</dd></div><div className="flex justify-between font-semibold"><dt>Balance</dt><dd>{formatKwacha(order.balancePaidAt ? 0 : balance)}</dd></div></dl></section>
       <section><h3 className="font-semibold">Proof of payment</h3>{order.submissions.length ? <ol className="space-y-3">{order.submissions.slice().reverse().map(pop => <li key={pop.id}><time className="text-xs text-ink-soft">{formatTimestamp(pop.submittedAt)}</time><p className="whitespace-pre-wrap rounded-sm border border-line bg-canvas p-3"><PlainText value={pop.text}/></p></li>)}</ol> : <p>No proof submitted.</p>}</section>
       <section><h3 className="font-semibold">Status history</h3><ol className="mt-2 space-y-2">{order.events.map(event => <li key={event.id} className="border-l-2 border-line pl-3"><p>{event.fromStatus ? `${event.fromStatus} → ` : "Created as "}{event.toStatus}</p><p className="text-xs text-ink-soft">{event.actor} · {formatTimestamp(event.at)}</p></li>)}</ol></section>

@@ -15,6 +15,7 @@ type Entry = {
 };
 
 type ImageUploaderProps = {
+  initialImages?: UploadedImage[];
   onChange?: (images: UploadedImage[]) => void;
   onPendingChange?: (pending: boolean) => void;
 };
@@ -66,13 +67,19 @@ function request<T>(method: 'POST' | 'DELETE', url: string, body?: FormData, tok
   });
 }
 
-export function ImageUploader({ onChange, onPendingChange }: ImageUploaderProps) {
+export function ImageUploader({ initialImages = [], onChange, onPendingChange }: ImageUploaderProps) {
   const inputId = useId();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectionError, setSelectionError] = useState('');
   const entriesRef = useRef(entries);
   const removeRequested = useRef(new Set<string>());
   const mounted = useRef(true);
+
+  useEffect(() => {
+    if (initialImages.length && entriesRef.current.length === 0) {
+      setEntries(initialImages.map((image) => ({ key: image.id, preview: '', name: 'Saved reference photo', progress: 100, status: 'ready', image })));
+    }
+  }, [initialImages]);
 
   useEffect(() => {
     entriesRef.current = entries;
@@ -190,7 +197,7 @@ export function ImageUploader({ onChange, onPendingChange }: ImageUploaderProps)
           <div key={entry.key} className="relative w-28">
             {/* Local previews stay in the browser; no image URL is sent to the server. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={entry.preview} alt={`Reference photo ${index + 1}: ${entry.name}`} className="h-28 w-28 rounded-md border border-line object-cover" />
+            {entry.preview ? <img src={entry.preview} alt={`Reference photo ${index + 1}: ${entry.name}`} className="h-28 w-28 rounded-md border border-line object-cover" /> : <p className="flex h-28 w-28 items-center justify-center rounded-md border border-line bg-canvas p-2 text-center text-xs text-ink-soft">Saved reference photo {index + 1}</p>}
             {entry.status === 'uploading' && <progress aria-label={`Uploading photo ${index + 1}`} max={100} value={entry.progress} className="mt-2 block h-2 w-full accent-brand" />}
             {entry.status === 'processing' && <p className="mt-1 text-xs text-ink-soft" role="status">Preparing photo…</p>}
             {entry.status === 'uploading' && <p className="mt-1 text-xs text-ink-soft" role="status">Uploading {entry.progress}%</p>}

@@ -10,11 +10,11 @@
 ## 2. Frontend (Claude)
 
 - [x] 2.1 `ImageUploader` component (canvas downscale, thumbnails, progress, remove, errors, 3 max) with tests and a gallery entry — gates: `pnpm test components/ui/ImageUploader.test.tsx` (4 passed), `pnpm lint` (passed), `pnpm typecheck` (passed), `openspec validate image-uploads --strict` (valid)
-- [ ] 2.2 Add the uploader to booking step 2 and send the tokens with the booking
-- [ ] 2.3 Show the images in the owner order sheet
+- [x] 2.2 Add the uploader to booking step 2 and send the tokens with the booking — gate: `pnpm test --maxWorkers=2 app/book/wizard.dom.test.tsx app/images.integration.test.tsx components/ui/ImageUploader.test.tsx app/owner/owner.integration.test.tsx` → 24 passed; full `pnpm test --maxWorkers=2` → 830 passed, 1 existing skip
+- [x] 2.3 Show the images in the owner order sheet — gate: `pnpm test --maxWorkers=2 app/book/wizard.dom.test.tsx app/images.integration.test.tsx components/ui/ImageUploader.test.tsx app/owner/owner.integration.test.tsx` → 24 passed; `pnpm lint` and `pnpm typecheck` → passed
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: upload through the route with the in-memory store, submit a booking, open the owner sheet and see signed URLs
-- [ ] 3.2 BLOCKED for a human: create a private Supabase Storage bucket and set the service role key in Vercel; record when done
+- [x] 3.1 Test: upload through the route with the in-memory store, submit a booking, open the owner sheet and see signed URLs — gate: `pnpm test --maxWorkers=2 app/images.integration.test.tsx` → 1 passed; final gates: lint, typecheck, full test (830 passed, 1 existing skip), build, portability, and strict OpenSpec validation all passed
+- [ ] BLOCKED: Who can complete the required human-only provisioning? — 3.2 BLOCKED for a human: create a private Supabase Storage bucket and set the service role key in Vercel; record when done
 - [ ] 3.3 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate image-uploads --strict` passes
