@@ -1,9 +1,9 @@
 ## 1. Shared rules
 
-- [ ] 1.1 In `CLAUDE.md`, add the "Post-merge cleanup" block after the standing orchestrator authorization in "Limits for every agent", and point the Git workflow "Delete the branch after merging" line at it
-- [ ] 1.2 Make the same changes word for word in `AGENTS.md`, and point its "Delete merged feature branches" Git workflow line at it
+- [x] 1.1 In `CLAUDE.md`, add the "Post-merge cleanup" block after the standing orchestrator authorization in "Limits for every agent", and point the Git workflow "Delete the branch after merging" line at it — gate: python assert pointer line and anchor found once each in CLAUDE.md → ok
+- [x] 1.2 Make the same changes word for word in `AGENTS.md`, and point its "Delete merged feature branches" Git workflow line at it — gate: same asserts on AGENTS.md → ok
 
 ## 2. Verify
 
-- [ ] 2.1 The "Post-merge cleanup" block is identical in `CLAUDE.md` and `AGENTS.md`, and nothing else in either file changed except the two pointer lines
-- [ ] 2.2 `openspec validate post-merge-cleanup --strict` passes
+- [x] 2.1 The "Post-merge cleanup" block is identical in `CLAUDE.md` and `AGENTS.md`, and nothing else in either file changed except the two pointer lines — gate: diff of the extracted Post-merge cleanup block CLAUDE.md vs AGENTS.md → identical (10 lines); git diff shows only the block and the two pointer lines
+- [x] 2.2 `openspec validate post-merge-cleanup --strict` passes — gate: openspec validate post-merge-cleanup --strict → valid
