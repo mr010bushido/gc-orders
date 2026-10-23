@@ -5,5 +5,5 @@
 
 ## 2. Verify
 
-- [x] 2.1 The "Post-merge cleanup" block is identical in `CLAUDE.md` and `AGENTS.md`, and nothing else in either file changed except the two pointer lines — gate: diff of the extracted Post-merge cleanup block CLAUDE.md vs AGENTS.md → identical (10 lines); git diff shows only the block and the two pointer lines
+- [x] 2.1 The "Post-merge cleanup" block is identical in `CLAUDE.md` and `AGENTS.md`, and nothing else in either file changed except the two pointer lines and the user-requested clarification that Codex/GPT and Claude have equal orchestrator authorization — gate: diff of the extracted Post-merge cleanup block CLAUDE.md vs AGENTS.md → identical (10 lines); git diff shows only the block, the two pointer lines, and the authorization clarification; rerun: matching authorization and cleanup blocks asserted
 - [x] 2.2 `openspec validate post-merge-cleanup --strict` passes — gate: openspec validate post-merge-cleanup --strict → valid

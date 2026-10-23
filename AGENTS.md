@@ -48,7 +48,7 @@ No agent may do any of the following unless the user explicitly authorizes that 
 - change GitHub, Vercel, Supabase or Linear settings;
 - read or expose production secrets.
 
-**Standing orchestrator authorization.** The user has authorized the orchestrator, and only the orchestrator, to do the following without asking each time:
+**Standing orchestrator authorization.** The user has authorized whichever agent is acting as orchestrator, including Codex/GPT and Claude equally, to complete the following workflow without asking each time. This authorization belongs to the orchestrator role, not implementers:
 
 - push `feature/*` branches and open their PRs, archive PRs included, into `develop` (`gh pr create --base develop`, title `JMS-<n>: …`);
 - wait for CI on the PR's head commit to finish, then delegate an independent review of that exact head SHA to an agent other than the author;
