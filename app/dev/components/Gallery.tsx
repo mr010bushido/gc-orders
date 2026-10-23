@@ -7,6 +7,7 @@ import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
+import { ImageUploader } from '@/components/ui/ImageUploader';
 import { OrderCard } from '@/components/ui/OrderCard';
 import { RadioCardGroup } from '@/components/ui/RadioCardGroup';
 import { Sheet } from '@/components/ui/Sheet';
@@ -98,6 +99,10 @@ export function Gallery({ today }: { today: string }) {
             { key: 'candles', label: 'Candles', price: 50 },
           ]}
         />
+      </Section>
+
+      <Section title="Image uploader">
+        <ImageUploader />
       </Section>
 
       <Section title="Stepper">

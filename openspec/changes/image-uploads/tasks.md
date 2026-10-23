@@ -9,7 +9,7 @@
 
 ## 2. Frontend (Claude)
 
-- [ ] 2.1 `ImageUploader` component (canvas downscale, thumbnails, progress, remove, errors, 3 max) with tests and a gallery entry
+- [x] 2.1 `ImageUploader` component (canvas downscale, thumbnails, progress, remove, errors, 3 max) with tests and a gallery entry — gates: `pnpm test components/ui/ImageUploader.test.tsx` (4 passed), `pnpm lint` (passed), `pnpm typecheck` (passed), `openspec validate image-uploads --strict` (valid)
 - [ ] 2.2 Add the uploader to booking step 2 and send the tokens with the booking
 - [ ] 2.3 Show the images in the owner order sheet
 
