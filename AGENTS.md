@@ -60,7 +60,7 @@ If a BLOCKING finding remains after the third round, stop and hand the PR to the
 
 1. Delete the remote branch.
 2. Remove the change's worktree and local branch, but only when `git status --porcelain` is empty and its HEAD is in `origin/develop`. Otherwise leave them and report why. Never discard uncommitted work.
-3. Fast-forward the root checkout with `git fetch origin && git merge --ff-only origin/develop`. Never stash, commit or revert the user's uncommitted edits; if the fast-forward refuses, leave it and report it.
+3. Check that the root checkout is on `develop`; if it is on another branch or has a detached HEAD, leave it unchanged and report why. On `develop`, fast-forward with `git fetch origin && git merge --ff-only origin/develop`. Never stash, commit or revert the user's uncommitted edits; if the fast-forward refuses, leave it and report it.
 4. Archive the change from a new worktree on `feature/jms-<n>-archive-<change>`, cut from `origin/develop`. Run `openspec archive <change> --yes`, which syncs the delta specs. Replace the generated "TBD" Purpose, run `openspec validate --specs --strict`, commit `JMS-<n>: Archive <change>`, and open the archive PR. It follows the same CI, review and merge conditions as any PR. Use the CLI: the `openspec-archive-change` skill stays denied to unattended agents.
 5. Once the archive PR reports MERGED, apply steps 1 to 3 to the archive branch, then set the Linear issue to Done.
 6. Remove the temporary artifacts you created for the change: harness routes, screenshots, scratch files and dev servers.
