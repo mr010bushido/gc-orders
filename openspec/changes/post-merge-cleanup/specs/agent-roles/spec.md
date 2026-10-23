@@ -12,7 +12,7 @@ After a feature PR reports MERGED, the orchestrating agent SHALL clean up withou
 A merged PR that is not an OpenSpec change SHALL get steps 1, 2, 3 and 6 only. The final report SHALL state the result of each step.
 
 #### Scenario: Clean merged worktree
-- **WHEN** a feature PR reports MERGED and its worktree is clean with HEAD in `origin/develop`
+- **WHEN** a feature PR reports MERGED and its worktree is clean with HEAD in `origin/develop` and the root checkout is on `develop`
 - **THEN** the orchestrator deletes the remote branch, removes the worktree and local branch, fast-forwards `develop` and opens the archive PR
 
 #### Scenario: Worktree has uncommitted work
