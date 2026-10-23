@@ -6,12 +6,13 @@ import { toPricingRules } from "../catalogue/pricing-rules";
 import type { Db } from "../db";
 import { normaliseZambianMobile } from "../phone";
 import { createOrder, type CreateOrderInput } from "../orders/orders";
+import { OrderError } from "../orders/orders";
 import { bookingRequestSchema, type BookingErrorCode, type BookingField, type BookingResponse } from "./schema";
 
 function fieldFor(path: PropertyKey[]): BookingField {
   const field = String(path[0] ?? "_form");
   if (field === "cake" && ["flavour", "frosting", "tierSizes", "addons"].includes(String(path[1]))) return String(path[1]) as BookingField;
-  return ["name", "phone", "email", "fulfilment", "address", "eventDate", "timeWindow", "designNotes", "topperMessage", "cake", "desserts"].includes(field)
+  return ["name", "phone", "email", "fulfilment", "address", "eventDate", "timeWindow", "designNotes", "topperMessage", "imageTokens", "cake", "desserts"].includes(field)
     ? field as BookingField : "_form";
 }
 
@@ -47,6 +48,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
         : issue.message === "Duplicate dessert types" ? "DUPLICATE_DESSERT"
           : field === "desserts" && issue.path.length === 1 && issue.code === "too_big" ? "TOO_MANY_DESSERT_LINES"
         : field === "tierSizes" && issue.code === "too_big" ? "TOO_MANY_TIERS"
+        : field === "imageTokens" && issue.code === "too_big" ? "TOO_MANY_IMAGES"
           : issue.code === "invalid_type" || issue.code === "too_small" ? "REQUIRED" : "INVALID_INPUT");
     }
     if (input && typeof input === "object" && "phone" in input && typeof input.phone === "string" && !normaliseZambianMobile(input.phone)) {
@@ -125,6 +127,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     timeWindow: request.timeWindow,
     designNotes: request.designNotes,
     topperMessage: request.topperMessage,
+    imageTokens: request.imageTokens,
     basket: {
       total: priced.total,
       deposit: priced.deposit,
@@ -164,6 +167,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     };
   } catch (error) {
     if (error instanceof AvailabilityError) return { ok: false, errors: { eventDate: "DATE_UNAVAILABLE" } };
+    if (error instanceof OrderError && error.code === "IMAGE_NOT_FOUND") return { ok: false, errors: { imageTokens: "IMAGE_NOT_FOUND" } };
     if (error instanceof PricingError) return { ok: false, errors: { eventDate: error.code === "DESSERT_LEAD_TIME" ? "DATE_TOO_SOON" : "INVALID_INPUT" } };
     throw error;
   }
