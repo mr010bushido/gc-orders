@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({ db: undefined as unknown, after: vi.fn(), acti
 vi.mock('@/lib/db', () => ({ getDb: () => mocks.db }));
 vi.mock('next/server', () => ({ after: mocks.after }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: mocks.routerReplace }) }));
+vi.mock('@/components/ui/ImageUploader', () => ({ ImageUploader: ({ initialImages, onChange, onPendingChange }: { initialImages: { id: string; token: string }[]; onChange: (images: { id: string; token: string }[]) => void; onPendingChange: (pending: boolean) => void }) => <div><span>{initialImages.length} saved photos</span><button type="button" onClick={() => onPendingChange(true)}>Start photo upload</button><button type="button" onClick={() => { onChange([{ id: 'image-1', token: 'token-1' }]); onPendingChange(false); }}>Finish photo upload</button></div> }));
 vi.mock('./actions', async importOriginal => {
   const actual = await importOriginal<typeof import('./actions')>();
   return { createBookingAction: (...args: Parameters<typeof actual.createBookingAction>) => mocks.actionMock ? (mocks.actionMock as typeof actual.createBookingAction)(...args) : actual.createBookingAction(...args) };
@@ -209,6 +210,36 @@ it('skips focus on mount and focuses the heading after Continue and Back', async
   await waitFor(() => expect(document.activeElement).toBe(detailsHeading));
   await user.click(screen.getByRole('button', { name: 'Back' }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Choose your treats' })));
+});
+
+it('restores uploaded image tokens from the booking draft and submits them with the booking', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: true as const, reference: 'CAKE-2026-0010', accessToken: 'opaque', total: 1700, deposit: 850, lines: [{ label: 'Cake', amount: 1700, kind: 'cake' }], paymentInstructions: { airtelNumber: null, mtnNumber: null, quote: 'CAKE-2026-0010' } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [], fulfilment: 'pickup', address: '', eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '', imageTokens: [{ id: 'saved-image', token: 'saved-token' }],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
+  const user = userEvent.setup();
+  await screen.findByRole('heading', { name: 'Review your booking' });
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  await screen.findByRole('status');
+  expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ imageTokens: ['saved-token'] }));
+  expect(sessionStorage.getItem('gc-booking-draft-v1')).toBeNull();
+});
+
+it('keeps booking submission disabled while a photo upload is pending', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [], fulfilment: 'pickup', address: '', eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '', imageTokens: [],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={1} />);
+  const user = userEvent.setup();
+  await screen.findByRole('heading', { name: 'Cake details' });
+  await user.click(screen.getByRole('button', { name: 'Start photo upload' }));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('heading', { name: 'Delivery and details' });
+  await user.click(screen.getByRole('button', { name: 'Review booking' }));
+  await screen.findByRole('heading', { name: 'Review your booking' });
+  expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(mocks.actionMock).not.toHaveBeenCalled();
 });
 
 it('ignores a second submit while the action is pending', async () => {
