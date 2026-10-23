@@ -1,11 +1,11 @@
 ## 1. Backend (Codex)
 
-- [ ] 1.1 Add `sharp`; `lib/images/process.ts` (signature check, decode, rotate, resize to 1600px, WebP, strip metadata); tests with fixture images including GPS EXIF, oversized, tiny and a renamed PDF
-- [ ] 1.2 Schema and migration for `order_images` (id, order id nullable, key, bytes, width, height, token hash, created at; RLS on)
-- [ ] 1.3 `POST /api/uploads` and `DELETE /api/uploads/[id]` with limits, the `RateLimiter` and the pending cap; route tests for every error code
-- [ ] 1.4 Extend the booking schema with `imageTokens` and attach in `createOrder`'s transaction; tests for three, four and wrong tokens
-- [ ] 1.5 Supabase Storage `ImageStore` adapter passing `imageStoreContract` with a mocked client; storage env names in `.env.example`
-- [ ] 1.6 `getOrderImageUrls(orderId)` for the owner, which issues 300-second signed URLs; test that it needs the owner guard
+- [x] 1.1 Add `sharp`; `lib/images/process.ts` (signature check, decode, rotate, resize to 1600px, WebP, strip metadata); tests with fixture images including GPS EXIF, oversized, tiny and a renamed PDF — gate: `pnpm test lib/images/process.test.ts` → 3 passed; `pnpm install --frozen-lockfile --store-dir /tmp/cakes-jms197-pnpm-store` → 458 downloaded, passed
+- [x] 1.2 Schema and migration for `order_images` (id, order id nullable, key, bytes, width, height, token hash, created at; RLS on; address hash for the pending cap) — gate: `pnpm test lib/db/schema.test.ts lib/db/migrations.test.ts` → 9 passed
+- [x] 1.3 `POST /api/uploads` and `DELETE /api/uploads/[id]` with limits, the `RateLimiter` and the pending cap; route tests for every error code — gate: `pnpm test lib/images/process.test.ts lib/images/http.test.ts` → 6 passed; `pnpm typecheck` → passed
+- [x] 1.4 Extend the booking schema with `imageTokens` and attach in `createOrder`'s transaction; tests for three, four and wrong tokens — gate: `pnpm test lib/booking/create-booking.test.ts` → 16 passed; `pnpm typecheck` → passed
+- [x] 1.5 Supabase Storage `ImageStore` adapter passing `imageStoreContract` with a mocked client; storage env names in `.env.example` — gate: `pnpm test lib/platform/adapters/supabase/image-store.test.ts` → 4 passed
+- [x] 1.6 `getOrderImageUrls(orderId)` for the owner, which issues 300-second signed URLs; test that it needs the owner guard — gate: `pnpm test lib/images/owner.test.ts` → 2 passed; `pnpm typecheck` → passed
 
 ## 2. Frontend (Claude)
 

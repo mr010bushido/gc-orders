@@ -64,6 +64,13 @@
       "when": 1792521773601,
       "tag": "0008_stale_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792774917798,
+      "tag": "0009_fuzzy_bruce_banner",
+      "breakpoints": true
     }
   ]
 }
