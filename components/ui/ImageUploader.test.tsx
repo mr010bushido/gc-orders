@@ -59,6 +59,7 @@ describe('ImageUploader', () => {
     render(<ImageUploader onChange={onChange} onPendingChange={onPendingChange} />);
     const input = screen.getByLabelText('Add photos');
     expect(input.getAttribute('accept')).toBe('image/jpeg,image/png,image/webp');
+    expect(input.parentElement?.querySelector('label')?.className).toContain('has-[:focus-visible]:outline-brand-ink');
 
     await user.upload(input, new File(['source'], 'cake.jpg', { type: 'image/jpeg' }));
     await waitFor(() => expect(onPendingChange).toHaveBeenLastCalledWith(true));

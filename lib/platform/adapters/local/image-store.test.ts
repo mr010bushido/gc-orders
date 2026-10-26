@@ -72,7 +72,15 @@ it("serves only valid local signed URLs through the route", async () => {
   expect(response.headers.get("content-type")).toBe("image/webp");
   expect(response.headers.get("cache-control")).toBe("private, no-store");
   expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([9]));
-  expect((await GET(new Request(`http://localhost${url}broken`))).status).toBe(404);
+  const rejected = await Promise.all([
+    GET(new Request(`http://localhost${url}broken`)),
+    GET(new Request(`http://localhost/api/images/local?key=images%2F..%2Fpublic%2Fx.webp&expires=1893456000&signature=${'0'.repeat(64)}`)),
+    GET(new Request(`http://localhost/api/images/local?key=images%2Fcake.webp&expires=1&signature=${'0'.repeat(64)}`)),
+  ]);
+  for (const invalid of rejected) {
+    expect(invalid.status).toBe(404);
+    expect(invalid.headers.get('cache-control')).toBe('private, no-store');
+  }
   vi.stubEnv("IMAGE_STORE", "supabase");
   expect((await GET(new Request(new URL(url, "http://localhost")))).status).toBe(404);
   vi.stubEnv("IMAGE_STORE", "local");

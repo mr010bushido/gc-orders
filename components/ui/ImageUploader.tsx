@@ -210,7 +210,7 @@ export function ImageUploader({ initialImages = [], onChange, onPendingChange }:
       </div>
       {entries.length < 3 && (
         <>
-          <label htmlFor={inputId} className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-sm border border-ink px-4 text-sm font-medium text-ink">Add photos</label>
+          <label htmlFor={inputId} className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-sm border border-ink px-4 text-sm font-medium text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-ink">Add photos</label>
           <input id={inputId} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => { chooseFiles(event.currentTarget.files); event.currentTarget.value = ''; }} className="sr-only" />
         </>
       )}
