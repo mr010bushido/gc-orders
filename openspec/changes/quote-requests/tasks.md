@@ -8,11 +8,11 @@
 
 ## 2. Screens (Claude)
 
-- [x] 2.1 Deviation: both status pill components already include `awaiting_quote`, so updated only the missing status table in `design/DESIGN.md` — gate: `openspec validate quote-requests --strict` → valid
-- [x] 2.2 Wizard quote request kind, description and `ImageUploader`; quote-only review and submission avoid showing a deposit — gate: `pnpm test app/book/wizard.dom.test.tsx` → 14 passed
-- [x] 2.3 Owner sheet shows request details/photos, prices through `priceBasket`, previews total and deposit, and exposes Send quote and Decline — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` → 5 passed
-- [ ] 2.4 Order page: `awaiting_quote` copy without payment instructions, quote lines after sending
-- [ ] 2.5 Component tests for each addition
+- [x] 2.1 Deviation: both status pill components already include `awaiting_quote`, so updated only the missing status table in `design/DESIGN.md` — gate: `openspec validate quote-requests --strict` → valid; rechecked `pnpm lint` → passed (2 existing warnings), `pnpm typecheck` → passed
+- [x] 2.2 Wizard quote request kind, description and `ImageUploader`; quote-only review and submission avoid showing a deposit — gate: `pnpm test app/book/wizard.dom.test.tsx` → 14 passed; rechecked `pnpm lint` → passed (2 existing warnings), `pnpm typecheck` → passed
+- [x] 2.3 Owner sheet shows request details/photos, prices through `priceBasket`, previews total and deposit, and exposes Send quote and Decline — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` → 5 passed, `pnpm test app/owner/owner.integration.test.tsx` → 7 passed; rechecked `pnpm lint` → passed (2 existing warnings), `pnpm typecheck` → passed
+- [x] 2.4 Order page shows quote request details and `awaiting_quote` copy without payment instructions or amounts; after sending, shows quote lines, total, deposit and payment instructions — gate: `pnpm test app/order/page.integration.test.tsx` → 11 passed, `pnpm typecheck` → passed
+- [x] 2.5 Component and page tests cover the wizard, owner quote sheet, status message and order page additions — gate: `pnpm test app/book/wizard.dom.test.tsx` → 14 passed, `pnpm test components/ui/OrderDetailSheet.test.tsx` → 5 passed, `pnpm test app/order/status-message.dom.test.tsx` → 10 passed, `pnpm test app/order/page.integration.test.tsx` → 11 passed
 
 ## 3. Integration (Claude owns this check)
 

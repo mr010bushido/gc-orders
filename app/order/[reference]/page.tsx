@@ -11,6 +11,7 @@ import { balanceDue } from "@/lib/orders/transitions";
 import { PopForm } from "../pop-form";
 import { ExpiryCountdown } from "../countdown";
 import { StatusMessage } from "../status-message";
+import { getQuoteRequest } from "@/lib/quotes/quotes";
 
 const payByFormat = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Lusaka" });
 const label = (status: string) => { const text = status.replaceAll("_", " "); return text[0].toUpperCase() + text.slice(1); };
@@ -21,7 +22,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const db = getDb();
   const detail = t ? await findOrderByToken(db, t) : null;
   if (!detail || detail.order.reference !== reference) notFound();
-  const [timeline, catalogue] = await Promise.all([getTimeline(db, detail.order.id), getCatalogue(db)]);
+  const [timeline, catalogue, quoteRequest] = await Promise.all([getTimeline(db, detail.order.id), getCatalogue(db), getQuoteRequest(db, detail.order.id)]);
   const status = effectiveStatus(detail.order, new Date());
   const { flaggedAt, flagNote, paymentDueAt } = detail.order;
   // After a flag the customer may answer; once their newest POP is later than the flag, the ball is back with the owner.
@@ -37,6 +38,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
       <div className="flex justify-between gap-4 py-3"><dt>Email</dt><dd className="text-right">{maskEmail(detail.order.customerEmail)}</dd></div>
       <div className="flex justify-between gap-4 py-3"><dt>Event</dt><dd className="text-right">{formatEventDate(detail.order.eventDate)} · <span className="capitalize">{detail.order.timeWindow}</span></dd></div>
       <div className="flex justify-between gap-4 py-3"><dt>Fulfilment</dt><dd className="text-right capitalize">{detail.order.fulfilment}</dd></div>
+      {quoteRequest && <div className="space-y-1 py-3"><dt className="font-medium">Quote request · {quoteRequest.kind.replaceAll("_", " ")}</dt><dd className="whitespace-pre-wrap">{quoteRequest.description}</dd></div>}
       {detail.lines.map(line => <div key={line.id} className="flex justify-between gap-4 py-3"><dt>{line.quantity > 1 ? `${line.quantity} × ` : ""}{line.label}</dt>{!quotePending && <dd className="shrink-0 tabular-nums">{formatKwacha(line.amount)}</dd>}</div>)}
       {quotePending
         ? <div className="flex justify-between gap-4 py-3 font-semibold"><dt>Total</dt><dd>Quote pending</dd></div>

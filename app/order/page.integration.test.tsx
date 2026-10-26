@@ -6,6 +6,8 @@ import { createOrder, getOrder } from "@/lib/orders/orders";
 import { orderInput } from "@/lib/orders/fixtures";
 import { markBalancePaid, setFlag, submitPop, transition } from "@/lib/orders/transitions";
 import { submitPopAction } from "./actions";
+import { sendQuote } from "@/lib/quotes/quotes";
+import { quoteRequests } from "@/lib/db/schema";
 
 const mocks = vi.hoisted(() => ({ db: undefined as unknown, after: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/server", () => ({ connection: async () => {}, after: (callback: () => unknown) => mocks.after(callback) }));
@@ -86,9 +88,38 @@ it("formats the event date and capitalises timeline labels", async () => {
 
 it("hides amounts and shows Quote pending until a quote exists", async () => {
   const quote = await createOrder(testDb.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), new Date());
+  await testDb.db.insert(quoteRequests).values({ orderId: quote.order.id, kind: "wedding_cake", description: "Three tier floral cake" });
   const html = await page(quote.order.reference, quote.accessToken);
   expect(html).toContain("Quote pending");
+  expect(html).toContain("Quote request · wedding cake");
+  expect(html).toContain("Three tier floral cake");
   for (const text of ["Deposit amount", "Balance due", "K0"]) expect(html).not.toContain(text);
+  for (const text of ["Pay your 50% deposit", "Airtel Money", "MTN MoMo", "<textarea"]) expect(html).not.toContain(text);
+});
+
+it("shows a sent quote through POP submission and owner verification using the rotated link", async () => {
+  const quote = await createOrder(testDb.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), new Date());
+  await testDb.db.insert(quoteRequests).values({ orderId: quote.order.id, kind: "wedding_cake", description: "Three tier floral cake" });
+  const now = new Date();
+  const sent = await sendQuote(testDb.db, quote.order.id, [{ label: "Wedding cake, 3 tier", amount: 6000 }], now);
+  expect(sent.order).toMatchObject({ status: "awaiting_payment", total: 6000, deposit: 3000 });
+  await expect(page(quote.order.reference, quote.accessToken)).rejects.toThrow("NOT_FOUND");
+
+  const priced = await page(quote.order.reference, sent.token);
+  expect(priced).toContain("Wedding cake, 3 tier");
+  expect(priced).toContain("K6,000");
+  expect(priced).toContain("K3,000");
+  expect(priced).toContain("Pay your 50% deposit");
+  expect(priced).toContain("Airtel Money");
+  expect(priced).toContain("<textarea");
+
+  await expect(submitPopAction(sent.token, "Airtel money payment confirmation TID 83921"))
+    .resolves.toEqual({ ok: true, status: "awaiting_verification" });
+  await transition(testDb.db, quote.order.id, "verify", "owner", now);
+  const verified = await page(quote.order.reference, sent.token);
+  expect(verified).toContain("Confirmed");
+  expect(verified).not.toContain("Pay your 50% deposit");
+  expect(verified).not.toContain("<textarea");
 });
 
 it("tells a customer who answered a flag that their details arrived and hides the form", async () => {
