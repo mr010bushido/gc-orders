@@ -13,6 +13,8 @@
 
 ## Decisions
 
+- **Quote links rotate the order access token.** `sendQuote` stores only the new token hash and returns plaintext to the caller for the post-commit `quote_ready` notification; the previous request link stops working, and Find my booking can recover access if delivery fails.
+
 - **Request details in `quote_requests(order_id, kind, description)`.** One row per order, created with the order. The description is plain text of 10 to 2,000 characters, and counts as personal data for retention.
 - **Totals before a quote count only priced items.** A quote-only order has total 0 and deposit 0 until the quote is sent. The order page and notifications never show a deposit for an `awaiting_quote` order.
 - **`sendQuote(orderId, lines, now)` does three things in one transaction:** append `quote` lines (label, amount), recompute total and deposit through `priceBasket` with the existing lines plus the quote lines, and perform the `send_quote` transition, which sets the payment deadline to `now` plus the expiry setting. Lines cannot be edited afterwards; a mistake means declining and asking the customer to rebook.

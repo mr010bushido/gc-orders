@@ -12,7 +12,8 @@ import { allocateReference } from "./reference";
 const HOUR = 60 * 60 * 1000;
 
 export type OrderErrorCode = "ORDER_INVALID" | "PHONE_INVALID" | "DELIVERY_ADDRESS_REQUIRED" | "ORDER_NOT_FOUND"
-  | "INVALID_TRANSITION" | "ORDER_EXPIRED" | "POP_TEXT_INVALID" | "BALANCE_ALREADY_PAID" | "IMAGE_NOT_FOUND";
+  | "INVALID_TRANSITION" | "ORDER_EXPIRED" | "POP_TEXT_INVALID" | "BALANCE_ALREADY_PAID" | "IMAGE_NOT_FOUND"
+  | "QUOTE_LINES_REQUIRED" | "INVALID_QUOTE_LINE";
 
 export class OrderError extends Error {
   constructor(public readonly code: OrderErrorCode, message: string = code) {

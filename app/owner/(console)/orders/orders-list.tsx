@@ -5,9 +5,10 @@ import type { OwnerOrderRow } from "../../../../lib/owner/orders-query";
 import { formatEventDate } from "../../../../components/ui/format";
 import { OrderCard } from "../../../../components/ui/OrderCard";
 import { OrderDetailSheet } from "./order-detail-sheet";
+import type { PricingRules } from "../../../../lib/basket-pricing";
 import type { OwnerOrderDetail } from "../../../../lib/owner/orders-query";
 
-export function OrdersList({ orders, selectedId, detail, images }: { orders: OwnerOrderRow[]; selectedId?: string; detail: OwnerOrderDetail | null; images: { id: string; url: string; width: number; height: number }[] }) {
+export function OrdersList({ orders, selectedId, detail, images, pricingRules }: { orders: OwnerOrderRow[]; selectedId?: string; detail: OwnerOrderDetail | null; images: { id: string; url: string; width: number; height: number }[]; pricingRules?: PricingRules }) {
   const router = useRouter();
   const search = useSearchParams();
   return <>
@@ -24,6 +25,6 @@ export function OrdersList({ orders, selectedId, detail, images }: { orders: Own
       </div>
     </li>)}
   </ul>}
-  <OrderDetailSheet order={detail} images={images} onClose={() => { const params = new URLSearchParams(search.toString()); params.delete("order"); router.push(`/owner/orders${params.size ? `?${params}` : ""}`); }}/>
+  <OrderDetailSheet order={detail} images={images} pricingRules={pricingRules} onClose={() => { const params = new URLSearchParams(search.toString()); params.delete("order"); router.push(`/owner/orders${params.size ? `?${params}` : ""}`); }}/>
   </>;
 }

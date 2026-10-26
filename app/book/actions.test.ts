@@ -53,6 +53,14 @@ it("returns the committed booking before scheduling both notifications", async (
   expect(mocks.notify.mock.calls[0][2].db).toBe(test.db);
 });
 
+it("sends quote request notifications after creating a mixed quote request", async () => {
+  const { createBookingAction } = await action();
+  const result = await createBookingAction(request({ quoteRequest: { kind: "other", description: "Please make a custom cake" } }));
+  expect(result).toMatchObject({ ok: true });
+  await mocks.callbacks[0]();
+  expect(mocks.notify.mock.calls.map(([event]) => event).sort()).toEqual(["owner_new_quote_request", "quote_request_received"]);
+});
+
 it("does not log customer fields or tokens for validation or notification failures", async () => {
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   try {

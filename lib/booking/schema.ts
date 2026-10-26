@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FULFILMENTS, TIME_WINDOWS } from "../db/schema/orders";
+import { QUOTE_KINDS } from "../db/schema/quotes";
 
 export const bookingRequestSchema = z.object({
   cake: z.object({
@@ -15,6 +16,7 @@ export const bookingRequestSchema = z.object({
   })).max(50).default([]).superRefine((desserts, ctx) => {
     if (new Set(desserts.map(dessert => dessert.type)).size !== desserts.length) ctx.addIssue({ code: "custom", path: [0, "type"], message: "Duplicate dessert types" });
   }),
+  quoteRequest: z.object({ kind: z.enum(QUOTE_KINDS), description: z.string().trim().min(10).max(2000) }).optional(),
   honeypot: z.string().max(200).optional(),
   fulfilment: z.enum(FULFILMENTS),
   address: z.string().trim().max(500).optional(),
@@ -39,7 +41,7 @@ export const BOOKING_ERROR_CODES = [
 export type BookingErrorCode = (typeof BOOKING_ERROR_CODES)[number];
 export type BookingField = "cake" | "flavour" | "frosting" | "tierSizes" | "addons" | "desserts"
   | "fulfilment" | "address" | "eventDate" | "timeWindow" | "name" | "phone" | "email"
-  | "designNotes" | "topperMessage" | "imageTokens" | "_form";
+  | "designNotes" | "topperMessage" | "imageTokens" | "quoteDescription" | "_form";
 
 export type BookingResponse =
   | { ok: true; reference: string; accessToken: string; total: number; deposit: number; lines: { label: string; amount: number; kind: string }[]; paymentInstructions: { airtelNumber: string | null; mtnNumber: string | null; quote: string } }

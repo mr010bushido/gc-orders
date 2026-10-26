@@ -53,6 +53,14 @@ it("puts the tokenised order link in the booking message", async () => {
   expect(sms.send.mock.calls[0][0].text).toContain(`https://cakes.test/order/${order.reference}?t=${token}`);
 });
 
+it("quote-ready provider failure is recorded and does not throw", async () => {
+  sms.send.mockRejectedValue(new Error("provider unavailable"));
+  const { order, token } = await newOrder();
+  await expect(notify("quote_ready", { order, token }, deps())).resolves.toBeUndefined();
+  expect(email.send).toHaveBeenCalledOnce();
+  expect((await log(order.id)).find(row => row.channel === "sms")).toMatchObject({ status: "failed" });
+});
+
 it("skips the owner SMS when the alert phone is unset and still sends the email", async () => {
   await test.db.update(settings).set({ value: null }).where(eq(settings.key, "owner_alert_phone"));
   try {

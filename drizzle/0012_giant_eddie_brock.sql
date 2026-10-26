@@ -1,0 +1,2 @@
+ALTER TABLE "notification_log" DROP CONSTRAINT "notification_log_event";--> statement-breakpoint
+ALTER TABLE "notification_log" ADD CONSTRAINT "notification_log_event" CHECK ("notification_log"."event" in ('booking_received', 'quote_request_received', 'pop_received', 'deposit_verified', 'quote_ready', 'order_expired', 'owner_new_booking', 'owner_new_quote_request', 'owner_pop_submitted'));

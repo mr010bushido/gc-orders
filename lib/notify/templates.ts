@@ -44,6 +44,9 @@ export const TEMPLATES: Record<NotificationEvent, (context: TemplateContext) => 
       + `${context.link ? ` at ${context.link}` : " on your order page"}.${pickupPin(context)}`,
       `Hi ${firstName(context.order)},`);
   },
+  quote_request_received: (context) => message(`Quote request ${context.order.reference} received`,
+    `${BRAND}: your quote request ${context.order.reference} was received. We will send your quote when it is ready.`
+    + linkTo(context, "Track your request:"), `Hi ${firstName(context.order)},`),
   pop_received: ({ order }) => message(`Payment details received for ${order.reference}`,
     `${BRAND}: we have your payment details for ${order.reference}. We will confirm once the deposit is verified.`,
     `Hi ${firstName(order)},`),
