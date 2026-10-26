@@ -1,10 +1,10 @@
 import { and, eq, lte } from "drizzle-orm";
-import type { Db } from "../db";
+import { getDb, type Db } from "../db";
 import { orders } from "../db/schema";
 import { notify } from "../notify/notify";
-import type { Order } from "../orders/orders";
-import { OrderError } from "../orders/orders";
+import { OrderError, type Order } from "../orders/orders";
 import { transition } from "../orders/transitions";
+import { defineJob } from "../platform/jobs";
 
 export async function expireOrders(
   db: Db,
@@ -27,3 +27,5 @@ export async function expireOrders(
   }
   return expired;
 }
+
+defineJob("expire-orders", () => expireOrders(getDb()));
