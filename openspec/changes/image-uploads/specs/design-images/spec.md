@@ -83,3 +83,14 @@ The Supabase Storage adapter SHALL pass `imageStoreContract`, and no other file 
 #### Scenario: Contract suite
 - **WHEN** the adapter runs the shared suite against a mocked client
 - **THEN** every scenario passes
+
+### Requirement: Local private storage for development
+When `IMAGE_STORE=local` outside production, the system SHALL save processed WebP images in a private filesystem directory outside `public/`, without overwriting an existing key. It SHALL issue signed read URLs that expire in at most 300 seconds. The read route SHALL reject missing, deleted, expired, changed or traversing requests and SHALL disable caching. Production SHALL reject local storage. Supabase SHALL remain the default hosted adapter; its private bucket and server key require provisioning before hosted use.
+
+#### Scenario: Local owner view
+- **WHEN** an owner opens an order with an image stored in local mode
+- **THEN** the owner receives a signed URL that reads the WebP image until expiry
+
+#### Scenario: Unauthorized read
+- **WHEN** a visitor changes the key or signature, uses an expired URL, or requests a deleted file
+- **THEN** the read route returns 404 without serving file bytes

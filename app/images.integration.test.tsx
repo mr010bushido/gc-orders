@@ -13,11 +13,11 @@ import { OrderDetailSheet } from './owner/(console)/orders/order-detail-sheet';
 
 const deps = vi.hoisted(() => ({ db: undefined as unknown, store: undefined as unknown, limiter: undefined as unknown }));
 vi.mock('@/lib/db', () => ({ getDb: () => deps.db }));
-vi.mock('@/lib/platform/adapters/supabase/image-store', () => ({ supabaseImageStore: {
+vi.mock('@/lib/platform/image-store-select', () => ({ imageStore: () => ({
   put: (...args: Parameters<import('@/lib/platform/image-store').ImageStore['put']>) => (deps.store as import('@/lib/platform/image-store').ImageStore).put(...args),
   createSignedUrl: (...args: Parameters<import('@/lib/platform/image-store').ImageStore['createSignedUrl']>) => (deps.store as import('@/lib/platform/image-store').ImageStore).createSignedUrl(...args),
   delete: (...args: Parameters<import('@/lib/platform/image-store').ImageStore['delete']>) => (deps.store as import('@/lib/platform/image-store').ImageStore).delete(...args),
-} }));
+}) }));
 vi.mock('@/lib/platform/rate-limit', () => ({ rateLimiter: { hit: (...args: unknown[]) => (deps.limiter as { hit: (...args: unknown[]) => unknown }).hit(...args) } }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }));
 

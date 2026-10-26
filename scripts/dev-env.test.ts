@@ -74,6 +74,7 @@ describe("renderLocalEnv and mergeLocalEnv", () => {
     expect(env).toContain(`DATABASE_MIGRATION_URL=${LOCAL_DATABASE_URL}\n`);
     expect(env).toContain("APP_URL=http://localhost:3000\n");
     expect(env).toContain(`JOBS_SECRET=${secret}\n`);
+    expect(env).toContain("IMAGE_STORE=local\n");
   });
 
   it("leaves a complete file byte-for-byte unchanged", () => {
