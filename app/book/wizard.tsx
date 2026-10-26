@@ -100,7 +100,7 @@ export function BookingWizard({ catalogue, rules, today, closedDates, initialSte
       return () => window.clearTimeout(timer);
     }
     if (clampedUrlStep !== initialStep + 1) router.replace(`/book?step=${clampedUrlStep}`, { scroll: false });
-  }, [ready, hasCake, draft.cake?.flavour, draft.cake?.frosting, draft.desserts, draft.eventDate, draft.timeWindow, draft.name, draft.phone, draft.email, draft.fulfilment, draft.address, catalogue.settings.dessert_min_quantity, initialStep, router, step]);
+  }, [ready, hasCake, draft.cake?.flavour, draft.cake?.frosting, draft.desserts, draft.quoteRequest, draft.eventDate, draft.timeWindow, draft.name, draft.phone, draft.email, draft.fulfilment, draft.address, catalogue.settings.dessert_min_quantity, initialStep, router, step]);
   const minDate = earliestEventDate(hasCake, new Date(), rules);
   const pricing = useMemo(() => {
     if (!draft.cake && draft.desserts.length === 0 && draft.quoteRequest) return { lines: [], total: 0, deposit: 0 };

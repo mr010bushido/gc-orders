@@ -99,7 +99,7 @@ it("guards every exported order action before it can mutate the real test databa
   expect(request.after).not.toHaveBeenCalled();
 });
 
-it("sends a quote after commit and never returns the access-token hash", async () => {
+it("sends and declines quotes without returning a token or access-token hash", async () => {
   const test = await createTestDb();
   request.db = test.db;
   request.testDb = test;
@@ -107,11 +107,16 @@ it("sends a quote after commit and never returns the access-token hash", async (
   const { order } = await createOrder(test.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), BOOKED_AT);
   const result = await sendQuoteAction(order.id, [{ label: "Custom cake", amount: 400 }]);
   expect(result).toMatchObject({ ok: true, order: { status: "awaiting_payment", total: 400, deposit: 200 } });
-  expect(JSON.stringify(result)).not.toContain("accessTokenHash");
+  expect(JSON.stringify(result)).not.toMatch(/accessTokenHash|\btoken\b/i);
   expect(request.after).toHaveBeenCalledOnce();
   const callback = request.after.mock.calls[0][0] as () => Promise<void>;
   await callback();
   expect(request.after).toHaveReturned();
+
+  const declinedOrder = await createOrder(test.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), BOOKED_AT);
+  const declined = await declineQuoteAction(declinedOrder.order.id);
+  expect(declined).toMatchObject({ ok: true, order: { status: "expired" } });
+  expect(JSON.stringify(declined)).not.toMatch(/accessTokenHash|\btoken\b/i);
 });
 
 it("redirects logged-out visitors from the shell and every page to the login page", async () => {
