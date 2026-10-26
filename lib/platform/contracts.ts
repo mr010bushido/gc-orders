@@ -49,7 +49,7 @@ export function ownerAuthContract(factory: () => AuthFixture) {
 
 type ImageFixture = {
   store: ImageStore;
-  readSignedUrl(url: string): Uint8Array | null;
+  readSignedUrl(url: string): Uint8Array | null | Promise<Uint8Array | null>;
   advanceTime(seconds: number): void;
 };
 
@@ -57,25 +57,25 @@ export function imageStoreContract(factory: () => ImageFixture) {
   describe("ImageStore contract", () => {
     it("keeps images private and reads them through a signed URL until expiry", async () => {
       const { store, readSignedUrl, advanceTime } = factory();
-      await store.put("cake", new Uint8Array([1, 2]), "image/png");
-      const url = await store.createSignedUrl("cake", 60);
-      expect(readSignedUrl(url)).toEqual(new Uint8Array([1, 2]));
+      await store.put("images/cake.webp", new Uint8Array([1, 2]), "image/webp");
+      const url = await store.createSignedUrl("images/cake.webp", 60);
+      expect(await readSignedUrl(url)).toEqual(new Uint8Array([1, 2]));
       advanceTime(61);
-      expect(readSignedUrl(url)).toBeNull();
+      expect(await readSignedUrl(url)).toBeNull();
     });
 
     it("rejects a missing or deleted key", async () => {
       const { store } = factory();
-      await expect(store.createSignedUrl("missing", 60)).rejects.toThrow();
-      await store.put("cake", new Uint8Array([1]), "image/png");
-      await store.delete("cake");
-      await expect(store.createSignedUrl("cake", 60)).rejects.toThrow();
+      await expect(store.createSignedUrl("images/missing.webp", 60)).rejects.toThrow();
+      await store.put("images/cake.webp", new Uint8Array([1]), "image/webp");
+      await store.delete("images/cake.webp");
+      await expect(store.createSignedUrl("images/cake.webp", 60)).rejects.toThrow();
     });
 
     it("deletes idempotently", async () => {
       const { store } = factory();
-      await expect(store.delete("missing")).resolves.toBeUndefined();
-      await expect(store.delete("missing")).resolves.toBeUndefined();
+      await expect(store.delete("images/missing.webp")).resolves.toBeUndefined();
+      await expect(store.delete("images/missing.webp")).resolves.toBeUndefined();
     });
   });
 }

@@ -42,6 +42,7 @@ export function mergeLocalEnv(existing: string, jobsSecret: string): string {
     ["DATABASE_MIGRATION_URL", LOCAL_DATABASE_URL],
     ["APP_URL", LOCAL_APP_URL],
     ["JOBS_SECRET", jobsSecret],
+    ["IMAGE_STORE", "local"],
   ];
   const added = defaults.filter(([key]) => !present.has(key)).map(([key, value]) => `${key}=${value}\n`);
   if (added.length === 0) return existing;

@@ -21,6 +21,7 @@
 - **Keys.** `images/<imageId>.webp` in the private bucket. The key never contains a customer or order identifier.
 - **Display.** Only the owner sees images, through `createSignedUrl(key, 300)` generated on render. Customers see their own thumbnails only during upload, from local object URLs.
 - **Supabase Storage adapter** implements `ImageStore` with the service role key on the server; the bucket is private and has no public policy. It passes `imageStoreContract`.
+- **2026-10-24 local development decision.** Until hosted storage is provisioned, `dev:setup` selects a filesystem `ImageStore` outside `public/`. The adapter signs read URLs with `JOBS_SECRET` and serves them through a private, uncached route for at most 300 seconds. Production rejects local mode. Production storage will be configured at deployment; the existing Supabase adapter requires a private bucket and server key if selected.
 
 ## Risks / Trade-offs
 
