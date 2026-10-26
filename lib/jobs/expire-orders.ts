@@ -28,4 +28,4 @@ export async function expireOrders(
   return expired;
 }
 
-defineJob("expire-orders", () => expireOrders(getDb()));
+defineJob("expire-orders", async () => { await expireOrders(getDb()); });

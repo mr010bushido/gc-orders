@@ -12,4 +12,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate order-expiry --strict` passes
+- [x] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate order-expiry --strict` passes — gates: `pnpm lint` → pass; `pnpm typecheck` → pass; `pnpm test --maxWorkers=2` → 818 passed, 1 skipped; `pnpm build` → pass; `pnpm check:portability` → pass; `openspec validate order-expiry --strict` → valid
