@@ -1,6 +1,6 @@
 ## 1. Domain (Codex)
 
-- [ ] 1.1 `lib/retention/constants.ts` (90 days, 2 years, 24 hours, batch size) and date helpers in Lusaka time with boundary tests (day 90/91, leap day, Lusaka midnight)
+- [x] 1.1 `lib/retention/constants.ts` (90 days, 2 years, 24 hours, batch size) and date helpers in Lusaka time with boundary tests (day 90/91, leap day, Lusaka midnight) — gate: `pnpm test lib/retention/constants.test.ts` (1 passed), `pnpm lint` (0 warnings)
 - [ ] 1.2 `lib/orders/anonymise.ts` clearing personal columns, POP texts, quote description and images; tests for old, recent and repeated runs
 - [ ] 1.3 `lib/jobs/retention.ts` with the four steps, batch limits, storage-before-row deletion, independent step failures and the 500 behaviour; PGlite tests with the in-memory `ImageStore`
 - [ ] 1.4 Register the job and the `jobs:retention` health check; tests
