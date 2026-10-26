@@ -4,6 +4,7 @@ import { getCatalogue } from "../catalogue/catalogue";
 import { resolveAddon, resolveDessertType, resolveFlavour, resolveFrosting, resolveSize } from "../catalogue/lookup";
 import { toPricingRules } from "../catalogue/pricing-rules";
 import type { Db } from "../db";
+import { quoteRequests } from "../db/schema";
 import { normaliseZambianMobile } from "../phone";
 import { createOrder, type CreateOrderInput } from "../orders/orders";
 import { OrderError } from "../orders/orders";
@@ -12,6 +13,7 @@ import { bookingRequestSchema, type BookingErrorCode, type BookingField, type Bo
 function fieldFor(path: PropertyKey[]): BookingField {
   const field = String(path[0] ?? "_form");
   if (field === "cake" && ["flavour", "frosting", "tierSizes", "addons"].includes(String(path[1]))) return String(path[1]) as BookingField;
+  if (field === "quoteRequest") return "quoteDescription";
   return ["name", "phone", "email", "fulfilment", "address", "eventDate", "timeWindow", "designNotes", "topperMessage", "imageTokens", "cake", "desserts"].includes(field)
     ? field as BookingField : "_form";
 }
@@ -49,6 +51,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
           : field === "desserts" && issue.path.length === 1 && issue.code === "too_big" ? "TOO_MANY_DESSERT_LINES"
         : field === "tierSizes" && issue.code === "too_big" ? "TOO_MANY_TIERS"
         : field === "imageTokens" && issue.code === "too_big" ? "TOO_MANY_IMAGES"
+          : issue.path[0] === "quoteRequest" ? "REQUIRED"
           : issue.code === "invalid_type" || issue.code === "too_small" ? "REQUIRED" : "INVALID_INPUT");
     }
     if (input && typeof input === "object" && "phone" in input && typeof input.phone === "string" && !normaliseZambianMobile(input.phone)) {
@@ -64,7 +67,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   const request = parsed.data;
   if (request.honeypot?.trim()) return { ok: false, errors: { _form: "INVALID_INPUT" } };
   const errors: Partial<Record<BookingField, BookingErrorCode>> = {};
-  if (!request.cake && request.desserts.length === 0) addError(errors, "_form", "EMPTY_BASKET");
+  if (!request.cake && request.desserts.length === 0 && !request.quoteRequest) addError(errors, "_form", "EMPTY_BASKET");
   const phone = normaliseZambianMobile(request.phone);
   if (!phone) addError(errors, "phone", "PHONE_INVALID");
   if (request.fulfilment === "delivery" && !request.address?.trim()) addError(errors, "address", "DELIVERY_ADDRESS_REQUIRED");
@@ -93,7 +96,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   }
 
   const rules = toPricingRules(catalogue);
-  if (request.eventDate < earliestEventDate(Boolean(request.cake), now, rules)) addError(errors, "eventDate", "DATE_TOO_SOON");
+  if (request.eventDate < earliestEventDate(Boolean(request.cake || request.quoteRequest), now, rules)) addError(errors, "eventDate", "DATE_TOO_SOON");
   if (Object.keys(errors).length) return { ok: false, errors };
 
   const cake = request.cake;
@@ -101,12 +104,14 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   const selectedFrosting = cake ? catalogue.frostings.find(item => item.key === cake.frosting)! : undefined;
   let priced;
   try {
-    priced = priceBasket({
+    priced = !request.cake && request.desserts.length === 0 && request.quoteRequest
+      ? { lines: [], total: 0, deposit: 0 }
+      : priceBasket({
       ...(cake ? { cake: { flavourGroup: flavour?.ok ? flavour.value : "", tierSizes: cake.tierSizes, addons: cake.addons } } : {}),
       desserts: request.desserts,
       delivery: request.fulfilment === "delivery",
       eventDate: request.eventDate,
-    }, now, rules);
+      }, now, rules);
   } catch (error) {
     if (!(error instanceof PricingError)) throw error;
     if (error.code === "DESSERT_MIN_QUANTITY" && unsafeDessertSubtotal(request.desserts, rules)) {
@@ -128,6 +133,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     designNotes: request.designNotes,
     topperMessage: request.topperMessage,
     imageTokens: request.imageTokens,
+    requestsQuote: Boolean(request.quoteRequest),
     basket: {
       total: priced.total,
       deposit: priced.deposit,
@@ -150,7 +156,9 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   try {
     const created = await db.transaction(async tx => {
       await assertDateOpen(tx, request.eventDate);
-      return createOrder(tx, orderInput, now);
+      const created = await createOrder(tx, orderInput, now);
+      if (request.quoteRequest) await tx.insert(quoteRequests).values({ orderId: created.order.id, ...request.quoteRequest });
+      return created;
     });
     return {
       ok: true,

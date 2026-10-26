@@ -78,6 +78,13 @@
       "when": 1792780531480,
       "tag": "0010_sweet_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793044395573,
+      "tag": "0011_normal_namora",
+      "breakpoints": true
     }
   ]
 }

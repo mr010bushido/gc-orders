@@ -4,7 +4,7 @@ import { closeDate } from "../availability/availability";
 import { seedCatalogue } from "../catalogue/seed";
 import { defaultCatalogue } from "../catalogue/catalogue";
 import { createTestDb } from "../db/test-db";
-import { orderImages, orderLines, orders, flavours } from "../db/schema";
+import { orderImages, orderLines, orders, flavours, quoteRequests } from "../db/schema";
 import { tokenHash } from "../images/uploads";
 import { createBooking } from "./create-booking";
 
@@ -48,6 +48,23 @@ it("ignores a client total and stores the server price", async () => {
   const result = await createBooking(test.db, request({ total: 1, deposit: 0 }), NOW);
   expect(result).toMatchObject({ ok: true, total: 1040, deposit: 520 });
   expect((await test.db.select().from(orders))[0]).toMatchObject({ total: 1040, deposit: 520 });
+});
+
+it("creates quote-only and mixed orders with request details and attaches request photos", async () => {
+  const quoteOnly = await createBooking(test.db, request({ cake: undefined, quoteRequest: { kind: "wedding_cake", description: "Three tier wedding cake" } }), NOW);
+  expect(quoteOnly).toMatchObject({ ok: true, total: 0, deposit: 0 });
+  expect((await test.db.select().from(orders))[0].status).toBe("awaiting_quote");
+  expect((await test.db.select().from(quoteRequests))[0]).toMatchObject({ kind: "wedding_cake", description: "Three tier wedding cake" });
+
+  const mixed = await createBooking(test.db, request({ quoteRequest: { kind: "toppings", description: "Please add gold leaf" } }), NOW);
+  expect(mixed).toMatchObject({ ok: true, total: 1040, deposit: 520 });
+  expect((await test.db.select().from(orders)).map(order => order.status)).toEqual(["awaiting_quote", "awaiting_quote"]);
+});
+
+it("rejects quote descriptions shorter than ten characters before creating an order", async () => {
+  expect(await createBooking(test.db, request({ cake: undefined, quoteRequest: { kind: "other", description: "short" } }), NOW))
+    .toMatchObject({ ok: false, errors: { quoteDescription: "REQUIRED" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
 });
 
 it("rejects inactive catalogue items without creating an order", async () => {
