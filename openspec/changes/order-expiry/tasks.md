@@ -1,6 +1,6 @@
 ## 1. Job
 
-- [ ] 1.1 `lib/jobs/expire-orders.ts` taking `now`: select up to 100 overdue `awaiting_payment` orders, expire each through the lifecycle transition, collect the ones actually expired; PGlite tests for every `order-expiry` scenario including run twice and the mid-run POP race
+- [x] 1.1 `lib/jobs/expire-orders.ts` taking `now`: select up to 100 overdue `awaiting_payment` orders, expire each through the lifecycle transition, collect the ones actually expired; PGlite tests for every `order-expiry` scenario including run twice and the mid-run POP race — gate: `pnpm test lib/jobs/expire-orders.test.ts` → 4 passed
 - [ ] 1.2 Call `notify('order_expired')` per expired order; test that a provider failure does not stop the run
 - [ ] 1.3 Register the job with the jobs endpoint and test an authorised call records a heartbeat
 
