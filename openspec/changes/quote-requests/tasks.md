@@ -16,5 +16,5 @@
 
 ## 3. Integration (Claude owns this check)
 
-- [ ] 3.1 Test: submit a quote-only request, price it as the owner, open the customer link, see the deposit and submit POP, then verify
-- [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` pass; `openspec validate quote-requests --strict` passes
+- [x] 3.1 Integration test: create a quote-only request, price and send it, open the customer page with the returned token, see the deposit, submit POP and verify — gate: `pnpm test app/order/page.integration.test.tsx` → 11 passed
+- [x] 3.2 Final gates passed: `pnpm lint` (0 errors, 2 warnings), `pnpm typecheck`, `pnpm test --maxWorkers=2` (868 passed, 1 skipped), `pnpm build`, `NEXT_OUTPUT=standalone pnpm build`, standalone `/api/health` check on ephemeral port 33401 with CI deep-equality assertion, `pnpm check:portability`, and `openspec validate quote-requests --strict`
