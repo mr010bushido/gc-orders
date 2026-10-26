@@ -17,8 +17,8 @@ export async function createBookingAction(input: unknown): Promise<BookingRespon
       const detail = await findOrderByToken(db, result.accessToken);
       if (!detail) throw new Error("created order could not be read");
       await Promise.all([
-        notify("booking_received", { order: detail.order, token: result.accessToken }, { db }),
-        notify("owner_new_booking", { order: detail.order }, { db }),
+        notify(input && typeof input === "object" && "quoteRequest" in input && input.quoteRequest ? "quote_request_received" : "booking_received", { order: detail.order, token: result.accessToken }, { db }),
+        notify(input && typeof input === "object" && "quoteRequest" in input && input.quoteRequest ? "owner_new_quote_request" : "owner_new_booking", { order: detail.order }, { db }),
       ]);
     } catch {
       console.error("booking notification task failed");

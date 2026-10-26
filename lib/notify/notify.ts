@@ -15,6 +15,7 @@ type Recipient = "customer" | "owner";
 /** Who gets each event and on which channels (PBS D1, D2, Q10). */
 export const ROUTES: Record<NotificationEvent, { to: Recipient; channels: readonly Channel[] }> = {
   booking_received: { to: "customer", channels: ["sms", "email"] },
+  quote_request_received: { to: "customer", channels: ["sms", "email"] },
   pop_received: { to: "customer", channels: ["sms", "email"] },
   deposit_verified: { to: "customer", channels: ["sms", "email"] },
   quote_ready: { to: "customer", channels: ["sms", "email"] },
@@ -26,7 +27,7 @@ export const ROUTES: Record<NotificationEvent, { to: Recipient; channels: readon
 
 export type NotifyOrder = TemplateOrder & Pick<Order, "id" | "customerPhone" | "customerEmail">;
 /** Events whose message links to the order need the customer's plaintext token, available only when it is issued. */
-export type NotifyContext<E extends NotificationEvent> = E extends "booking_received" | "quote_ready"
+export type NotifyContext<E extends NotificationEvent> = E extends "booking_received" | "quote_request_received" | "quote_ready"
   ? { order: NotifyOrder; token: string } : { order: NotifyOrder };
 
 export type NotifyDeps = { db: Db; sms: SmsSender; email: EmailSender; ownerEmail?: string; appUrl?: string; now: () => Date };

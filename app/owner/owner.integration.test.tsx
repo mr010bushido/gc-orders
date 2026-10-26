@@ -7,7 +7,7 @@ import { orderStatusEvents, orders } from "@/lib/db/schema";
 import { BOOKED_AT, orderInput } from "@/lib/orders/fixtures";
 import { createOrder } from "@/lib/orders/orders";
 import * as adapter from "@/lib/platform/adapters/supabase/owner-auth";
-import { clearFlag, completeOrder, flagOrder, markSeen, recordBalancePaid, verifyOrder } from "./(console)/orders/actions";
+import { clearFlag, completeOrder, declineQuoteAction, flagOrder, markSeen, recordBalancePaid, sendQuoteAction, verifyOrder } from "./(console)/orders/actions";
 import { signOutOwner } from "./actions";
 import OwnerHome from "./page";
 import OwnerLayout from "./(console)/layout";
@@ -84,6 +84,8 @@ it("guards every exported order action before it can mutate the real test databa
     () => completeOrder(order.id),
     () => recordBalancePaid(order.id, "cash", "Received"),
     () => markSeen(order.id),
+    () => sendQuoteAction(order.id, [{ label: "Cake", amount: 100 }]),
+    () => declineQuoteAction(order.id),
   ];
 
   for (const authenticateAs of [null, "stranger@example.com"]) {
@@ -95,6 +97,21 @@ it("guards every exported order action before it can mutate the real test databa
   expect(await test.db.select().from(orders).where(eq(orders.id, order.id))).toEqual([beforeOrder]);
   expect(await test.db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id))).toEqual(beforeEvents);
   expect(request.after).not.toHaveBeenCalled();
+});
+
+it("sends a quote after commit and never returns the access-token hash", async () => {
+  const test = await createTestDb();
+  request.db = test.db;
+  request.testDb = test;
+  await signInAs("owner@example.com");
+  const { order } = await createOrder(test.db, orderInput({ requestsQuote: true, basket: { lines: [], total: 0, deposit: 0 } }), BOOKED_AT);
+  const result = await sendQuoteAction(order.id, [{ label: "Custom cake", amount: 400 }]);
+  expect(result).toMatchObject({ ok: true, order: { status: "awaiting_payment", total: 400, deposit: 200 } });
+  expect(JSON.stringify(result)).not.toContain("accessTokenHash");
+  expect(request.after).toHaveBeenCalledOnce();
+  const callback = request.after.mock.calls[0][0] as () => Promise<void>;
+  await callback();
+  expect(request.after).toHaveReturned();
 });
 
 it("redirects logged-out visitors from the shell and every page to the login page", async () => {

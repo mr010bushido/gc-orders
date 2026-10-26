@@ -3,8 +3,8 @@
 - [x] 1.1 Schema and migration for `quote_requests` (RLS on); extend the booking schema with `quoteRequest`; booking validation and order creation for quote-only and mixed baskets; tests for the scenarios — gate: `pnpm db:generate`, `pnpm test lib/booking/create-booking.test.ts` → 18 passed, `pnpm typecheck` → passed
 - [x] 1.2 `sendQuote(orderId, lines, now)`: validate, append lines, recompute via `priceBasket`, `send_quote` transition and deadline in one transaction; tests including double send and priced-item-plus-quote — gate: `pnpm test lib/quotes/quotes.test.ts` → 3 passed, `pnpm typecheck` → passed
 - [x] 1.3 `declineQuote` using the `decline` transition; test that no notification is sent — gate: `pnpm test lib/quotes/quotes.test.ts` → 3 passed (silent decline), `pnpm typecheck` → passed
-- [ ] BLOCKED: How should quote-ready notifications obtain a private order link without invalidating the original customer token? The order stores only its hash and the booking plaintext token is no longer available. — 1.4 Add `quote_request_received` to `notifications` (template, recipients, tests); call `notify` for request received, owner alert and quote ready, with provider-failure tests
-- [ ] 1.5 Owner server actions `sendQuoteAction` and `declineQuoteAction` with `requireOwner()` and tests
+- [x] 1.4 Add `quote_request_received` to `notifications` (template, recipients, tests); call `notify` for request received, owner alert and quote ready, with provider-failure tests. Decision: `sendQuote` rotates the order token, returns plaintext only to the caller for post-commit notification, and stores only its hash; the old link stops working and Find my booking recovers access if delivery fails — gate: `pnpm test lib/quotes/quotes.test.ts lib/notify/notify.test.ts lib/notify/templates.test.ts app/book/actions.test.ts` → 51 passed, `pnpm typecheck` → passed, `openspec validate quote-requests --strict` → valid
+- [x] 1.5 Owner server actions `sendQuoteAction` and `declineQuoteAction` with `requireOwner()` and tests — gate: `pnpm test app/owner/owner.integration.test.tsx` → 7 passed, `pnpm typecheck` → passed
 
 ## 2. Screens (Claude)
 

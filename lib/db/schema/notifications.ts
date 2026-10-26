@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { check, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { orders } from "./orders";
 
-export const NOTIFICATION_EVENTS = ["booking_received", "pop_received", "deposit_verified", "quote_ready", "order_expired",
+export const NOTIFICATION_EVENTS = ["booking_received", "quote_request_received", "pop_received", "deposit_verified", "quote_ready", "order_expired",
   "owner_new_booking", "owner_new_quote_request", "owner_pop_submitted"] as const;
 /** POP can be resubmitted while an order is flagged, so its messages may repeat; every other event sends once per order. */
 export const REPEATABLE_EVENTS = ["pop_received", "owner_pop_submitted"] as const;

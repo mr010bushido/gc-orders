@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { getCatalogue } from "../catalogue/catalogue";
 import { toPricingRules } from "../catalogue/pricing-rules";
@@ -7,6 +8,7 @@ import { orderLines, orders, quoteRequests } from "../db/schema";
 import { priceBasket } from "../basket-pricing";
 import { OrderError } from "../orders/orders";
 import { transition } from "../orders/transitions";
+import { hashToken } from "../orders/orders";
 
 const linesSchema = z.array(z.object({ label: z.string().trim().min(1).max(200), amount: z.number().int().positive() })).max(5);
 export type QuoteLineInput = z.input<typeof linesSchema>[number];
@@ -31,8 +33,9 @@ export async function sendQuote(db: Db, orderId: string, input: unknown, now: Da
       orderId, position: start + index, kind: "quote" as const, label: line.label, quantity: 1,
       unitAmount: line.amount, amount: line.amount, meta: {},
     })));
-    await tx.update(orders).set({ total: priced.total, deposit: priced.deposit }).where(eq(orders.id, orderId));
-    return transition(tx, orderId, "send_quote", "owner", now);
+    const token = randomBytes(32).toString("base64url");
+    await tx.update(orders).set({ total: priced.total, deposit: priced.deposit, accessTokenHash: hashToken(token) }).where(eq(orders.id, orderId));
+    return { order: await transition(tx, orderId, "send_quote", "owner", now), token };
   });
 }
 
