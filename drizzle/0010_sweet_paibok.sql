@@ -1,0 +1,1 @@
+ALTER TABLE "order_images" ADD COLUMN "deleting_at" timestamp with time zone;

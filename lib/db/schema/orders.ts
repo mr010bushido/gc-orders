@@ -73,6 +73,23 @@ export const orderLines = pgTable("order_lines", {
   check("order_lines_amounts", sql`${table.quantity} > 0 and ${table.unitAmount} >= 0 and ${table.amount} >= 0`),
 ]).enableRLS();
 
+export const orderImages = pgTable("order_images", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id").references(() => orders.id),
+  key: text("key").notNull().unique(),
+  bytes: integer("bytes").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  addressHash: text("address_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  deletingAt: timestamp("deleting_at", { withTimezone: true }),
+}, (table) => [
+  index("order_images_order_id_idx").on(table.orderId),
+  index("order_images_pending_address_idx").on(table.addressHash, table.orderId),
+  check("order_images_dimensions", sql`${table.bytes} > 0 and ${table.width} > 0 and ${table.height} > 0`),
+]).enableRLS();
+
 export const popSubmissions = pgTable("pop_submissions", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderId: uuid("order_id").notNull().references(() => orders.id),

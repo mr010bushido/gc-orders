@@ -4,7 +4,8 @@ import { closeDate } from "../availability/availability";
 import { seedCatalogue } from "../catalogue/seed";
 import { defaultCatalogue } from "../catalogue/catalogue";
 import { createTestDb } from "../db/test-db";
-import { orderLines, orders, flavours } from "../db/schema";
+import { orderImages, orderLines, orders, flavours } from "../db/schema";
+import { tokenHash } from "../images/uploads";
 import { createBooking } from "./create-booking";
 
 const NOW = new Date("2026-10-17T08:00:00Z");
@@ -130,5 +131,33 @@ it("rejects an aggregate dessert subtotal that exceeds safe integer range", asyn
     { type: "brownies", quantity: 1_510_000_000_000 },
   ] }), NOW);
   expect(result).toMatchObject({ ok: false, errors: { desserts: "INVALID_INPUT" } });
+  expect(await test.db.select().from(orders)).toEqual([]);
+});
+
+it("attaches three image tokens once in the order transaction", async () => {
+  const tokens = ["A".repeat(22), "B".repeat(22), "C".repeat(22)];
+  await test.db.insert(orderImages).values(tokens.map((token, i) => ({
+    key: `images/${i}.webp`, bytes: 10, width: 10, height: 10, tokenHash: tokenHash(token),
+    addressHash: "address", createdAt: NOW,
+  })));
+  const result = await createBooking(test.db, request({ imageTokens: tokens }), NOW);
+  expect(result.ok).toBe(true);
+  const images = await test.db.select().from(orderImages);
+  expect(new Set(images.map(image => image.orderId)).size).toBe(1);
+  expect(images.every(image => image.orderId)).toBe(true);
+  expect(await createBooking(test.db, request({ imageTokens: tokens }), NOW))
+    .toMatchObject({ ok: false, errors: { imageTokens: "IMAGE_NOT_FOUND" } });
+  expect(await test.db.select().from(orders)).toHaveLength(1);
+});
+
+it("rejects a fourth image and rolls back if any token is wrong", async () => {
+  const first = "A".repeat(22);
+  await test.db.insert(orderImages).values({ key: "images/one.webp", bytes: 10, width: 10, height: 10,
+    tokenHash: tokenHash(first), addressHash: "address", createdAt: NOW });
+  expect(await createBooking(test.db, request({ imageTokens: [first, "B".repeat(22), "C".repeat(22), "D".repeat(22)] }), NOW))
+    .toMatchObject({ ok: false, errors: { imageTokens: "TOO_MANY_IMAGES" } });
+  expect(await createBooking(test.db, request({ imageTokens: [first, "B".repeat(22)] }), NOW))
+    .toMatchObject({ ok: false, errors: { imageTokens: "IMAGE_NOT_FOUND" } });
+  expect((await test.db.select().from(orderImages))[0].orderId).toBeNull();
   expect(await test.db.select().from(orders)).toEqual([]);
 });

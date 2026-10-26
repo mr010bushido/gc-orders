@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../db";
-import { orderLines, orders, orderStatusEvents, popSubmissions, settings } from "../db/schema";
+import { orderImages, orderLines, orders, orderStatusEvents, popSubmissions, settings } from "../db/schema";
 import { FULFILMENTS, LINE_KINDS, ORDER_STATUSES, TIME_WINDOWS, type OrderStatus } from "../db/schema/orders";
 import { resolveSettings } from "../catalogue/settings";
 import { normaliseZambianMobile } from "../phone";
@@ -12,7 +12,7 @@ import { allocateReference } from "./reference";
 const HOUR = 60 * 60 * 1000;
 
 export type OrderErrorCode = "ORDER_INVALID" | "PHONE_INVALID" | "DELIVERY_ADDRESS_REQUIRED" | "ORDER_NOT_FOUND"
-  | "INVALID_TRANSITION" | "ORDER_EXPIRED" | "POP_TEXT_INVALID" | "BALANCE_ALREADY_PAID";
+  | "INVALID_TRANSITION" | "ORDER_EXPIRED" | "POP_TEXT_INVALID" | "BALANCE_ALREADY_PAID" | "IMAGE_NOT_FOUND";
 
 export class OrderError extends Error {
   constructor(public readonly code: OrderErrorCode, message: string = code) {
@@ -36,6 +36,7 @@ const createOrderInput = z.object({
   designNotes: optionalText(2000),
   topperMessage: optionalText(200),
   requestsQuote: z.boolean().default(false),
+  imageTokens: z.array(z.string().regex(/^[A-Za-z0-9_-]{22}$/)).max(3).default([]),
   basket: z.object({
     lines: z.array(z.object({
       kind: z.enum(LINE_KINDS),
@@ -112,6 +113,11 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
       unitAmount: line.unitAmount, amount: line.amount, meta: metas[position],
     }))).returning();
     await tx.insert(orderStatusEvents).values({ orderId: order.id, fromStatus: null, toStatus: status, actor: "system", at: now });
+    for (const token of data.imageTokens) {
+      const attached = await tx.update(orderImages).set({ orderId: order.id })
+        .where(and(eq(orderImages.tokenHash, hashToken(token)), isNull(orderImages.orderId), isNull(orderImages.deletingAt))).returning({ id: orderImages.id });
+      if (attached.length !== 1) throw new OrderError("IMAGE_NOT_FOUND");
+    }
     return { order, lines: stored, accessToken };
   });
 }

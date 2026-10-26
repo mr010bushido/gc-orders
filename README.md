@@ -27,7 +27,9 @@ Normally branch from `develop` and open feature PRs with an explicit `develop` b
 
 ### Local database
 
-`pnpm dev:setup && pnpm dev` is all a fresh checkout needs (Docker required). `dev:setup` creates `.env.local` if it is missing (local `DATABASE_URL` and `DATABASE_MIGRATION_URL`, `APP_URL`, and a random `JOBS_SECRET`), starts the Postgres 17 container, waits until it is healthy, applies the migrations and seeds the catalogue. Rerunning it is safe: it never overwrites `.env.local` or an existing variable in it (it only appends keys that are absent), drizzle does not replay migrations, and the seed never overwrites rows the owner edited.
+`pnpm dev:setup && pnpm dev` is all a fresh checkout needs (Docker required). `dev:setup` creates `.env.local` if it is missing (local `DATABASE_URL` and `DATABASE_MIGRATION_URL`, `APP_URL`, a random `JOBS_SECRET`, and `IMAGE_STORE=local`), starts the Postgres 17 container, waits until it is healthy, applies the migrations and seeds the catalogue. Rerunning it is safe: it never overwrites `.env.local` or an existing variable in it (it only appends keys that are absent), drizzle does not replay migrations, and the seed never overwrites rows the owner edited.
+
+Local reference photos are saved under `.local/cake-images/images/` on first upload. The directory is ignored by Git and is outside `public/`. `LOCAL_IMAGE_DIR` can move it to another private directory. Reads use 300-second signed URLs and require `JOBS_SECRET`; restarting with a different secret invalidates old links. Local storage is available only with `IMAGE_STORE=local` outside production. Configure persistent production image storage at deployment. The existing hosted adapter is `IMAGE_STORE=supabase` (the default); if selected, it requires a private Supabase Storage bucket and `SUPABASE_SERVICE_ROLE_KEY`. No Supabase configuration is needed for local storage. Local files are not migrated to production storage automatically.
 
 | Command | What it does |
 |---|---|
