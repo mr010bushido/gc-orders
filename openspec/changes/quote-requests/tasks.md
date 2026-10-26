@@ -1,8 +1,8 @@
 ## 1. Domain (Codex)
 
 - [x] 1.1 Schema and migration for `quote_requests` (RLS on); extend the booking schema with `quoteRequest`; booking validation and order creation for quote-only and mixed baskets; tests for the scenarios — gate: `pnpm db:generate`, `pnpm test lib/booking/create-booking.test.ts` → 18 passed, `pnpm typecheck` → passed
-- [ ] 1.2 `sendQuote(orderId, lines, now)`: validate, append lines, recompute via `priceBasket`, `send_quote` transition and deadline in one transaction; tests including double send and priced-item-plus-quote
-- [ ] 1.3 `declineQuote` using the `decline` transition; test that no notification is sent
+- [x] 1.2 `sendQuote(orderId, lines, now)`: validate, append lines, recompute via `priceBasket`, `send_quote` transition and deadline in one transaction; tests including double send and priced-item-plus-quote — gate: `pnpm test lib/quotes/quotes.test.ts` → 3 passed, `pnpm typecheck` → passed
+- [x] 1.3 `declineQuote` using the `decline` transition; test that no notification is sent — gate: `pnpm test lib/quotes/quotes.test.ts` → 3 passed (silent decline), `pnpm typecheck` → passed
 - [ ] 1.4 Add `quote_request_received` to `notifications` (template, recipients, tests); call `notify` for request received, owner alert and quote ready, with provider-failure tests
 - [ ] 1.5 Owner server actions `sendQuoteAction` and `declineQuoteAction` with `requireOwner()` and tests
 
