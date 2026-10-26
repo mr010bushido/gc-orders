@@ -17,6 +17,7 @@ async function order(dueAt = new Date(now.getTime() - 10 * 60_000)) {
   await test.db.update(orders).set({ paymentDueAt: dueAt }).where(eq(orders.id, created.order.id));
   return created.order.id;
 }
+const run = () => expireOrders(test.db, now, transition, async () => {});
 
 it("expires overdue orders at their deadline, but leaves future and flagged orders alone", async () => {
   const overdue = await order();
@@ -25,7 +26,7 @@ it("expires overdue orders at their deadline, but leaves future and flagged orde
   await test.db.update(orders).set({ status: "awaiting_verification", flaggedAt: now, flagNote: "Check payment" })
     .where(eq(orders.id, flagged));
 
-  const expired = await expireOrders(test.db, now);
+  const expired = await run();
 
   expect(expired.map(({ id }) => id)).toEqual([overdue]);
   expect(await test.db.select({ id: orderStatusEvents.id, orderId: orderStatusEvents.orderId, actor: orderStatusEvents.actor })
@@ -39,15 +40,27 @@ it("expires at most 100 orders per run", async () => {
   const ids = [];
   for (let i = 0; i < 150; i++) ids.push(await order());
 
-  expect(await expireOrders(test.db, now)).toHaveLength(100);
-  expect(await expireOrders(test.db, now)).toHaveLength(50);
+  expect(await run()).toHaveLength(100);
+  expect(await run()).toHaveLength(50);
   expect((await test.db.select().from(orders).where(eq(orders.status, "expired")))).toHaveLength(150);
 });
 
 it("returns nothing on a second run", async () => {
   await order();
-  expect(await expireOrders(test.db, now)).toHaveLength(1);
-  expect(await expireOrders(test.db, now)).toEqual([]);
+  expect(await run()).toHaveLength(1);
+  expect(await run()).toEqual([]);
+});
+
+it("continues expiring the batch when a notice fails", async () => {
+  const first = await order();
+  const second = await order();
+  const notified: string[] = [];
+  await expect(expireOrders(test.db, now, transition, async ({ id }) => {
+    notified.push(id);
+    if (id === first) throw new Error("provider failed");
+  })).resolves.toHaveLength(2);
+  expect(notified).toEqual(expect.arrayContaining([first, second]));
+  expect((await test.db.select().from(orders).where(eq(orders.status, "expired")))).toHaveLength(2);
 });
 
 it("does not expire an order if POP lands after selection", async () => {
