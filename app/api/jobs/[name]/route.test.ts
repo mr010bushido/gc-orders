@@ -38,6 +38,14 @@ it("runs a known job and records a heartbeat", async () => {
   expect(handler).toHaveBeenCalledOnce();
 });
 
+it("registers expire-orders with the authorised jobs endpoint", async () => {
+  const { heartbeatStore } = await import("../../../../lib/platform/heartbeat");
+  const { POST } = await import("./route");
+  const response = await POST(request("correct-secret"), { params: Promise.resolve({ name: "expire-orders" }) });
+  expect(response.status).toBe(200);
+  expect(await heartbeatStore.last("expire-orders")).toBeInstanceOf(Date);
+});
+
 it.each([undefined, "wrong", "short", ""])("rejects a missing or wrong bearer secret (%s) before job lookup", async (secret) => {
   const { defineJob } = await import("../../../../lib/platform/jobs");
   const { POST } = await import("./route");
