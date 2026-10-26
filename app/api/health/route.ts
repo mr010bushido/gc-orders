@@ -1,4 +1,5 @@
 import "../../../lib/db/health";
+import "../../../lib/jobs/expire-orders-health";
 import "../../../lib/notify/health";
 import { runHealthChecks } from "../../../lib/platform/health";
 

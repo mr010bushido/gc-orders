@@ -6,7 +6,7 @@
 
 ## 2. Health and ops
 
-- [ ] 2.1 Register the `jobs:expire-orders` health check (45-minute threshold, production only) with tests
+- [x] 2.1 Register the `jobs:expire-orders` health check (45-minute threshold, production only) with tests — gate: `pnpm test lib/jobs/expire-orders-health.test.ts` → 3 passed
 - [ ] 2.2 `ops/pg_cron/expire-orders.sql` (15 minutes, `net.http_post`, placeholder secret) and `ops/systemd/expire-orders.{service,timer}` plus a curl example; a test or script confirms no real secret is present
 - [ ] 2.3 BLOCKED for a human: run the pg_cron SQL in Supabase with the real `JOBS_SECRET` and app URL; record when done
 
