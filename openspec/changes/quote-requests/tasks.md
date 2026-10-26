@@ -8,9 +8,9 @@
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 Add `awaiting_quote` to `components/StatusPill.tsx`, `design/components/StatusPill.tsx` and the status table in `design/DESIGN.md`; update the gallery and tests
-- [ ] 2.2 Wizard: "Something custom? Request a quote" section (kind, description, `ImageUploader`) in step 1 and the matching review copy for quote-only baskets
-- [ ] 2.3 Owner sheet: request details and photos, "Price this request" form with live total and deposit, Send quote and Decline
+- [x] 2.1 Deviation: both status pill components already include `awaiting_quote`, so updated only the missing status table in `design/DESIGN.md` — gate: `openspec validate quote-requests --strict` → valid
+- [x] 2.2 Wizard quote request kind, description and `ImageUploader`; quote-only review and submission avoid showing a deposit — gate: `pnpm test app/book/wizard.dom.test.tsx` → 14 passed
+- [x] 2.3 Owner sheet shows request details/photos, prices through `priceBasket`, previews total and deposit, and exposes Send quote and Decline — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` → 5 passed
 - [ ] 2.4 Order page: `awaiting_quote` copy without payment instructions, quote lines after sending
 - [ ] 2.5 Component tests for each addition
 

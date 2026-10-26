@@ -7,6 +7,8 @@ import { getDb } from "../../../../lib/db";
 import { ORDER_STATUSES, type OrderStatus } from "../../../../lib/db/schema/orders";
 import { getOwnerOrderDetail, listOwnerOrders } from "../../../../lib/owner/orders-query";
 import { getOrderImageUrls } from "../../../../lib/images/owner";
+import { getCatalogue } from "../../../../lib/catalogue/catalogue";
+import { toPricingRules } from "../../../../lib/catalogue/pricing-rules";
 import { OrdersList } from "./orders-list";
 
 type Params = { status?: string; sort?: string; date?: string; cursor?: string; order?: string };
@@ -24,6 +26,7 @@ export default async function OwnerOrdersPage({ searchParams = Promise.resolve({
   });
   const detail = params.order ? await getOwnerOrderDetail(getDb(), params.order) : null;
   const images = detail ? await getOrderImageUrls(detail.id) : [];
+  const pricingRules = detail?.status === "awaiting_quote" ? toPricingRules(await getCatalogue(getDb())) : undefined;
   const selectedId = params.order ? orders.find(row => row.reference === params.order)?.id : undefined;
   const base = new URLSearchParams();
   if (status !== "active") base.set("status", status);
@@ -45,7 +48,7 @@ export default async function OwnerOrdersPage({ searchParams = Promise.resolve({
       <form action="/owner/orders" className="flex min-h-11 flex-wrap items-end gap-2"><Input id="event-date" label="Event date" name="date" type="date" defaultValue={params.date} className="w-auto min-w-40"/><input type="hidden" name="status" value={status}/><Button variant="ghost" type="submit">Apply</Button>{params.date && <Button variant="ghost" href="/owner/orders">Clear</Button>}</form>
       <Button variant="ghost" href={`/owner/orders?${new URLSearchParams({ ...(status !== "active" ? { status } : {}), ...(params.date ? { date: params.date } : {}), sort: sort === "asc" ? "desc" : "asc" })}`}>Event date {sort === "asc" ? "↑" : "↓"}</Button>
     </div>
-    <OrdersList orders={orders} selectedId={selectedId} detail={detail} images={images}/>
+    <OrdersList orders={orders} selectedId={selectedId} detail={detail} images={images} pricingRules={pricingRules}/>
     {nextCursor && <Link className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center rounded-md border border-ink bg-transparent font-semibold text-ink" href={`/owner/orders?${new URLSearchParams({ ...(status !== "active" ? { status } : {}), ...(params.date ? { date: params.date } : {}), ...(sort !== "asc" ? { sort } : {}), cursor: nextCursor })}`}>Load more</Link>}
     {params.order && !detail && <p role="status" className="mt-4 text-sm text-ink-soft">That order could not be found.</p>}
     <span className="sr-only">Supported statuses: {ORDER_STATUSES.join(", ")}</span>

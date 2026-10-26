@@ -44,11 +44,12 @@ If you are using an AI coding tool, put this file in the repo root. You can also
 - **Date picker:** Show the month name in Cormorant. Mark rush days (less than 5 days away) with `bg-warn-bg text-warn-ink`. Show fully booked days with a strikethrough in `disabled-ink`, past days in `past`, and the selected day as a brick-filled circle.
 - **Stepper:** On phones, use the overline label "Step 2 of 4 · Details" over four 3px segments (`brand` for done, `line` for to-do). From tablet width up, use numbered circles with labels joined by 1px lines.
 - **Summary card:** `bg-surface border-line rounded-md`. Line items sit in `<dl>` rows separated by hairlines. Show the rush fee in `warn-ink`. The total row uses `bg-gold-wash`, with the amount in Cormorant at 34px. The deposit line goes below it.
-- **Status pills:** these are rounded pills (`rounded-full`), 26–28px tall, and always show a dot plus a word. The colours for each status:
+- **Status pills:** these are rounded pills (`rounded-full`), 26–28px tall, and always show a dot plus a word except Completed, which shows a check mark. The colours for each status:
 
   | Status | Background | Text |
   |---|---|---|
   | New | `gold-wash` | `gold-ink` |
+  | Awaiting quote | `gold-wash` | `gold-ink` |
   | Awaiting payment | `warn-bg` | `warn-ink` |
   | Awaiting verification | `info-bg` | `info-ink` (the dot is a hollow ring) |
   | Confirmed | `ok-bg` | `ok-ink` |

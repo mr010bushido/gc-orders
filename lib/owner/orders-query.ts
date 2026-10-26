@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, isNotNull, lt, lte, or, type SQL } from "drizzle-orm";
 import type { Db } from "../db";
-import { orderLines, orders, orderStatusEvents, popSubmissions } from "../db/schema";
+import { orderLines, orders, orderStatusEvents, popSubmissions, quoteRequests } from "../db/schema";
 import { ORDER_STATUSES, type OrderStatus } from "../db/schema/orders";
 
 const ACTIVE: OrderStatus[] = ["awaiting_quote", "awaiting_payment", "awaiting_verification", "confirmed"];
@@ -10,6 +10,7 @@ export type OwnerOrderDetail = OwnerOrderRow & {
   lines: (typeof orderLines.$inferSelect)[];
   submissions: (typeof popSubmissions.$inferSelect)[];
   events: (typeof orderStatusEvents.$inferSelect)[];
+  quoteRequest: typeof quoteRequests.$inferSelect | null;
 };
 
 /** Load detail independently of list filters so a shared reference always opens its order. */
@@ -24,13 +25,14 @@ export async function getOwnerOrderDetail(db: Db, reference: string, now = new D
     ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, createdAt: orders.createdAt,
   }).from(orders).where(eq(orders.reference, reference)).limit(1);
   if (!order) return null;
-  const [lines, submissions, events] = await Promise.all([
+  const [lines, submissions, events, [quoteRequest]] = await Promise.all([
     db.select().from(orderLines).where(eq(orderLines.orderId, order.id)).orderBy(asc(orderLines.position)),
     db.select().from(popSubmissions).where(eq(popSubmissions.orderId, order.id)).orderBy(asc(popSubmissions.submittedAt)),
     db.select().from(orderStatusEvents).where(eq(orderStatusEvents.orderId, order.id)).orderBy(asc(orderStatusEvents.at)),
+    db.select().from(quoteRequests).where(eq(quoteRequests.orderId, order.id)).limit(1),
   ]);
   const status = order.status === "awaiting_payment" && order.paymentDueAt && order.paymentDueAt <= now ? "expired" : order.status;
-  return { ...order, status, summary: lines.map(line => line.label).join(", ") || "Quote request", lines, submissions, events };
+  return { ...order, status, summary: lines.map(line => line.label).join(", ") || "Quote request", lines, submissions, events, quoteRequest: quoteRequest ?? null };
 }
 
 function parseCursor(cursor: string | undefined): { date: string; id: string } | null {

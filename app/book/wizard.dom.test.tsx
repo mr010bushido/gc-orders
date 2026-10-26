@@ -96,6 +96,25 @@ it('keeps the dessert step disabled below the configured minimum', async () => {
   expect(screen.getByText('Step 2 of 3 · Delivery and details')).toBeTruthy();
 });
 
+it('reviews and submits a quote-only request without showing a deposit', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: true as const, reference: 'CAKE-2026-0042', accessToken: 'opaque', total: 0, deposit: 0, lines: [], paymentInstructions: { airtelNumber: null, mtnNumber: null, quote: 'CAKE-2026-0042' } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    desserts: [], quoteRequest: { kind: 'wedding_cake', description: 'A floral three tier cake' }, fulfilment: 'pickup', address: '',
+    eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila Banda', phone: '0977 123 456', email: 'mwila@example.com',
+    designNotes: '', topperMessage: '', imageTokens: [],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
+  const user = userEvent.setup();
+  expect(await screen.findByRole('heading', { name: 'Review your request' })).toBeTruthy();
+  expect(screen.getByText('No deposit is due until we send your quote.')).toBeTruthy();
+  expect(screen.queryByText('Deposit due now (50%)')).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  expect(await screen.findByText('Quote request received')).toBeTruthy();
+  expect(screen.getByText('No payment is due until we send your quote.')).toBeTruthy();
+  expect(screen.queryByText('Pay your 50% deposit')).toBeNull();
+  expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ quoteRequest: { kind: 'wedding_cake', description: 'A floral three tier cake' } }));
+});
+
 it('routes a server phone error from Review to details, announces and focuses it', async () => {
   mocks.actionMock = vi.fn(async () => ({ ok: false as const, errors: { phone: 'PHONE_INVALID' as const } }));
   sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
