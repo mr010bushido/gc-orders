@@ -115,7 +115,7 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
     await tx.insert(orderStatusEvents).values({ orderId: order.id, fromStatus: null, toStatus: status, actor: "system", at: now });
     for (const token of data.imageTokens) {
       const attached = await tx.update(orderImages).set({ orderId: order.id })
-        .where(and(eq(orderImages.tokenHash, hashToken(token)), isNull(orderImages.orderId))).returning({ id: orderImages.id });
+        .where(and(eq(orderImages.tokenHash, hashToken(token)), isNull(orderImages.orderId), isNull(orderImages.deletingAt))).returning({ id: orderImages.id });
       if (attached.length !== 1) throw new OrderError("IMAGE_NOT_FOUND");
     }
     return { order, lines: stored, accessToken };

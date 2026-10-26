@@ -83,6 +83,7 @@ export const orderImages = pgTable("order_images", {
   tokenHash: text("token_hash").notNull().unique(),
   addressHash: text("address_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  deletingAt: timestamp("deleting_at", { withTimezone: true }),
 }, (table) => [
   index("order_images_order_id_idx").on(table.orderId),
   index("order_images_pending_address_idx").on(table.addressHash, table.orderId),

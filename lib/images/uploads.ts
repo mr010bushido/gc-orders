@@ -24,32 +24,42 @@ export async function uploadImage(db: Db, store: ImageStore, limiter: RateLimite
   const id = randomUUID();
   const key = `images/${id}.webp`;
   const token = randomBytes(16).toString("base64url");
-  await db.transaction(async tx => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${addressHash}, 0))`);
-    const [pending] = await tx.select({ total: count() }).from(orderImages)
-      .where(and(eq(orderImages.addressHash, addressHash), isNull(orderImages.orderId)));
-    if (pending.total >= 6) throw new UploadError("RATE_LIMITED");
-    await store.put(key, processed.bytes, "image/webp");
-    try {
+  let stored = false;
+  try {
+    await db.transaction(async tx => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${addressHash}, 0))`);
+      const [pending] = await tx.select({ total: count() }).from(orderImages)
+        .where(and(eq(orderImages.addressHash, addressHash), isNull(orderImages.orderId), isNull(orderImages.deletingAt)));
+      if (pending.total >= 6) throw new UploadError("RATE_LIMITED");
+      await store.put(key, processed.bytes, "image/webp");
+      stored = true;
       await tx.insert(orderImages).values({ id, key, bytes: processed.bytes.length, width: processed.width,
         height: processed.height, tokenHash: tokenHash(token), addressHash, createdAt: new Date() });
-    } catch (error) {
-      await store.delete(key);
-      throw error;
+    });
+  } catch (error) {
+    if (stored) {
+      try {
+        await store.delete(key);
+      } catch {
+        console.error("Image upload cleanup failed");
+      }
     }
-  });
+    throw error;
+  }
   return { id, token };
 }
 
 export async function deletePendingImage(db: Db, store: ImageStore, id: string, token: string): Promise<boolean> {
   if (!/^[0-9a-f-]{36}$/i.test(id) || !/^[A-Za-z0-9_-]{22}$/.test(token)) return false;
-  return db.transaction(async tx => {
+  const image = await db.transaction(async tx => {
     const [image] = await tx.select().from(orderImages)
       .where(and(eq(orderImages.id, id), eq(orderImages.tokenHash, tokenHash(token)), isNull(orderImages.orderId)))
       .for("update");
-    if (!image) return false;
-    await store.delete(image.key);
-    await tx.delete(orderImages).where(eq(orderImages.id, id));
-    return true;
+    if (image && !image.deletingAt) await tx.update(orderImages).set({ deletingAt: new Date() }).where(eq(orderImages.id, id));
+    return image;
   });
+  if (!image) return false;
+  await store.delete(image.key);
+  await db.delete(orderImages).where(and(eq(orderImages.id, id), isNull(orderImages.orderId), eq(orderImages.tokenHash, tokenHash(token))));
+  return true;
 }
