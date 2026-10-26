@@ -1,0 +1,7 @@
+[Unit]
+Description=Expire overdue Giuseppe's Cakes orders
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/gc-orders/jobs.env
+ExecStart=/usr/bin/curl --fail --silent --show-error --request POST "${APP_URL}/api/jobs/expire-orders" --header "Authorization: Bearer ${JOBS_SECRET}"
