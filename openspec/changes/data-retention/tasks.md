@@ -5,15 +5,17 @@
 - [ ] 1.3 `lib/jobs/retention.ts` with the four steps, batch limits, storage-before-row deletion, independent step failures and the 500 behaviour; PGlite tests with the in-memory `ImageStore`
 - [ ] 1.4 Register the job and the `jobs:retention` health check; tests
 - [ ] 1.5 Treat anonymised orders as not found in order-tracking lookups, and add the owner `eraseOrderData` action (refuses active orders) with `requireOwner()` and tests
-- [ ] 1.6 `ops/pg_cron/retention.sql` and systemd timer examples with placeholder secrets
+- [ ] 1.6 Consent: booking schema requires `privacyConsent: true` (`CONSENT_REQUIRED` otherwise), migration adding `orders.privacy_consent_at` set on creation and kept by anonymisation; tests (owner decision 2026-10-27)
+- [ ] 1.7 `ops/pg_cron/retention.sql` and systemd timer examples with placeholder secrets
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 `/privacy` page using the shared constants, plain language, one display moment; link it from the booking form's privacy note
-- [ ] 2.2 Owner sheet "Erase personal data" button with confirmation for completed or expired orders; "Anonymised" display in the list
-- [ ] 2.3 Component tests
+- [ ] 2.1 `/privacy` page using the shared constants, plain language, one display moment, including the no-targeted-marketing promise
+- [ ] 2.2 Booking form consent checkbox (unticked, labelled, links to `/privacy`, error announced when missing) in the details/review step; component tests (owner decision 2026-10-27)
+- [ ] 2.3 Owner sheet "Erase personal data" button with confirmation for completed or expired orders; "Anonymised" display in the list
+- [ ] 2.4 Component tests
 
 ## 3. Verify
 
-- [ ] 3.1 BLOCKED for a human: review the privacy wording and confirm any obligations under the Zambia Data Protection Act 2021; run the pg_cron SQL in Supabase; record when done
+- [ ] 3.1 BLOCKED for a human: run the pg_cron SQL in Supabase at production deployment; record when done. (Privacy wording settled by the owner on 2026-10-27: consent for order handling only, no targeted marketing.)
 - [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate data-retention --strict` passes
