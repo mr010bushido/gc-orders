@@ -10,7 +10,7 @@
 
 ## 2. Screens (Claude)
 
-- [ ] 2.1 `/privacy` page using the shared constants, plain language, one display moment, including the no-targeted-marketing promise
+- [x] 2.1 `/privacy` page uses shared retention constants, plain language and the no-targeted-marketing promise — gate: `pnpm test app/privacy/page.test.tsx` (1 passed), `pnpm lint` (0 warnings), `pnpm typecheck` (passed)
 - [ ] 2.2 Booking form consent checkbox (unticked, labelled, links to `/privacy`, error announced when missing) in the details/review step; component tests (owner decision 2026-10-27)
 - [ ] 2.3 Owner sheet "Erase personal data" button with confirmation for completed or expired orders; "Anonymised" display in the list
 - [ ] 2.4 Component tests

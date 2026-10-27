@@ -64,6 +64,8 @@ it('restores a draft, validates the first step, focuses detail errors, then show
   const displayedTotal = review.querySelector('.bg-gold-wash dd')?.textContent;
 
   const { createBookingAction } = await import('./actions');
+  expect((screen.getByRole('checkbox', { name: /I agree that my details/ }) as HTMLInputElement).checked).toBe(false);
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   await screen.findByText(/^CAKE-\d{4}-\d{4}$/);
   const [stored] = await testDb.db.select().from(orders);
@@ -108,6 +110,7 @@ it('reviews and submits a quote-only request without showing a deposit', async (
   expect(await screen.findByRole('heading', { name: 'Review your request' })).toBeTruthy();
   expect(screen.getByText('No deposit is due until we send your quote.')).toBeTruthy();
   expect(screen.queryByText('Deposit due now (50%)')).toBeNull();
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   expect(await screen.findByText('Quote request received')).toBeTruthy();
   expect(screen.getByText('No payment is due until we send your quote.')).toBeTruthy();
@@ -124,6 +127,7 @@ it('routes a server phone error from Review to details, announces and focuses it
   const user = userEvent.setup();
   await screen.findByRole('heading', { name: 'Review your booking' });
   await waitFor(() => expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(false));
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   expect(await screen.findByRole('heading', { name: 'Delivery and details' })).toBeTruthy();
   expect(await screen.findByText('Enter a valid Zambian mobile number.')).toBeTruthy();
@@ -153,6 +157,7 @@ it('shows the server total and notice when current pricing differs from the revi
   const user = userEvent.setup();
   await screen.findByRole('heading', { name: 'Review your booking' });
   await waitFor(() => expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(false));
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   expect(await screen.findByRole('status')).toBeTruthy();
   expect(screen.getAllByText('K1,700')).toHaveLength(2);
@@ -192,6 +197,7 @@ it('renders one dessert error alert when the server rejects duplicate types', as
   const user = userEvent.setup();
   await screen.findByRole('heading', { name: 'Review your booking' });
   await waitFor(() => expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(false));
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   await screen.findByText('Choose each dessert type only once.');
   expect(document.querySelectorAll('#error-desserts[role="alert"]')).toHaveLength(1);
@@ -239,6 +245,7 @@ it('restores uploaded image tokens from the booking draft and submits them with 
   render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
   const user = userEvent.setup();
   await screen.findByRole('heading', { name: 'Review your booking' });
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   await user.click(screen.getByRole('button', { name: 'Submit booking' }));
   await screen.findByRole('status');
   expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ imageTokens: ['saved-token'] }));
@@ -273,6 +280,7 @@ it('ignores a second submit while the action is pending', async () => {
   await screen.findByRole('heading', { name: 'Review your booking' });
   await waitFor(() => expect((screen.getByRole('button', { name: 'Submit booking' }) as HTMLButtonElement).disabled).toBe(false));
   const submit = screen.getByRole('button', { name: 'Submit booking' });
+  await userEvent.setup().click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
   fireEvent.click(submit);
   expect((await screen.findByRole('button', { name: 'Submitting…' }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(submit);
