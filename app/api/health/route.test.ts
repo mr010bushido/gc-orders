@@ -18,7 +18,7 @@ it("returns 200 and both named checks when all pass", async () => {
   registerHealthCheck("two", () => {});
   const response = await GET();
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ status: "ok", checks: { database: "ok", "jobs:expire-orders": "ok", notifications: "ok", one: "ok", two: "ok" } });
+  expect(await response.json()).toEqual({ status: "ok", checks: { database: "ok", "jobs:expire-orders": "ok", "jobs:retention": "ok", notifications: "ok", one: "ok", two: "ok" } });
   expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
@@ -27,7 +27,7 @@ it("returns 503 without a failing check's connection string", async () => {
   const { GET } = await import("./route");
   const response = await GET();
   expect(response.status).toBe(503);
-  expect(await response.text()).toBe('{"status":"fail","checks":{"database":"fail","jobs:expire-orders":"ok","notifications":"ok"}}');
+  expect(await response.text()).toBe('{"status":"fail","checks":{"database":"fail","jobs:expire-orders":"ok","jobs:retention":"ok","notifications":"ok"}}');
   expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
@@ -35,7 +35,7 @@ it("always registers the database and notifications checks", async () => {
   const { GET } = await import("./route");
   const response = await GET();
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ status: "ok", checks: { database: "ok", "jobs:expire-orders": "ok", notifications: "ok" } });
+  expect(await response.json()).toEqual({ status: "ok", checks: { database: "ok", "jobs:expire-orders": "ok", "jobs:retention": "ok", notifications: "ok" } });
   expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
@@ -44,7 +44,7 @@ it("returns 503 when database configuration is missing without exposing errors",
   const { GET } = await import("./route");
   const response = await GET();
   expect(response.status).toBe(503);
-  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", notifications: "ok" } });
+  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", "jobs:retention": "ok", notifications: "ok" } });
 });
 
 it("fails after two seconds even when the driver never resolves", async () => {
@@ -55,7 +55,7 @@ it("fails after two seconds even when the driver never resolves", async () => {
   await vi.advanceTimersByTimeAsync(2000);
   const response = await pending;
   expect(response.status).toBe(503);
-  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", notifications: "ok" } });
+  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", "jobs:retention": "ok", notifications: "ok" } });
   expect(vi.getTimerCount()).toBe(0);
 });
 
@@ -65,7 +65,7 @@ it("returns 200 degraded when production has no notification credentials", async
   const { GET } = await import("./route");
   const response = await GET();
   expect(response.status).toBe(200);
-  expect(await response.text()).toBe('{"status":"degraded","checks":{"database":"ok","jobs:expire-orders":"ok","notifications":"degraded"}}');
+  expect(await response.text()).toBe('{"status":"degraded","checks":{"database":"ok","jobs:expire-orders":"ok","jobs:retention":"ok","notifications":"degraded"}}');
   expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
@@ -76,5 +76,5 @@ it("lets a failing check outrank a degraded one", async () => {
   const { GET } = await import("./route");
   const response = await GET();
   expect(response.status).toBe(503);
-  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", notifications: "degraded" } });
+  expect(await response.json()).toEqual({ status: "fail", checks: { database: "fail", "jobs:expire-orders": "ok", "jobs:retention": "ok", notifications: "degraded" } });
 });

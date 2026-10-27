@@ -10,11 +10,13 @@ export async function anonymiseOrder(db: Db, store: ImageStore, orderId: string,
     await store.delete(image.key);
     await db.delete(orderImages).where(eq(orderImages.id, image.id));
   }
-  const changed = await db.update(orders).set({ customerName: null, customerPhone: null, customerEmail: null,
-    deliveryAddress: null, designNotes: null, topperMessage: null, flagNote: null, balanceNote: null, anonymisedAt: now })
-    .where(and(eq(orders.id, orderId), isNull(orders.anonymisedAt))).returning({ id: orders.id });
-  if (!changed.length) return false;
-  await db.delete(popSubmissions).where(eq(popSubmissions.orderId, orderId));
-  await db.update(quoteRequests).set({ description: "Customer data removed" }).where(eq(quoteRequests.orderId, orderId));
-  return true;
+  return db.transaction(async tx => {
+    const changed = await tx.update(orders).set({ customerName: null, customerPhone: null, customerEmail: null,
+      deliveryAddress: null, designNotes: null, topperMessage: null, flagNote: null, balanceNote: null, anonymisedAt: now })
+      .where(and(eq(orders.id, orderId), isNull(orders.anonymisedAt))).returning({ id: orders.id });
+    if (!changed.length) return false;
+    await tx.delete(popSubmissions).where(eq(popSubmissions.orderId, orderId));
+    await tx.update(quoteRequests).set({ description: "Customer data removed" }).where(eq(quoteRequests.orderId, orderId));
+    return true;
+  });
 }
