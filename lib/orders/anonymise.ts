@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "../db";
 import { orderImages, orders, popSubmissions, quoteRequests } from "../db/schema";
 import type { ImageStore } from "../platform/image-store";
@@ -12,7 +12,7 @@ export async function anonymiseOrder(db: Db, store: ImageStore, orderId: string,
   }
   const changed = await db.update(orders).set({ customerName: null, customerPhone: null, customerEmail: null,
     deliveryAddress: null, designNotes: null, topperMessage: null, flagNote: null, balanceNote: null, anonymisedAt: now })
-    .where(eq(orders.id, orderId)).returning({ id: orders.id });
+    .where(and(eq(orders.id, orderId), isNull(orders.anonymisedAt))).returning({ id: orders.id });
   if (!changed.length) return false;
   await db.delete(popSubmissions).where(eq(popSubmissions.orderId, orderId));
   await db.update(quoteRequests).set({ description: "Customer data removed" }).where(eq(quoteRequests.orderId, orderId));
