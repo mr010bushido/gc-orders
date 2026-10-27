@@ -36,6 +36,7 @@ const createOrderInput = z.object({
   timeWindow: z.enum(TIME_WINDOWS),
   designNotes: optionalText(2000),
   topperMessage: optionalText(200),
+  privacyConsentAt: z.date().optional(),
   requestsQuote: z.boolean().default(false),
   imageTokens: z.array(z.string().regex(/^[A-Za-z0-9_-]{22}$/)).max(3).default([]),
   basket: z.object({
@@ -108,6 +109,7 @@ export async function createOrder(db: Db, input: CreateOrderInput, now: Date): P
       deposit,
       paymentDueAt,
       createdAt: now,
+      privacyConsentAt: data.privacyConsentAt ?? now,
     }).returning();
     const stored = lines.length === 0 ? [] : await tx.insert(orderLines).values(lines.map((line, position) => ({
       orderId: order.id, position, kind: line.kind, label: line.label, quantity: line.quantity,
@@ -145,7 +147,8 @@ export async function getOrder(db: Db, id: string): Promise<OrderDetail | null> 
 /** Looks an order up by the customer's link token. Only the SHA-256 is stored, so the database compares hashes, never the token. */
 export async function findOrderByToken(db: Db, token: string): Promise<OrderDetail | null> {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const [row] = await db.select({ id: orders.id }).from(orders).where(eq(orders.accessTokenHash, hashToken(token)));
+  const [row] = await db.select({ id: orders.id }).from(orders)
+    .where(and(eq(orders.accessTokenHash, hashToken(token)), isNull(orders.anonymisedAt)));
   return row ? getOrder(db, row.id) : null;
 }
 

@@ -9,6 +9,10 @@ import { clearFlagForOwner, completeOrderForOwner, flagOrderForOwner, markOrderS
 import type { BalanceMethod } from "../../../../lib/db/schema/orders";
 import { sendQuote, declineQuote } from "../../../../lib/quotes/quotes";
 import type { Order } from "../../../../lib/orders/orders";
+import { anonymiseOrder } from "../../../../lib/orders/anonymise";
+import { imageStore } from "../../../../lib/platform/image-store-select";
+import { orders } from "../../../../lib/db/schema";
+import { eq } from "drizzle-orm";
 
 function withoutTokenHash(order: Order): Omit<Order, "accessTokenHash"> {
   const safeOrder = { ...order } as Partial<Order>;
@@ -54,6 +58,18 @@ export async function recordBalancePaid(id: string, method: BalanceMethod, note:
 export async function markSeen(id: string) {
   await requireOwner();
   return markOrderSeenForOwner({ db: getDb() }, id);
+}
+
+export async function eraseOrderData(id: string) {
+  await requireOwner();
+  const db = getDb();
+  const [order] = await db.select({ status: orders.status, anonymisedAt: orders.anonymisedAt }).from(orders).where(eq(orders.id, id));
+  if (!order) return { ok: false as const, code: "ORDER_NOT_FOUND" };
+  if (order.anonymisedAt) return { ok: true as const };
+  if (order.status !== "completed" && order.status !== "expired") return { ok: false as const, code: "ORDER_ACTIVE" };
+  await anonymiseOrder(db, imageStore(), id);
+  revalidatePath("/owner/orders");
+  return { ok: true as const };
 }
 
 export async function sendQuoteAction(id: string, lines: unknown) {

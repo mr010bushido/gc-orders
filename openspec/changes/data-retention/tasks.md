@@ -4,8 +4,8 @@
 - [x] 1.2 `lib/orders/anonymise.ts` clears personal columns, POP texts, quote description and images; repeated anonymisation is idempotent — gate: `pnpm test lib/orders/anonymise.test.ts` (1 passed), `pnpm lint` (0 warnings)
 - [x] 1.3 `lib/jobs/retention.ts` with four independent bounded steps and storage-before-row deletion — gate: `pnpm test lib/jobs/retention.test.ts` (1 passed), `pnpm lint` (0 warnings), `pnpm typecheck` (passed)
 - [x] 1.4 Register the job and the `jobs:retention` health check — gate: `pnpm test lib/jobs/retention-health.test.ts` (1 passed), `pnpm lint` (0 warnings)
-- [ ] 1.5 Treat anonymised orders as not found in order-tracking lookups, and add the owner `eraseOrderData` action (refuses active orders) with `requireOwner()` and tests
-- [ ] 1.6 Consent: booking schema requires `privacyConsent: true` (`CONSENT_REQUIRED` otherwise), migration adding `orders.privacy_consent_at` set on creation and kept by anonymisation; tests (owner decision 2026-10-27)
+- [x] 1.5 Treat anonymised orders as not found in order-tracking lookups; owner `eraseOrderData` guards first and refuses active orders — gate: `pnpm test lib/orders/access.test.ts` (9 passed), `pnpm test 'app/owner/(console)/orders/actions.test.ts'` (1 passed), `pnpm typecheck` (passed)
+- [x] 1.6 Consent: booking requires `privacyConsent: true` (`CONSENT_REQUIRED` otherwise), records `orders.privacy_consent_at` on creation and retains it through anonymisation — gate: `pnpm test lib/booking/create-booking.test.ts app/book/wizard.dom.test.tsx` (34 passed), `pnpm lint` (0 warnings), `pnpm typecheck` (passed), `pnpm db:generate` (migration generated; rerun no changes)
 - [ ] 1.7 `ops/pg_cron/retention.sql` and systemd timer examples with placeholder secrets
 
 ## 2. Screens (Claude)

@@ -81,7 +81,7 @@ it("uses a settings price for the booking catalogue and quote while preserving a
   const request = {
     cake: { flavour: "vanilla", frosting: "american_buttercream", tierSizes: [8], addons: [] },
     fulfilment: "pickup", eventDate: "2026-11-30", timeWindow: "afternoon",
-    name: "Mwila Banda", phone: "0977 123 456", email: "mwila@example.com",
+    name: "Mwila Banda", phone: "0977 123 456", email: "mwila@example.com", privacyConsent: true,
   };
   const existing = await createBooking(test.db, request, now);
   expect(existing).toMatchObject({ ok: true, total: 1040 });

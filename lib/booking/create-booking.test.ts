@@ -26,6 +26,7 @@ function request(overrides: Record<string, unknown> = {}) {
     name: "Mwila Banda",
     phone: "0977 123 456",
     email: "mwila@example.com",
+    privacyConsent: true,
     ...overrides,
   };
 }
@@ -36,12 +37,18 @@ it("collects required and phone errors and rejects an empty basket", async () =>
   expect(await createBooking(test.db, request({ cake: undefined }), NOW)).toMatchObject({ ok: false, errors: { _form: "EMPTY_BASKET" } });
 });
 
+it("requires explicit privacy consent before creating an order", async () => {
+  expect(await createBooking(test.db, request({ privacyConsent: false }), NOW))
+    .toMatchObject({ ok: false, errors: { privacyConsent: "CONSENT_REQUIRED" } });
+  expect(await test.db.select().from(orders)).toHaveLength(0);
+});
+
 it("requires a delivery address and normalises a valid Zambian mobile", async () => {
   expect(await createBooking(test.db, request({ fulfilment: "delivery", address: " " }), NOW))
     .toMatchObject({ ok: false, errors: { address: "DELIVERY_ADDRESS_REQUIRED" } });
   const result = await createBooking(test.db, request(), NOW);
   expect(result.ok).toBe(true);
-  expect((await test.db.select().from(orders))[0].customerPhone).toBe("+260977123456");
+  expect((await test.db.select().from(orders))[0]).toMatchObject({ customerPhone: "+260977123456", privacyConsentAt: NOW });
 });
 
 it("ignores a client total and stores the server price", async () => {

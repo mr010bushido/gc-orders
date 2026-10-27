@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "privacy_consent_at" timestamp with time zone;

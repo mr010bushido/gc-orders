@@ -15,7 +15,7 @@ const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
   customerPhone: "+260977123456", customerEmail: "mwila@example.test", deliveryAddress: "",
   designNotes: "<img src=x onerror=alert(1)>", topperMessage: "Happy birthday", total: 2650, deposit: 1325,
   paymentDueAt: null, flaggedAt: null, flagNote: null, balancePaidAt: null, balanceMethod: null, balanceNote: null,
-  ownerSeenAt: new Date(), anonymisedAt: null, createdAt: new Date(), summary: "Chocolate cake",
+  ownerSeenAt: new Date(), anonymisedAt: null, privacyConsentAt: new Date(), createdAt: new Date(), summary: "Chocolate cake",
   lines: [{ id: "line-1", orderId: "00000000-0000-4000-8000-000000000042", position: 0, kind: "cake", label: "Chocolate cake", quantity: 1, unitAmount: 2650, amount: 2650, meta: {} }],
   submissions: [{ id: "pop-1", orderId: "00000000-0000-4000-8000-000000000042", text: "<script>alert('pop')</script>", submittedAt: new Date("2026-10-18T10:00:00Z") }],
   events: [{ id: "event-1", orderId: "00000000-0000-4000-8000-000000000042", fromStatus: null, toStatus: status, actor: "owner", at: new Date("2026-10-18T10:00:00Z") }],

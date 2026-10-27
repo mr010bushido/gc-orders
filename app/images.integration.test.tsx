@@ -39,7 +39,7 @@ it('uploads through POST, attaches the token to a booking, and renders its owner
     const booked = await createBooking(test.db, {
       cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [8], addons: [] },
       imageTokens: [uploaded.token], fulfilment: 'pickup', eventDate: '2026-11-30', timeWindow: 'afternoon',
-      name: 'Mwila Banda', phone: '0977 123 456', email: 'mwila@example.com',
+      name: 'Mwila Banda', phone: '0977 123 456', email: 'mwila@example.com', privacyConsent: true,
     }, new Date('2026-10-17T08:00:00Z'));
     expect(booked.ok).toBe(true);
     if (!booked.ok) return;

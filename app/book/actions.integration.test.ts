@@ -42,6 +42,7 @@ function request() {
     name: "Sensitive Customer",
     phone: "0977 123 456",
     email: "private@example.com",
+    privacyConsent: true,
   };
 }
 
