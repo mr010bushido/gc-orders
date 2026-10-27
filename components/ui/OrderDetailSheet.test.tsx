@@ -6,7 +6,7 @@ import { defaultCatalogue } from "../../lib/catalogue/catalogue";
 import { toPricingRules } from "../../lib/catalogue/pricing-rules";
 import { OrderDetailSheet } from "../../app/owner/(console)/orders/order-detail-sheet";
 
-vi.mock("../../app/owner/(console)/orders/actions", () => ({ markSeen: vi.fn(), verifyOrder: vi.fn(), flagOrder: vi.fn(), clearFlag: vi.fn(), completeOrder: vi.fn(), recordBalancePaid: vi.fn(), sendQuoteAction: vi.fn(), declineQuoteAction: vi.fn() }));
+vi.mock("../../app/owner/(console)/orders/actions", () => ({ markSeen: vi.fn(), verifyOrder: vi.fn(), flagOrder: vi.fn(), clearFlag: vi.fn(), completeOrder: vi.fn(), eraseOrderData: vi.fn().mockResolvedValue({ ok: true }), recordBalancePaid: vi.fn(), sendQuoteAction: vi.fn(), declineQuoteAction: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
@@ -23,6 +23,30 @@ const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
 });
 
 describe("OrderDetailSheet", () => {
+  it("confirms owner erasure for completed orders and labels anonymised records", async () => {
+    const actions = await import("../../app/owner/(console)/orders/actions");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const view = render(<OrderDetailSheet order={order("completed")} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Erase personal data" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("This cannot be undone"));
+    expect(actions.eraseOrderData).toHaveBeenCalledWith(order("completed").id);
+    view.rerender(<OrderDetailSheet order={{ ...order("completed"), anonymisedAt: new Date() }} onClose={() => {}} />);
+    expect(screen.getByText("Anonymised")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Erase personal data" })).toBeNull();
+    confirm.mockRestore();
+  });
+  it("confirms owner erasure only for completed or expired orders and labels anonymised records", async () => {
+    const actions = await import("../../app/owner/(console)/orders/actions");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const view = render(<OrderDetailSheet order={order("completed")} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Erase personal data" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("This cannot be undone"));
+    expect(actions.eraseOrderData).toHaveBeenCalledWith(order("completed").id);
+    view.rerender(<OrderDetailSheet order={{ ...order("completed"), anonymisedAt: new Date() }} onClose={() => {}} />);
+    expect(screen.getByText("Anonymised")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Erase personal data" })).toBeNull();
+    confirm.mockRestore();
+  });
   it("renders each supported order status in its shared pill", () => {
     for (const status of ["awaiting_quote", "awaiting_payment", "awaiting_verification", "confirmed", "completed", "expired"] as const) {
       const view = render(<OrderDetailSheet order={order(status)} onClose={() => {}} />);

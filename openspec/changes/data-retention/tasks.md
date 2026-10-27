@@ -11,9 +11,9 @@
 ## 2. Screens (Claude)
 
 - [x] 2.1 `/privacy` page uses shared retention constants, plain language and the no-targeted-marketing promise — gate: `pnpm test app/privacy/page.test.tsx` (1 passed), `pnpm lint` (0 warnings), `pnpm typecheck` (passed)
-- [ ] 2.2 Booking form consent checkbox (unticked, labelled, links to `/privacy`, error announced when missing) in the details/review step; component tests (owner decision 2026-10-27)
-- [ ] 2.3 Owner sheet "Erase personal data" button with confirmation for completed or expired orders; "Anonymised" display in the list
-- [ ] 2.4 Component tests
+- [x] 2.2 Booking form consent checkbox is unticked, labelled, links to `/privacy`, and announces missing consent — gate: `pnpm test app/book/wizard.dom.test.tsx` (15 passed)
+- [x] 2.3 Owner sheet confirms erasure for eligible orders and shows anonymised state in the sheet/list — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` (7 passed)
+- [x] 2.4 Component tests — gate: `pnpm test app/book/wizard.dom.test.tsx components/ui/OrderDetailSheet.test.tsx` (22 passed), `pnpm lint` (0 warnings), `pnpm typecheck` (passed)
 
 ## 3. Verify
 

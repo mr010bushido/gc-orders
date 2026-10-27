@@ -118,6 +118,22 @@ it('reviews and submits a quote-only request without showing a deposit', async (
   expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ quoteRequest: { kind: 'wedding_cake', description: 'A floral three tier cake' } }));
 });
 
+it('requires consent on the review step and announces the server validation error', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: false as const, errors: { privacyConsent: 'CONSENT_REQUIRED' as const } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [], fulfilment: 'pickup', address: '',
+    eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila', phone: '0977 123 456', email: 'mwila@example.com',
+    designNotes: '', topperMessage: '', privacyConsent: false,
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={3} />);
+  const user = userEvent.setup();
+  await screen.findByRole('heading', { name: 'Review your booking' });
+  expect(screen.getByRole('link', { name: 'privacy page' }).getAttribute('href')).toBe('/privacy');
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Please agree to the privacy terms');
+  expect(screen.getByRole('checkbox', { name: /I agree that my details/ }).getAttribute('aria-invalid')).toBe('true');
+});
+
 it('routes a server phone error from Review to details, announces and focuses it', async () => {
   mocks.actionMock = vi.fn(async () => ({ ok: false as const, errors: { phone: 'PHONE_INVALID' as const } }));
   sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
