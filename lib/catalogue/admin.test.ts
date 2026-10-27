@@ -62,6 +62,15 @@ describe("catalogue price writes", () => {
     expect((await db.select().from(addons).where(eq(addons.key, "chocolate_drip")))[0].price).toBe(0);
   });
 
+  it("rejects unknown top-level price keys without writing any prices", async () => {
+    const { db } = await seeded();
+    const input = { flavourGroupPrices: { classic: "1350" }, addonPrices: {}, dessertPrices: {}, sizeMultipliers: {}, delivery_fee: 0 };
+    await expect(savePricesSection(db, input)).rejects.toMatchObject({
+      field: "_form", code: "UNKNOWN_SETTING", message: "This setting cannot be changed here.",
+    });
+    expect((await db.select().from(flavourGroups).where(eq(flavourGroups.key, "classic")))[0].basePrice).toBe(1300);
+  });
+
   it("rejects negative and fractional add-on prices when updating or adding", async () => {
     const { db } = await seeded();
     for (const invalid of [-1, 1.5, "-1", "1.5", "1e2", "0x10", " 5", "00"]) {

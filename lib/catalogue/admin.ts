@@ -232,6 +232,9 @@ function entries(value: unknown, field: string): [string, unknown][] {
 }
 
 export async function savePricesSection(db: Db, input: PriceSectionInput) {
+  if (input && typeof input === "object" && !Array.isArray(input) && Object.keys(input).some(key => !["flavourGroupPrices", "addonPrices", "dessertPrices", "sizeMultipliers"].includes(key))) {
+    throw new CatalogueAdminError("_form", "UNKNOWN_SETTING", "This setting cannot be changed here.");
+  }
   const groups = entries(input?.flavourGroupPrices, "flavourGroupPrices").map(([key, value]) => [key, priceValue(value, `flavourGroupPrices.${key}`)] as const);
   const addonPrices = entries(input?.addonPrices, "addonPrices").map(([key, value]) => [key, priceValue(value, `addonPrices.${key}`, 0)] as const);
   const dessertPrices = entries(input?.dessertPrices, "dessertPrices").map(([key, value]) => [key, priceValue(value, `dessertPrices.${key}`)] as const);
