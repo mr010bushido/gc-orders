@@ -1,4 +1,5 @@
 import "../../../../lib/jobs/expire-orders";
+import "../../../../lib/jobs/retention";
 import { heartbeatStore } from "../../../../lib/platform/heartbeat";
 import { getJob, verifySecret } from "../../../../lib/platform/jobs";
 

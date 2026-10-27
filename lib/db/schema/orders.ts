@@ -40,6 +40,7 @@ export const orders = pgTable("orders", {
   balanceNote: text("balance_note"),
   ownerSeenAt: timestamp("owner_seen_at", { withTimezone: true }),
   anonymisedAt: timestamp("anonymised_at", { withTimezone: true }),
+  privacyConsentAt: timestamp("privacy_consent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 }, (table) => [
   index("orders_event_date_status_idx").on(table.eventDate, table.status),

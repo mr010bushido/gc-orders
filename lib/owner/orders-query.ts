@@ -22,7 +22,7 @@ export async function getOwnerOrderDetail(db: Db, reference: string, now = new D
     designNotes: orders.designNotes, topperMessage: orders.topperMessage, total: orders.total, deposit: orders.deposit,
     paymentDueAt: orders.paymentDueAt, flaggedAt: orders.flaggedAt, flagNote: orders.flagNote,
     balancePaidAt: orders.balancePaidAt, balanceMethod: orders.balanceMethod, balanceNote: orders.balanceNote,
-    ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, createdAt: orders.createdAt,
+    ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, privacyConsentAt: orders.privacyConsentAt, createdAt: orders.createdAt,
   }).from(orders).where(eq(orders.reference, reference)).limit(1);
   if (!order) return null;
   const [lines, submissions, events, [quoteRequest]] = await Promise.all([
@@ -76,7 +76,7 @@ export async function listOwnerOrders(db: Db, filter: OrdersFilter = {}): Promis
     designNotes: orders.designNotes, topperMessage: orders.topperMessage, total: orders.total, deposit: orders.deposit,
     paymentDueAt: orders.paymentDueAt, flaggedAt: orders.flaggedAt, flagNote: orders.flagNote,
     balancePaidAt: orders.balancePaidAt, balanceMethod: orders.balanceMethod, balanceNote: orders.balanceNote,
-    ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, createdAt: orders.createdAt,
+    ownerSeenAt: orders.ownerSeenAt, anonymisedAt: orders.anonymisedAt, privacyConsentAt: orders.privacyConsentAt, createdAt: orders.createdAt,
   }).from(orders).where(conditions.length ? and(...conditions) : undefined)
     .orderBy(sort === "asc" ? asc(orders.eventDate) : desc(orders.eventDate), asc(orders.id)).limit(limit + 1);
   const page = rows.slice(0, limit);

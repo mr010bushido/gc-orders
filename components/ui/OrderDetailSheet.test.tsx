@@ -6,7 +6,7 @@ import { defaultCatalogue } from "../../lib/catalogue/catalogue";
 import { toPricingRules } from "../../lib/catalogue/pricing-rules";
 import { OrderDetailSheet } from "../../app/owner/(console)/orders/order-detail-sheet";
 
-vi.mock("../../app/owner/(console)/orders/actions", () => ({ markSeen: vi.fn(), verifyOrder: vi.fn(), flagOrder: vi.fn(), clearFlag: vi.fn(), completeOrder: vi.fn(), recordBalancePaid: vi.fn(), sendQuoteAction: vi.fn(), declineQuoteAction: vi.fn() }));
+vi.mock("../../app/owner/(console)/orders/actions", () => ({ markSeen: vi.fn(), verifyOrder: vi.fn(), flagOrder: vi.fn(), clearFlag: vi.fn(), completeOrder: vi.fn(), eraseOrderData: vi.fn().mockResolvedValue({ ok: true }), recordBalancePaid: vi.fn(), sendQuoteAction: vi.fn(), declineQuoteAction: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
@@ -15,7 +15,7 @@ const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
   customerPhone: "+260977123456", customerEmail: "mwila@example.test", deliveryAddress: "",
   designNotes: "<img src=x onerror=alert(1)>", topperMessage: "Happy birthday", total: 2650, deposit: 1325,
   paymentDueAt: null, flaggedAt: null, flagNote: null, balancePaidAt: null, balanceMethod: null, balanceNote: null,
-  ownerSeenAt: new Date(), anonymisedAt: null, createdAt: new Date(), summary: "Chocolate cake",
+  ownerSeenAt: new Date(), anonymisedAt: null, privacyConsentAt: new Date(), createdAt: new Date(), summary: "Chocolate cake",
   lines: [{ id: "line-1", orderId: "00000000-0000-4000-8000-000000000042", position: 0, kind: "cake", label: "Chocolate cake", quantity: 1, unitAmount: 2650, amount: 2650, meta: {} }],
   submissions: [{ id: "pop-1", orderId: "00000000-0000-4000-8000-000000000042", text: "<script>alert('pop')</script>", submittedAt: new Date("2026-10-18T10:00:00Z") }],
   events: [{ id: "event-1", orderId: "00000000-0000-4000-8000-000000000042", fromStatus: null, toStatus: status, actor: "owner", at: new Date("2026-10-18T10:00:00Z") }],
@@ -23,6 +23,30 @@ const order = (status: OwnerOrderDetail["status"]): OwnerOrderDetail => ({
 });
 
 describe("OrderDetailSheet", () => {
+  it("confirms owner erasure for completed orders and labels anonymised records", async () => {
+    const actions = await import("../../app/owner/(console)/orders/actions");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const view = render(<OrderDetailSheet order={order("completed")} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Erase personal data" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("This cannot be undone"));
+    expect(actions.eraseOrderData).toHaveBeenCalledWith(order("completed").id);
+    view.rerender(<OrderDetailSheet order={{ ...order("completed"), anonymisedAt: new Date() }} onClose={() => {}} />);
+    expect(screen.getByText("Anonymised")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Erase personal data" })).toBeNull();
+    confirm.mockRestore();
+  });
+  it("confirms owner erasure only for completed or expired orders and labels anonymised records", async () => {
+    const actions = await import("../../app/owner/(console)/orders/actions");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const view = render(<OrderDetailSheet order={order("completed")} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Erase personal data" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("This cannot be undone"));
+    expect(actions.eraseOrderData).toHaveBeenCalledWith(order("completed").id);
+    view.rerender(<OrderDetailSheet order={{ ...order("completed"), anonymisedAt: new Date() }} onClose={() => {}} />);
+    expect(screen.getByText("Anonymised")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Erase personal data" })).toBeNull();
+    confirm.mockRestore();
+  });
   it("renders each supported order status in its shared pill", () => {
     for (const status of ["awaiting_quote", "awaiting_payment", "awaiting_verification", "confirmed", "completed", "expired"] as const) {
       const view = render(<OrderDetailSheet order={order(status)} onClose={() => {}} />);

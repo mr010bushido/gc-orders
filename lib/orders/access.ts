@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb, type Db } from "../db";
 import { orders } from "../db/schema";
 import { rateLimiter, type RateLimiter } from "../platform/rate-limit";
@@ -47,7 +47,7 @@ async function lookupAndSend(referenceKey: string, normalised: string, deps: Fin
     const appUrl = deps.appUrl ?? process.env.APP_URL;
     if (!appUrl) return;
     await db.transaction(async (tx) => {
-      const [row] = await tx.select().from(orders).where(and(eq(orders.reference, referenceKey), eq(orders.customerPhone, normalised))).for("update");
+      const [row] = await tx.select().from(orders).where(and(eq(orders.reference, referenceKey), eq(orders.customerPhone, normalised), isNull(orders.anonymisedAt))).for("update");
       if (!row) return;
       // Reissue a fresh private token, keeping only its hash in the database.
       const { randomBytes } = await import("node:crypto");

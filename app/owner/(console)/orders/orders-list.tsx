@@ -15,7 +15,7 @@ export function OrdersList({ orders, selectedId, detail, images, pricingRules }:
   {!orders.length ? <p className="mt-6 rounded-md border border-line bg-surface p-4 text-sm text-ink-soft">No orders match these filters.</p> : <ul className="mt-4 divide-y divide-line overflow-hidden rounded-md border border-line bg-surface">
     {orders.map(order => <li key={order.id}>
       <div className="relative">
-        {order.ownerSeenAt === null && <span className="absolute right-4 top-[3.65rem] z-10 rounded-full bg-gold-wash px-2 py-1 text-xs font-semibold text-ink">New</span>}
+        {order.anonymisedAt ? <span className="absolute right-4 top-[3.65rem] z-10 rounded-full border border-line px-2 py-1 text-xs font-semibold text-ink-soft">Anonymised</span> : order.ownerSeenAt === null && <span className="absolute right-4 top-[3.65rem] z-10 rounded-full bg-gold-wash px-2 py-1 text-xs font-semibold text-ink">New</span>}
         <OrderCard reference={order.reference} date={formatEventDate(order.eventDate)} status={order.status}
           customer={order.customerName ?? "Customer"} summary={order.summary} fulfilment={order.fulfilment}
           total={order.total} selected={selectedId === order.id} onSelect={() => {

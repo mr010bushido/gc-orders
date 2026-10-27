@@ -27,7 +27,7 @@ The job SHALL delete an order's images from storage and the table once the Lusak
 - **THEN** its row is kept and the next run retries it
 
 ### Requirement: Anonymise orders after two years
-The job SHALL anonymise an order once the Lusaka date is more than two calendar years after its event date. Anonymising SHALL clear name, phone, email, delivery address, design notes, topper text, quote request description and all POP submissions, delete any remaining images, and set `anonymised_at`. It SHALL keep the reference, event date, lines, totals, statuses and timeline.
+The job SHALL anonymise an order once the Lusaka date is more than two calendar years after its event date. Anonymising SHALL clear name, phone, email, delivery address, design notes, topper text, quote request description, all POP submissions, and each related notification-log recipient, provider message ID and error text, delete any remaining images, and set `anonymised_at`. Notification-log rows SHALL remain with their event, channel, status and timestamp so normal log retention and send deduplication continue to apply. It SHALL keep the reference, event date, lines, totals, statuses and timeline.
 
 #### Scenario: Old order
 - **WHEN** an order's event was 2 years and 1 day ago
@@ -78,11 +78,26 @@ The owner SHALL be able to erase an order's personal data immediately from the o
 - **THEN** its personal data is cleared immediately
 
 ### Requirement: Privacy page
-The app SHALL serve `/privacy` in plain language stating what is collected, why, who receives it (the owner, the SMS and email providers and the hosting providers), how long it is kept, and how to ask for deletion. The retention periods shown SHALL come from the same constants the job uses. The booking form's privacy note SHALL link to it.
+The app SHALL serve `/privacy` in plain language stating what is collected, why, who receives it (the owner, the SMS and email providers and the hosting providers), how long it is kept, and how to ask for deletion. The retention periods shown SHALL come from the same constants the job uses. The booking form's consent text SHALL link to it, and the page SHALL repeat the no-marketing promise.
 
 #### Scenario: Periods match
 - **WHEN** the retention constants change
 - **THEN** the page text changes with them and a test fails if the page hard-codes a period
+
+### Requirement: Consent to use personal data
+The booking form SHALL ask the customer, before submission, to agree that their name, phone, email, address, notes and photos are used only to handle their order. The consent text SHALL state that the data is never used for targeted marketing, never sold or shared beyond the parties needed to handle the order, and is handled as the privacy page describes, and SHALL link to `/privacy`. The consent control SHALL be unticked by default. The booking server action SHALL reject a submission without consent with the validation error `CONSENT_REQUIRED`, and an accepted booking SHALL record the time consent was given on the order. Anonymisation SHALL keep the consent time.
+
+#### Scenario: Booking without consent
+- **WHEN** a customer submits a booking without ticking the consent box
+- **THEN** the form shows that consent is required, and the server rejects the request with `CONSENT_REQUIRED` and creates no order
+
+#### Scenario: Booking with consent
+- **WHEN** a customer ticks the consent box and submits
+- **THEN** the order is created and stores the consent time
+
+#### Scenario: No marketing promise
+- **WHEN** the customer reads the consent text or the privacy page
+- **THEN** both state that their data is used only to handle the order and never for targeted marketing
 
 ### Requirement: Missed-run health check
 In production the check `jobs:retention` SHALL fail when the last heartbeat is older than 36 hours or absent.

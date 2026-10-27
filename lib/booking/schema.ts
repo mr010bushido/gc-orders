@@ -18,6 +18,7 @@ export const bookingRequestSchema = z.object({
   }),
   quoteRequest: z.object({ kind: z.enum(QUOTE_KINDS), description: z.string().trim().min(10).max(2000) }).optional(),
   honeypot: z.string().max(200).optional(),
+  privacyConsent: z.boolean(),
   fulfilment: z.enum(FULFILMENTS),
   address: z.string().trim().max(500).optional(),
   eventDate: z.iso.date(),
@@ -35,13 +36,13 @@ export type BookingRequest = z.input<typeof bookingRequestSchema>;
 export const BOOKING_ERROR_CODES = [
   "REQUIRED", "PHONE_INVALID", "EMAIL_INVALID", "DATE_UNAVAILABLE", "DATE_TOO_SOON",
   "DESSERT_MIN_QUANTITY", "DELIVERY_ADDRESS_REQUIRED", "TOO_MANY_TIERS", "INACTIVE_ITEM",
-  "EMPTY_BASKET", "INVALID_INPUT", "DUPLICATE_DESSERT", "TOO_MANY_DESSERT_LINES", "TOO_MANY_IMAGES", "IMAGE_NOT_FOUND",
+  "EMPTY_BASKET", "INVALID_INPUT", "DUPLICATE_DESSERT", "TOO_MANY_DESSERT_LINES", "TOO_MANY_IMAGES", "IMAGE_NOT_FOUND", "CONSENT_REQUIRED",
 ] as const;
 
 export type BookingErrorCode = (typeof BOOKING_ERROR_CODES)[number];
 export type BookingField = "cake" | "flavour" | "frosting" | "tierSizes" | "addons" | "desserts"
   | "fulfilment" | "address" | "eventDate" | "timeWindow" | "name" | "phone" | "email"
-  | "designNotes" | "topperMessage" | "imageTokens" | "quoteDescription" | "_form";
+  | "designNotes" | "topperMessage" | "imageTokens" | "quoteDescription" | "privacyConsent" | "_form";
 
 export type BookingResponse =
   | { ok: true; reference: string; accessToken: string; total: number; deposit: number; lines: { label: string; amount: number; kind: string }[]; paymentInstructions: { airtelNumber: string | null; mtnNumber: string | null; quote: string } }

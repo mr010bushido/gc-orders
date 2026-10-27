@@ -1,0 +1,7 @@
+[Unit]
+Description=Run Giuseppe's Cakes data retention
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/gc-orders/jobs.env
+ExecStart=/usr/bin/curl --fail --silent --show-error --request POST "${APP_URL}/api/jobs/retention" --header "Authorization: Bearer ${JOBS_SECRET}"

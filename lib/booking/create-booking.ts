@@ -14,7 +14,7 @@ function fieldFor(path: PropertyKey[]): BookingField {
   const field = String(path[0] ?? "_form");
   if (field === "cake" && ["flavour", "frosting", "tierSizes", "addons"].includes(String(path[1]))) return String(path[1]) as BookingField;
   if (field === "quoteRequest") return "quoteDescription";
-  return ["name", "phone", "email", "fulfilment", "address", "eventDate", "timeWindow", "designNotes", "topperMessage", "imageTokens", "cake", "desserts"].includes(field)
+  return ["name", "phone", "email", "fulfilment", "address", "eventDate", "timeWindow", "designNotes", "topperMessage", "imageTokens", "cake", "desserts", "privacyConsent"].includes(field)
     ? field as BookingField : "_form";
 }
 
@@ -46,7 +46,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     const errors: Partial<Record<BookingField, BookingErrorCode>> = {};
     for (const issue of parsed.error.issues) {
       const field = fieldFor(issue.path);
-      addError(errors, field, field === "phone" ? "PHONE_INVALID" : field === "email" ? "EMAIL_INVALID"
+      addError(errors, field, field === "privacyConsent" ? "CONSENT_REQUIRED" : field === "phone" ? "PHONE_INVALID" : field === "email" ? "EMAIL_INVALID"
         : issue.message === "Duplicate dessert types" ? "DUPLICATE_DESSERT"
           : field === "desserts" && issue.path.length === 1 && issue.code === "too_big" ? "TOO_MANY_DESSERT_LINES"
         : field === "tierSizes" && issue.code === "too_big" ? "TOO_MANY_TIERS"
@@ -65,8 +65,10 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   }
 
   const request = parsed.data;
+  if (!request.privacyConsent) return { ok: false, errors: { privacyConsent: "CONSENT_REQUIRED" } };
   if (request.honeypot?.trim()) return { ok: false, errors: { _form: "INVALID_INPUT" } };
   const errors: Partial<Record<BookingField, BookingErrorCode>> = {};
+  if (!request.privacyConsent) addError(errors, "privacyConsent", "CONSENT_REQUIRED");
   if (!request.cake && request.desserts.length === 0 && !request.quoteRequest) addError(errors, "_form", "EMPTY_BASKET");
   const phone = normaliseZambianMobile(request.phone);
   if (!phone) addError(errors, "phone", "PHONE_INVALID");
@@ -132,6 +134,7 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
     timeWindow: request.timeWindow,
     designNotes: request.designNotes,
     topperMessage: request.topperMessage,
+    privacyConsentAt: now,
     imageTokens: request.imageTokens,
     requestsQuote: Boolean(request.quoteRequest),
     basket: {

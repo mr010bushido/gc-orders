@@ -3,6 +3,8 @@ import { createTestDb } from "../db/test-db";
 import { BOOKED_AT, orderInput } from "./fixtures";
 import { createOrder, findOrderByToken } from "./orders";
 import { FIND_BOOKING_MESSAGE, NOT_FOUND_MESSAGE, findMyBooking, findOrderForAccess, maskEmail, maskPhone } from "./access";
+import { anonymiseOrder } from "./anonymise";
+import { makeImageStoreFake } from "../platform/fakes";
 
 let test: Awaited<ReturnType<typeof createTestDb>>;
 beforeAll(async () => { test = await createTestDb(); });
@@ -15,6 +17,18 @@ it("returns the same missing result for a wrong token and an unknown reference",
   expect(await findOrderForAccess(test.db, "CAKE-2099-9999", accessToken)).toBeNull();
   expect(NOT_FOUND_MESSAGE).toBe("We couldn't find that booking.");
   expect(await findOrderForAccess(test.db, order.reference, accessToken)).toMatchObject({ order: { reference: order.reference } });
+});
+
+it("does not serve or recover anonymised bookings", async () => {
+  const { order, accessToken } = await createOrder(test.db, orderInput(), BOOKED_AT);
+  await anonymiseOrder(test.db, makeImageStoreFake().store, order.id);
+  expect(await findOrderByToken(test.db, accessToken)).toBeNull();
+  expect(await findOrderForAccess(test.db, order.reference, accessToken)).toBeNull();
+  const scheduled: (() => Promise<void>)[] = [];
+  await findMyBooking(order.reference, "0977 123 456", { db: test.db, clientAddress: "anonymised",
+    appUrl: "https://cakes.invalid", limiter: { hit: async () => true }, schedule: work => { scheduled.push(work); },
+    sms: { send: async () => ({ id: "unexpected" }) } });
+  await scheduled[0]();
 });
 
 it("masks contact details", () => {

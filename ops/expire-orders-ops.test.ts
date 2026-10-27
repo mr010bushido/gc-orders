@@ -13,3 +13,14 @@ it("documents only a placeholder or environment variable for the job secret", ()
     "Bearer REPLACE_WITH_JOBS_SECRET", "Bearer ${JOBS_SECRET}", "Bearer ${JOBS_SECRET}",
   ]);
 });
+
+it("documents retention scheduling with placeholder secrets and single-argument curl values", () => {
+  const files = ["ops/pg_cron/retention.sql", "ops/systemd/retention.service", "ops/systemd/retention.timer"];
+  const content = files.map(file => readFileSync(file, "utf8")).join("\n");
+  const service = readFileSync("ops/systemd/retention.service", "utf8");
+  expect(content).toContain("REPLACE_WITH_JOBS_SECRET");
+  expect(content).toContain("${JOBS_SECRET}");
+  expect(content).toContain("0 0 * * *");
+  expect(content).toContain("00:00:00 UTC");
+  expect(service).toContain('"${APP_URL}/api/jobs/retention" --header "Authorization: Bearer ${JOBS_SECRET}"');
+});

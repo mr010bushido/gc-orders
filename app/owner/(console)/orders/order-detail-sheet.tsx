@@ -8,7 +8,7 @@ import { Sheet } from "../../../../components/ui/Sheet";
 import { formatEventDate, formatKwacha } from "../../../../components/ui/format";
 import { ownerContactLinks } from "../../../../lib/owner/order-links";
 import type { OwnerOrderDetail } from "../../../../lib/owner/orders-query";
-import { markSeen } from "./actions";
+import { eraseOrderData, markSeen } from "./actions";
 import { clearFlag, completeOrder, flagOrder, recordBalancePaid, verifyOrder } from "./actions";
 import type { BalanceMethod } from "../../../../lib/db/schema/orders";
 import type { PricingRules } from "../../../../lib/basket-pricing";
@@ -60,12 +60,17 @@ export function OrderDetailSheet({ order, images = [], pricingRules, onClose }: 
     <Button variant="ghost" block disabled={busy} onClick={() => void act(() => declineQuoteAction(order.id))}>Decline</Button>
     <Button block type="submit" form="quote-form" disabled={busy || !quotePreview || validQuoteLines.length !== quoteLines.length}>Send quote</Button>
   </> : undefined;
+  const canErase = !order.anonymisedAt && (order.status === "completed" || order.status === "expired");
   return <Sheet open onClose={onClose} title={order.customerName ?? "Order"} reference={order.reference} status={order.status} flagged={Boolean(order.flaggedAt)} actions={confirmComplete ? undefined : actions}>
     <div className="space-y-5 py-4 text-sm">
       <section aria-label="Customer"><h3 className="font-semibold">Customer</h3><p>{order.customerName ?? "Personal details removed"}</p>
         {order.customerEmail && <p>{order.customerEmail}</p>}{order.customerPhone && <p>{order.customerPhone}</p>}
         {links && <div className="mt-2 flex gap-2"><Button variant="ghost" href={links.tel}>Call</Button><Button variant="ghost" href={links.whatsapp} target="_blank" rel="noreferrer">WhatsApp</Button></div>}
       </section>
+      {canErase && <Button variant="ghost" block disabled={busy} onClick={() => {
+        if (window.confirm(`Erase personal data for ${order.reference}? This cannot be undone.`)) void act(() => eraseOrderData(order.id));
+      }}>Erase personal data</Button>}
+      {order.anonymisedAt && <p className="rounded-sm border border-line px-3 py-2 text-xs font-semibold text-ink-soft">Anonymised</p>}
       <section><h3 className="font-semibold">Event</h3><p>{formatEventDate(order.eventDate)} · {order.timeWindow}</p><p className="capitalize">{order.fulfilment}{order.fulfilment === "delivery" && order.deliveryAddress ? ` · ${order.deliveryAddress}` : ""}</p></section>
       {order.quoteRequest && <section aria-label="Quote request"><h3 className="font-semibold">Quote request · {order.quoteRequest.kind.replaceAll("_", " ")}</h3><p className="mt-1 whitespace-pre-wrap">{order.quoteRequest.description}</p></section>}
       <section><h3 className="font-semibold">Design notes</h3><p className="whitespace-pre-wrap"><PlainText value={order.designNotes || "None"}/></p><p>Topper: <span className="whitespace-pre-wrap"><PlainText value={order.topperMessage || "None"}/></span></p></section>
