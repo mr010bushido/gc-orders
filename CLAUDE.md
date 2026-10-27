@@ -100,8 +100,9 @@ Database money columns hold whole Kwacha as `integer`.
 ## Agent roster and ownership
 
 - **Coordinator (orchestrator):** whichever agent orchestrates: the user's T3 thread (Claude by default), or Claude or Codex started from the CLI. The same rules apply to each. It starts implementer runs, pushes feature branches, opens PRs into `develop`, arranges independent review, and merges into `develop` under the standing authorization in "Limits for every agent". Releases, tags, deploys and anything that touches `main` stay with the user.
-- **Codex (GPT) owns backend work:** database and migrations, server actions and routes, authentication, pricing, the order lifecycle, notifications, security, and backend tests.
-- **Claude owns frontend work:** design-system components, customer booking screens, the owner dashboard, accessibility, and frontend tests.
+- **Backend work:** database and migrations, server actions and routes, authentication, pricing, the order lifecycle, notifications, security, and backend tests.
+- **Frontend work:** design-system components, customer booking screens, the owner dashboard, accessibility, and frontend tests.
+- **Who implements:** Codex runs implement both backend and frontend work and do the independent reviews (see "Codex usage"), unless the user assigns a run to Claude. The backend/frontend split still decides which skills an implementer loads and how tasks are grouped.
 - **Ownership follows behavior, not folders.** A server action that sits next to the screen calling it is backend work; the screen is frontend work.
 - **Cross-cutting features get one OpenSpec change.** Agree the request/response shapes, validation errors and statuses in the change's spec before tasks are split. One named agent owns the final integration check, and the feature is not complete until it passes. Ownership is the default assignment, not permission to leave a broken integration for the other agent.
 - **Parallel work uses separate worktrees and branches.**
@@ -114,13 +115,14 @@ Before planning or delegating each new codebase task, the coordinator SHALL quer
 
 ## Codex usage (shared ChatGPT quota)
 
-Codex bills to the user's ChatGPT subscription, and that quota runs out. Claude is the main agent and spends Claude tokens on everything except writing code.
+Codex bills to the user's ChatGPT subscriptions, and that quota runs out. The user has two ChatGPT accounts connected to T3 Code ("ChatGPT - JMS" and "ChatGPT - TDJ").
 
-- **Claude does the thinking:** reading, exploring, planning, OpenSpec proposals, classifying work, verifying gates, and review. Don't hand these to Codex.
-- **Codex only writes code for a well-scoped task:** a `delegate_task` implementer run (provider `codex_cc288b17-ab76-45a0-87ce-7db26aa41373`), or `/codex-bridge:codex-execute` for an approved plan. Pass `--budget 3` by default and `--serial` when quota is low.
-- **Choose the model, cheapest first:** `gpt-6-luna` for mechanical work (renames, boilerplate, simple tests), `gpt-5.6-terra` for ordinary features, `gpt-6-sol` only for auth, security, migrations, money or other risky logic. Never `gpt-6-astra` for writing. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model.
-- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss). Ordinary plans get Claude's own review.
-- **On a Codex usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): don't retry and don't escalate the model. Tell the user, then finish the work with Claude unless the user says to wait for the reset.
+- **The orchestrator (Claude Opus by default) only orchestrates:** reading, planning, OpenSpec proposals, classifying work, Linear, git, PRs and merges. It spawns as few Claude threads as possible.
+- **Codex does all delegated work:** implementer runs and independent reviews go to `gpt-6-luna` through `delegate_task`, unless the user names another model. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model. Never use `gpt-6-astra` for writing.
+- **Look up the provider id every time.** Call `orchestrator_capabilities` and use the live `providerInstanceId` of a "ChatGPT - …" instance. The ids change whenever an account signs in again, so never copy one into a document.
+- **Spread work across both accounts.** A review goes to a different account, or at least a fresh session, from the implementer that wrote the code.
+- **On a usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): switch the task to the other account. Don't escalate the model. If both accounts fail, stop and tell the user. Don't fall back to a Claude model unless the user says so.
+- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss).
 
 ## Limits for every agent
 
@@ -162,7 +164,7 @@ Implementers also do not push, open or update PRs. They commit to their own bran
 
 1. **Linear first.** Every OpenSpec change must have its own Linear issue (project Giuseppe's Cakes Orders, team Jmsarchy, key `JMS`) before its branch exists. Never invent a key. Create the issue only when the user asks. The key goes in the branch `feature/jms-<n>-<change>` and the PR title `JMS-<n>: …`.
 2. **Commit the change directory** (`openspec/changes/<name>/`) before delegating. A worktree starts from the committed state and does not copy uncommitted files.
-3. **Delegate** the `openspec-implementer` with worktree isolation, choosing the provider by the change's owner (Codex for backend, Claude for frontend). The contract is in `.claude/agents/openspec-implementer.md` for Claude and in this section for Codex. `isolation:"worktree"` branches from the coordinator thread's own commit, so run the coordinator from a checkout on `develop` or the change branch; `delegate_task` takes no working directory or agent type, so name the contract file in the task prompt.
+3. **Delegate** the `openspec-implementer` with worktree isolation, on a Codex account as described in "Codex usage", for backend and frontend alike. The contract is in `.claude/agents/openspec-implementer.md` and this section; name the contract file in every implementer prompt. `isolation:"worktree"` branches from the coordinator thread's own commit, so run the coordinator from a checkout on `develop` or the change branch; `delegate_task` takes no working directory or agent type, so name the contract file in the task prompt.
 4. **Work one change per run,** tasks in order, using the `openspec` CLI directly. Do not wrap `openspec-apply-change`, whose interactive pauses a background run cannot answer.
 5. **Gate every ticked task.** Run the commands that apply (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `openspec validate <name> --strict`), tick the task only after they pass, and append the gate and its result to the task line. A task with no runnable command names the check actually performed. A failure that also fails on the base commit is recorded as pre-existing, not as a pass.
 6. **Record deviations in place.** When you do something other than what a task says, rewrite the line to state what was done and why before ticking it.
