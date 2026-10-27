@@ -31,13 +31,14 @@ Before planning or delegating each new codebase task, the coordinator SHALL quer
 
 ## Codex usage (shared ChatGPT quota)
 
-Codex bills to the user's ChatGPT subscription, and that quota runs out. Claude is the main agent and spends Claude tokens on everything except writing code.
+Codex bills to the user's ChatGPT subscriptions, and that quota runs out. The user has two ChatGPT accounts connected to T3 Code ("ChatGPT - JMS" and "ChatGPT - TDJ").
 
-- **Claude does the thinking:** reading, exploring, planning, OpenSpec proposals, classifying work, verifying gates, and review. Don't hand these to Codex.
-- **Codex only writes code for a well-scoped task:** a `delegate_task` implementer run (provider `codex_cc288b17-ab76-45a0-87ce-7db26aa41373`), or `/codex-bridge:codex-execute` for an approved plan. Pass `--budget 3` by default and `--serial` when quota is low.
-- **Choose the model, cheapest first:** `gpt-6-luna` for mechanical work (renames, boilerplate, simple tests), `gpt-5.6-terra` for ordinary features, `gpt-6-sol` only for auth, security, migrations, money or other risky logic. Never `gpt-6-astra` for writing. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model.
-- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss). Ordinary plans get Claude's own review.
-- **On a Codex usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): don't retry and don't escalate the model. Tell the user, then finish the work with Claude unless the user says to wait for the reset.
+- **The orchestrator (Claude Opus by default) only orchestrates:** reading, planning, OpenSpec proposals, classifying work, Linear, git, PRs and merges. It spawns as few Claude threads as possible.
+- **Codex does all delegated work:** implementer runs and independent reviews go to `gpt-6-luna` through `delegate_task`, unless the user names another model. Always name the model; an omitted model runs whatever `~/.codex/config.toml` names, which is a top-tier model. Never use `gpt-6-astra` for writing.
+- **Look up the provider id every time.** Call `orchestrator_capabilities` and use the live `providerInstanceId` of a "ChatGPT - …" instance. The ids change whenever an account signs in again, so never copy one into a document.
+- **Spread work across both accounts.** A review goes to a different account, or at least a fresh session, from the implementer that wrote the code.
+- **On a usage-limit or auth error** ("usage limit", "Subscription Sharing", `401 token_expired`): switch the task to the other account. Don't escalate the model. If both accounts fail, stop and tell the user. Don't fall back to a Claude model unless the user says so.
+- **`/codex-bridge:codex-review` only for risky plans** (auth, security, migrations, data loss).
 
 ## Limits for every agent
 
