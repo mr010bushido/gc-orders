@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createTestDb } from "../../../../lib/db/test-db";
-import { orders } from "../../../../lib/db/schema";
+import { notificationLog, orders } from "../../../../lib/db/schema";
 import { orderInput } from "../../../../lib/orders/fixtures";
 import { createOrder } from "../../../../lib/orders/orders";
 import { makeImageStoreFake } from "../../../../lib/platform/fakes";
@@ -22,8 +22,13 @@ it("guards first, refuses active orders, and erases completed order data", async
   expect(await eraseOrderData(active.order.id)).toEqual({ ok: false, code: "ORDER_ACTIVE" });
   expect(mocks.guard).toHaveBeenCalledOnce();
   await test.db.update(orders).set({ status: "completed" }).where(eq(orders.id, active.order.id));
+  await test.db.insert(notificationLog).values({ orderId: active.order.id, event: "booking_received", channel: "sms",
+    recipient: "+260***456", providerMessageId: "personal-id", error: "personal error", status: "failed", at: new Date() });
   expect(await eraseOrderData(active.order.id)).toEqual({ ok: true });
   const [saved] = await test.db.select().from(orders).where(eq(orders.id, active.order.id));
   expect(saved).toMatchObject({ customerName: null, anonymisedAt: expect.any(Date), privacyConsentAt: new Date("2026-10-17T08:00:00Z") });
+  expect(await test.db.select().from(notificationLog)).toMatchObject([
+    { recipient: "Removed", providerMessageId: null, error: null, event: "booking_received", channel: "sms", status: "failed" },
+  ]);
   expect(mocks.guard).toHaveBeenCalledTimes(2);
 });

@@ -19,3 +19,7 @@
 
 - [ ] 3.1 BLOCKED for a human: run the pg_cron SQL in Supabase at production deployment; record when done. (Privacy wording settled by the owner on 2026-10-27: consent for order handling only, no targeted marketing.)
 - [x] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build`, `pnpm check:portability`, `openspec validate data-retention --strict`, and `pnpm db:generate` with no diff — all pass; standalone health endpoint reproduced on a random port with the exact CI deep equality (503 and expected body)
+
+## Review fix
+
+- [x] Clear notification-log personal fields during scheduled and owner anonymisation while retaining rows — gate: `pnpm lint` (0 warnings), `pnpm typecheck` (passed), `pnpm test --maxWorkers=2` (882 passed, 1 skipped), `pnpm build` (passed), `openspec validate data-retention --strict` (valid), `pnpm db:generate` (no schema changes)

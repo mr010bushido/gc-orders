@@ -14,6 +14,10 @@ it("removes expired pending uploads and anonymises due orders", async () => {
     const now = new Date("2026-10-27T00:00:00Z");
     const old = await createOrder(test.db, orderInput({ eventDate: "2024-10-25" }), now);
     const recent = await createOrder(test.db, orderInput({ eventDate: "2025-10-27" }), now);
+    await test.db.insert(notificationLog).values([
+      { orderId: old.order.id, event: "booking_received", channel: "sms", recipient: "+260***456", providerMessageId: "old-id", error: "old error", status: "failed", at: now },
+      { orderId: recent.order.id, event: "booking_received", channel: "sms", recipient: "+260***789", providerMessageId: "recent-id", error: "recent error", status: "failed", at: now },
+    ]);
     await test.db.insert(orderImages).values({ key: "old-order", orderId: old.order.id, bytes: 1, width: 1, height: 1,
       tokenHash: "old-token", addressHash: "old-address", createdAt: now });
     await store.put("old-order", new Uint8Array([1]), "image/jpeg");
@@ -27,6 +31,9 @@ it("removes expired pending uploads and anonymises due orders", async () => {
     expect(order.customerName).toBeNull();
     const [recentOrder] = await test.db.select().from(orders).where(eq(orders.id, recent.order.id));
     expect(recentOrder.customerName).toBe("Mwila Banda");
+    const logs = await test.db.select().from(notificationLog);
+    expect(logs.find(log => log.orderId === old.order.id)).toMatchObject({ recipient: "Removed", providerMessageId: null, error: null });
+    expect(logs.find(log => log.orderId === recent.order.id)).toMatchObject({ recipient: "+260***789", providerMessageId: "recent-id", error: "recent error" });
     expect(await test.db.select().from(orderImages)).toHaveLength(1);
   } finally { await test.close(); }
 });

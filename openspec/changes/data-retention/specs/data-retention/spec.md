@@ -27,7 +27,7 @@ The job SHALL delete an order's images from storage and the table once the Lusak
 - **THEN** its row is kept and the next run retries it
 
 ### Requirement: Anonymise orders after two years
-The job SHALL anonymise an order once the Lusaka date is more than two calendar years after its event date. Anonymising SHALL clear name, phone, email, delivery address, design notes, topper text, quote request description and all POP submissions, delete any remaining images, and set `anonymised_at`. It SHALL keep the reference, event date, lines, totals, statuses and timeline.
+The job SHALL anonymise an order once the Lusaka date is more than two calendar years after its event date. Anonymising SHALL clear name, phone, email, delivery address, design notes, topper text, quote request description, all POP submissions, and each related notification-log recipient, provider message ID and error text, delete any remaining images, and set `anonymised_at`. Notification-log rows SHALL remain with their event, channel, status and timestamp so normal log retention and send deduplication continue to apply. It SHALL keep the reference, event date, lines, totals, statuses and timeline.
 
 #### Scenario: Old order
 - **WHEN** an order's event was 2 years and 1 day ago

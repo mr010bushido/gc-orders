@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "../db";
-import { orderImages, orders, popSubmissions, quoteRequests } from "../db/schema";
+import { notificationLog, orderImages, orders, popSubmissions, quoteRequests } from "../db/schema";
 import type { ImageStore } from "../platform/image-store";
 
 export async function anonymiseOrder(db: Db, store: ImageStore, orderId: string, now = new Date()): Promise<boolean> {
@@ -17,6 +17,8 @@ export async function anonymiseOrder(db: Db, store: ImageStore, orderId: string,
     if (!changed.length) return false;
     await tx.delete(popSubmissions).where(eq(popSubmissions.orderId, orderId));
     await tx.update(quoteRequests).set({ description: "Customer data removed" }).where(eq(quoteRequests.orderId, orderId));
+    await tx.update(notificationLog).set({ recipient: "Removed", providerMessageId: null, error: null })
+      .where(eq(notificationLog.orderId, orderId));
     return true;
   });
 }
