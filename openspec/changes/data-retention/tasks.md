@@ -18,4 +18,4 @@
 ## 3. Verify
 
 - [ ] 3.1 BLOCKED for a human: run the pg_cron SQL in Supabase at production deployment; record when done. (Privacy wording settled by the owner on 2026-10-27: consent for order handling only, no targeted marketing.)
-- [ ] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check:portability` pass; `openspec validate data-retention --strict` passes
+- [x] 3.2 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build`, `pnpm check:portability`, `openspec validate data-retention --strict`, and `pnpm db:generate` with no diff — all pass; standalone health endpoint reproduced on a random port with the exact CI deep equality (503 and expected body)
