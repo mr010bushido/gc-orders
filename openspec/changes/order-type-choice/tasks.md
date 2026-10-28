@@ -15,4 +15,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2`, `pnpm build`, `pnpm check:portability`, `openspec validate order-type-choice --strict` all pass
+- [x] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (889 passed, 1 skipped), `pnpm build`, `pnpm check:portability`, `openspec validate order-type-choice --strict` all pass — gates: lint passed; typecheck passed; test 103 files passed, 1 skipped; build passed; portability passed; strict validation passed
