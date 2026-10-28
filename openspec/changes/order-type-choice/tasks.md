@@ -1,7 +1,7 @@
 ## 1. Server (backend)
 
 - [x] 1.1 `lib/booking/schema.ts` and `lib/booking/create-booking.ts`: add `WEDDING_WITH_CAKE` (`_form`) and `QUOTE_NEEDS_CAKE` (`quoteDescription`) to `BOOKING_ERROR_CODES` and enforce them; tests for quote basket guards and plain cake — gate: `pnpm test lib/booking/create-booking.test.ts` → 20 passed
-- [ ] 1.2 `app/owner/(console)/orders/order-detail-sheet.tsx`: label the subtotal "Base price (price list)" for `awaiting_quote` orders that have priced lines; keep the K0 wedding case readable; update the sheet test
+- [x] 1.2 `app/owner/(console)/orders/order-detail-sheet.tsx`: label the subtotal "Base price (price list)" for `awaiting_quote` orders that have priced lines; K0 wedding retains "Total" — gate: `pnpm test components/ui/OrderDetailSheet.test.tsx` → 8 passed
 
 ## 2. Wizard (frontend)
 

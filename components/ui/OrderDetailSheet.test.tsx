@@ -75,11 +75,18 @@ describe("OrderDetailSheet", () => {
     render(<OrderDetailSheet order={request} pricingRules={toPricingRules(defaultCatalogue())} onClose={() => {}} />);
     expect(screen.getByText("Quote request · wedding cake")).toBeTruthy();
     expect(screen.getByText("Three tier floral cake")).toBeTruthy();
+    expect(screen.getByText("Base price (price list)")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Quote line 1"), { target: { value: "Custom decoration" } });
     fireEvent.change(screen.getByLabelText("Quote amount 1"), { target: { value: "500" } });
     expect(screen.getByText("Deposit (50%)").parentElement?.textContent).toContain("K1,575");
     expect(screen.getByRole("button", { name: "Send quote" }).className).toContain("bg-brand");
     expect(screen.getByRole("button", { name: "Decline" }).className).toContain("border-ink");
+  });
+
+  it("labels a wedding quote with no priced lines as total", () => {
+    render(<OrderDetailSheet order={{ ...order("awaiting_quote"), total: 0, deposit: 0, lines: [], quoteRequest: { id: "quote-2", orderId: order("awaiting_quote").id, kind: "wedding_cake", description: "A wedding cake" } }} onClose={() => {}} />);
+    expect(screen.getByText("Total")).toBeTruthy();
+    expect(screen.queryByText("Base price (price list)")).toBeNull();
   });
 
   it("makes completion the sole filled action for confirmed orders with unpaid or paid balance", () => {
