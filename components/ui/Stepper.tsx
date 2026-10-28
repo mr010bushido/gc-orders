@@ -1,8 +1,8 @@
 import { cn } from './cn';
 
-type StepperProps = { steps: string[]; current: number; className?: string };
+type StepperProps = { steps: string[]; current: number; className?: string; hideTotal?: boolean };
 
-export function Stepper({ steps, current, className }: StepperProps) {
+export function Stepper({ steps, current, className, hideTotal = false }: StepperProps) {
   const state = (i: number) => (i < current ? 'done' : i === current ? 'current' : 'todo');
 
   return (
@@ -10,10 +10,10 @@ export function Stepper({ steps, current, className }: StepperProps) {
       {/* Phones: overline over segments */}
       <div className="md:hidden">
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">
-          Step {current + 1} of {steps.length} · {steps[current]}
+          Step {current + 1}{hideTotal ? '' : ` of ${steps.length}`} · {steps[current]}
         </p>
         <ol className="flex gap-1.5" aria-hidden="true">
-          {steps.map((label, i) => (
+          {steps.slice(0, hideTotal ? 1 : undefined).map((label, i) => (
             <li
               key={label}
               data-state={state(i)}

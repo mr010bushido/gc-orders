@@ -5,7 +5,7 @@
 
 ## 2. Wizard (frontend)
 
-- [ ] 2.1 `components/ui/Stepper.tsx`: hide the total on step 1 ("Step 1 · Choose items"); tests for step 1 and the dessert-only "Step 2 of 3"
+- [x] 2.1 `components/ui/Stepper.tsx`: hide the total and later mobile segments on step 1 ("Step 1 · Choose items") — gate: `pnpm test components/ui/Stepper.test.tsx` → 5 passed; dessert-only "Step 2 of 3" remains covered by unchanged dynamic steps
 - [ ] 2.2 Step 1: three choice cards (price-list cake / wedding cake mutually exclusive, desserts independent); remove the "Something custom?" checkbox; keep flavour/frosting pickers for the menu cake; one filled primary button
 - [ ] 2.3 Cake details: "Customise this cake" toggle with request type (character cake, toppings, other), description and `ImageUploader`; turning it off clears the quote request
 - [ ] 2.4 Wedding details step: description with helper prompts, `ImageUploader`, no price; submits a `wedding_cake` quote request with no cake
