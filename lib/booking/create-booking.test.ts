@@ -74,6 +74,15 @@ it("rejects quote descriptions shorter than ten characters before creating an or
   expect(await test.db.select().from(orders)).toEqual([]);
 });
 
+it("enforces quote kinds against the basket shape", async () => {
+  expect(await createBooking(test.db, request({ quoteRequest: { kind: "wedding_cake", description: "A wedding cake request" } }), NOW))
+    .toMatchObject({ ok: false, errors: { _form: "WEDDING_WITH_CAKE" } });
+  expect(await createBooking(test.db, request({ cake: undefined, desserts: [{ type: "cupcakes", quantity: 30 }], quoteRequest: { kind: "other", description: "An additional decoration" } }), NOW))
+    .toMatchObject({ ok: false, errors: { quoteDescription: "QUOTE_NEEDS_CAKE" } });
+  expect(await createBooking(test.db, request({ quoteRequest: undefined }), NOW)).toMatchObject({ ok: true, total: 1040 });
+  expect(await test.db.select().from(orders)).toHaveLength(1);
+});
+
 it("rejects inactive catalogue items without creating an order", async () => {
   await test.db.update(flavours).set({ active: false }).where(eq(flavours.key, "vanilla"));
   expect(await createBooking(test.db, request(), NOW)).toMatchObject({ ok: false, errors: { flavour: "INACTIVE_ITEM" } });
