@@ -14,6 +14,7 @@ export default function Home() {
         <h1 className="max-w-lg font-display text-[40px] leading-[44px] sm:text-[56px] sm:leading-[60px]">A cake for your occasion.</h1>
         <p className="max-w-lg leading-6 text-ink-soft">Choose your cake or desserts, arrange pickup or delivery, and celebrate.</p>
         <Button href="/book" className="sm:w-fit">Book a Cake</Button>
+        <Button variant="ghost" href="/order" className="sm:w-fit">Find my booking</Button>
       </section>
     </main>
   );

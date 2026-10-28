@@ -78,6 +78,15 @@ describe('ImageUploader', () => {
     expect(screen.getByRole('img', { name: 'Reference photo 1: cake.jpg' })).toBeTruthy();
   });
 
+  it('adds a photo when crypto.randomUUID is unavailable', async () => {
+    vi.stubGlobal('crypto', {});
+    const user = userEvent.setup();
+    render(<ImageUploader />);
+    await user.upload(screen.getByLabelText('Add photos'), new File(['source'], 'cake.jpg', { type: 'image/jpeg' }));
+    expect(await screen.findByRole('img', { name: 'Reference photo 1: cake.jpg' })).toBeTruthy();
+    await waitFor(() => expect(MockXHR.requests).toHaveLength(1));
+  });
+
   it('enforces the three-photo limit and deletes a removed upload with its token header', async () => {
     const user = userEvent.setup();
     render(<ImageUploader />);

@@ -20,6 +20,8 @@ type ImageUploaderProps = {
   onPendingChange?: (pending: boolean) => void;
 };
 
+let nextEntryKey = 0;
+
 function downscale(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const sourceUrl = URL.createObjectURL(file);
@@ -159,7 +161,7 @@ export function ImageUploader({ initialImages = [], onChange, onPendingChange }:
     const selected = Array.from(files).slice(0, available);
     if (files.length > available) setSelectionError('You can add up to 3 photos.');
     const next = selected.map((file) => {
-      const key = crypto.randomUUID();
+      const key = `photo-${++nextEntryKey}`;
       const entry: Entry = { key, preview: URL.createObjectURL(file), name: file.name, progress: 0, status: 'processing' };
       void upload(entry, file);
       return entry;
