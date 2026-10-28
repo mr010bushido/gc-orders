@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { loginOrigin } from "../../../../lib/auth/login-request";
 import { supabaseOwnerAuth } from "../../../../lib/platform/adapters/supabase/owner-auth";
 
 function redirect(request: Request, path: string) {
-  const response = NextResponse.redirect(new URL(path, request.url));
+  const response = NextResponse.redirect(new URL(path, loginOrigin(request.headers) ?? request.url));
   response.headers.set("Referrer-Policy", "no-referrer");
   response.headers.set("Cache-Control", "no-store");
   return response;
