@@ -18,6 +18,12 @@ describe('OrderCard', () => {
     expect(lines[2].textContent).toBe('DeliveryK2,650');
   });
 
+  it('keeps an optional badge inline with the reference and date', () => {
+    const { container } = render(<OrderCard {...order} badge={<span>New</span>} />);
+    expect(container.firstChild?.firstChild?.textContent).toContain('New');
+    expect(screen.getByText('K2,650')).toBeTruthy();
+  });
+
   it('uses the selected background and the 3px brick bar when selected', () => {
     const { container, rerender } = render(<OrderCard {...order} />);
     const card = () => container.firstChild as HTMLElement;
