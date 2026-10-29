@@ -1,14 +1,18 @@
 # booking-wizard Specification
 
 ## Purpose
-TBD - created by archiving change booking-flow. Update Purpose after archive.
+The customer-facing booking flow: the landing page, the step-by-step wizard that collects items, cake details, delivery and contact details, and the review, submission and confirmation screens.
 ## Requirements
 ### Requirement: Landing page
-The home page SHALL show the logo, one display-font headline and one primary "Book a Cake" button leading to `/book`.
+The home page SHALL show the logo, one display-font headline, one primary "Book a Cake" button leading to `/book`, and a secondary ghost-style "Find my booking" link leading to `/order`.
 
 #### Scenario: Start booking
 - **WHEN** a visitor presses "Book a Cake"
 - **THEN** the wizard opens at step 1
+
+#### Scenario: Find an existing booking
+- **WHEN** a visitor presses "Find my booking"
+- **THEN** the find-my-booking page at `/order` opens
 
 ### Requirement: Steps and stepper
 The wizard SHALL have the steps Choose items, Cake details, Delivery and details, and Review. When the basket has no cake, the Cake details step SHALL be skipped and the stepper SHALL show three steps. Each step SHALL be reachable with Back and Next without losing entered data.
