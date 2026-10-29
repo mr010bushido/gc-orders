@@ -13,15 +13,16 @@ type OrderCardProps = {
   selected?: boolean;
   onSelect?: () => void;
   className?: string;
+  badge?: React.ReactNode;
 };
 
 export function OrderCard({
-  reference, date, status, customer, summary, fulfilment, total, selected = false, onSelect, className,
+  reference, date, status, customer, summary, fulfilment, total, selected = false, onSelect, className, badge,
 }: OrderCardProps) {
   const body = (
     <>
       <span className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-xs text-ink-soft tabular-nums">{reference} · {date}</span>
+        <span className="flex min-w-0 items-center gap-2 text-xs text-ink-soft tabular-nums"><span className="truncate">{reference} · {date}</span>{badge}</span>
         <StatusPill status={status} size="sm" />
       </span>
       <span className="mt-1.5 block truncate text-base font-semibold text-ink">{customer} · {summary}</span>
