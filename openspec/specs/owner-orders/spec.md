@@ -1,7 +1,7 @@
 # owner-orders Specification
 
 ## Purpose
-TBD - created by archiving change owner-orders. Update Purpose after archive.
+The owner console's order list and detail sheet: filtering, the New highlight, order details, and the owner actions that move an order through its lifecycle.
 ## Requirements
 ### Requirement: Order list
 `/owner/orders` SHALL list orders as order cards showing reference and date, status pill, customer and cake or dessert summary, fulfilment and total. The default view SHALL show orders that are `awaiting_quote`, `awaiting_payment`, `awaiting_verification` or `confirmed`, sorted by event date ascending, and SHALL use `effectiveStatus`.
@@ -26,11 +26,15 @@ The list SHALL offer a chip for each status, a Flagged chip and All, a sort by e
 - **THEN** every order for that date is listed regardless of status
 
 ### Requirement: New highlight
-Orders the owner has not opened (`owner_seen_at` null) SHALL be marked New. Opening the order SHALL mark it seen.
+Orders the owner has not opened (`owner_seen_at` null) SHALL be marked New. Opening the order SHALL mark it seen. The New tag, and the Anonymised tag shown for anonymised orders, SHALL sit beside the order's reference line and SHALL NOT cover the total, the status pill or any other order text at any viewport width. The New tag SHALL use a non-alarm colour (not the danger or brick colour).
 
 #### Scenario: Open a new order
 - **WHEN** the owner opens an unseen order
 - **THEN** it stops showing as New on the next load
+
+#### Scenario: Total stays readable
+- **WHEN** an unseen order is listed
+- **THEN** the New tag is shown and the order's total is fully visible
 
 ### Requirement: Order detail
 The detail sheet SHALL show the reference, status pill and flag badge, the customer's name, phone and email, fulfilment with address, event date and time window, design notes and topper text, every priced line, total, deposit and balance due, the latest pasted POP text with earlier submissions, and the status timeline with times and actors. POP and notes SHALL be rendered as plain text.
