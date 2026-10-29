@@ -19,6 +19,23 @@ describe('Stepper', () => {
     expect(container.querySelectorAll('[data-state]')).toHaveLength(3);
   });
 
+  it('hides the total and later mobile segments on the first step', () => {
+    const { container } = render(<Stepper steps={['Choose items', 'Details', 'Delivery', 'Review']} current={0} hideTotal />);
+    expect(screen.getByText('Step 1 · Choose items')).toBeTruthy();
+    expect(screen.queryByText(/of 4/)).toBeNull();
+    expect(container.querySelectorAll('[data-state]')).toHaveLength(1);
+  });
+
+  it('shows only the current label in the desktop list when hiding the total', () => {
+    const { container } = render(<Stepper steps={['Choose items', 'Details', 'Delivery', 'Review']} current={0} hideTotal />);
+    const desktop = container.querySelector('.md\\:flex')!;
+    expect(desktop.textContent).toContain('1Choose items');
+    expect(desktop.textContent).not.toContain('Details');
+    expect(desktop.textContent).not.toContain('Delivery');
+    expect(desktop.textContent).not.toContain('Review');
+    expect(desktop.querySelector('[aria-current="step"]')?.textContent).toContain('Choose items');
+  });
+
   it('marks the current step with aria-current in both layouts', () => {
     const { container } = render(<Stepper steps={['Cake', 'Details', 'Review']} current={2} />);
     const current = container.querySelectorAll('[aria-current="step"]');

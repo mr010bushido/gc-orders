@@ -69,6 +69,8 @@ export async function createBooking(db: Db, input: unknown, now: Date): Promise<
   if (request.honeypot?.trim()) return { ok: false, errors: { _form: "INVALID_INPUT" } };
   const errors: Partial<Record<BookingField, BookingErrorCode>> = {};
   if (!request.privacyConsent) addError(errors, "privacyConsent", "CONSENT_REQUIRED");
+  if (request.quoteRequest?.kind === "wedding_cake" && request.cake) addError(errors, "_form", "WEDDING_WITH_CAKE");
+  if (request.quoteRequest && request.quoteRequest.kind !== "wedding_cake" && !request.cake) addError(errors, "quoteDescription", "QUOTE_NEEDS_CAKE");
   if (!request.cake && request.desserts.length === 0 && !request.quoteRequest) addError(errors, "_form", "EMPTY_BASKET");
   const phone = normaliseZambianMobile(request.phone);
   if (!phone) addError(errors, "phone", "PHONE_INVALID");

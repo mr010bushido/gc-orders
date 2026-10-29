@@ -40,7 +40,7 @@ it('restores a draft, validates the first step, focuses detail errors, then show
   sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify(draft));
   const { container } = render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
   await screen.findByRole('heading', { name: 'Choose your treats' });
-  await waitFor(() => expect((screen.getByLabelText('Add a cake') as HTMLInputElement).checked).toBe(true));
+  await waitFor(() => expect(screen.getByRole('button', { name: /Cake from our price list/ }).getAttribute('aria-pressed')).toBe('true'));
   expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
   await user.selectOptions(screen.getByRole('combobox', { name: 'Flavour' }), 'vanilla');
   await user.selectOptions(screen.getByRole('combobox', { name: 'Frosting' }), 'american_buttercream');
@@ -82,7 +82,7 @@ it('keeps the dessert step disabled below the configured minimum', async () => {
   render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
   await screen.findByRole('heading', { name: 'Choose your treats' });
   await waitFor(() => expect(sessionStorage.getItem('gc-booking-draft-v1')).not.toBeNull());
-  await user.click(screen.getByRole('button', { name: '+ Add dessert type' }));
+  await user.click(screen.getByRole('button', { name: /^Desserts/ }));
   await user.selectOptions(screen.getByLabelText('Dessert 1'), 'brownies');
   const quantity = screen.getByLabelText('Quantity') as HTMLInputElement;
   await user.clear(quantity);
@@ -116,6 +116,112 @@ it('reviews and submits a quote-only request without showing a deposit', async (
   expect(screen.getByText('No payment is due until we send your quote.')).toBeTruthy();
   expect(screen.queryByText('Pay your 50% deposit')).toBeNull();
   expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ quoteRequest: { kind: 'wedding_cake', description: 'A floral three tier cake' } }));
+});
+
+it('offers a separate wedding details step and keeps cake choices exclusive', async () => {
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await user.click(screen.getByRole('button', { name: /Cake from our price list/ }));
+  await user.click(screen.getByRole('button', { name: /Wedding cake/ }));
+  expect(screen.getByRole('button', { name: /Cake from our price list/ }).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: /Wedding cake/ }).getAttribute('aria-pressed')).toBe('true');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  expect(await screen.findByRole('heading', { name: 'Wedding details' })).toBeTruthy();
+  expect(screen.getByText(/guest count, number of tiers, theme or colours, and flowers/)).toBeTruthy();
+  expect(screen.queryByText('Estimated total')).toBeNull();
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
+  await user.type(screen.getByLabelText('Wedding cake description'), 'Three tiers with flowers');
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('keeps a valid dessert basket with a wedding cake in the submitted request', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cakeChoice: 'wedding', quoteRequest: { kind: 'wedding_cake', description: '' },
+    desserts: [{ type: 'brownies', quantity: 30, note: '' }], fulfilment: 'pickup', address: '',
+    designNotes: '', topperMessage: '', imageTokens: [],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(screen.getByRole('button', { name: /Wedding cake/ }).getAttribute('aria-pressed')).toBe('true'));
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false);
+  await waitFor(() => {
+    const draft = JSON.parse(sessionStorage.getItem('gc-booking-draft-v1')!);
+    expect(draft.quoteRequest).toEqual({ kind: 'wedding_cake', description: '' });
+    expect(draft.desserts).toEqual([{ type: 'brownies', quantity: 30, note: '' }]);
+  });
+});
+
+it('shows the minimum description error and disables Continue for a short wedding description', async () => {
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await user.click(screen.getByRole('button', { name: /Wedding cake/ }));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.type(screen.getByLabelText('Wedding cake description'), '12345');
+  expect(screen.getByRole('alert').textContent).toContain('at least 10 characters');
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('clears customised cake photos when changing to a wedding cake', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: true as const, reference: 'CAKE-2026-0044', accessToken: 'opaque', total: 0, deposit: 0, lines: [], paymentInstructions: { airtelNumber: null, mtnNumber: null, quote: 'CAKE-2026-0044' } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cakeChoice: 'menu', cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [],
+    quoteRequest: { kind: 'other', description: 'A custom cake design' }, imageTokens: [{ id: 'old', token: 'custom-photo' }], fulfilment: 'pickup', address: '',
+    eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila Banda', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '',
+  }));
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(screen.getByText('1 saved photos')).toBeTruthy());
+  await user.click(screen.getByRole('button', { name: /Wedding cake/ }));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('heading', { name: 'Wedding details' });
+  expect(screen.getByText('0 saved photos')).toBeTruthy();
+  await user.type(screen.getByLabelText('Wedding cake description'), 'A three tier wedding cake');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.click(screen.getByRole('button', { name: 'Review booking' }));
+  await screen.findByRole('heading', { name: 'Review your request' });
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  await screen.findByText('Quote request received');
+  expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ imageTokens: [] }));
+});
+
+it('drops a legacy non-wedding quote request that has no cake', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    desserts: [], quoteRequest: { kind: 'other', description: 'A custom request' }, fulfilment: 'pickup', address: '',
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(JSON.parse(sessionStorage.getItem('gc-booking-draft-v1')!).quoteRequest).toBeUndefined());
+  expect(JSON.parse(sessionStorage.getItem('gc-booking-draft-v1')!).cakeChoice).toBe('none');
+});
+
+it('lets a price-list cake be customised on Cake details and cleared again', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cakeChoice: 'menu', cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [], fulfilment: 'pickup', address: '',
+    eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '',
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={1} />);
+  const user = userEvent.setup();
+  await screen.findByRole('heading', { name: 'Cake details' });
+  const customize = screen.getByRole('checkbox', { name: /Customise this cake/ });
+  await user.click(customize);
+  expect(screen.getByRole('combobox', { name: 'Request type' }).textContent).not.toContain('Wedding');
+  await user.type(screen.getByLabelText('Request description'), 'Add extra toppings');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.click(screen.getByRole('button', { name: 'Review booking' }));
+  expect(await screen.findByRole('heading', { name: 'Review your request' })).toBeTruthy();
+  expect(screen.getByText('Base price (price list)')).toBeTruthy();
+  expect(screen.getByText('No deposit is due until we send your quote.')).toBeTruthy();
+  await user.click(screen.getByRole('button', { name: 'Back' }));
+  await user.click(screen.getByRole('button', { name: 'Back' }));
+  await user.click(customize);
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.click(screen.getByRole('button', { name: 'Review booking' }));
+  expect(await screen.findByRole('heading', { name: 'Review your booking' })).toBeTruthy();
+  expect(screen.queryByText('Base price (price list)')).toBeNull();
 });
 
 it('requires consent on the review step and announces the server validation error', async () => {
@@ -196,7 +302,7 @@ it('prevents selecting a dessert type already used by another row', async () => 
   render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
   await screen.findByRole('heading', { name: 'Choose your treats' });
   await waitFor(() => expect(sessionStorage.getItem('gc-booking-draft-v1')).not.toBeNull());
-  await user.click(screen.getByRole('button', { name: '+ Add dessert type' }));
+  await user.click(screen.getByRole('button', { name: /^Desserts/ }));
   await user.click(screen.getByRole('button', { name: '+ Add dessert type' }));
   await user.selectOptions(screen.getByLabelText('Dessert 1'), 'brownies');
   expect((screen.getByLabelText('Dessert 2').querySelector('option[value="brownies"]') as HTMLOptionElement).disabled).toBe(true);
@@ -244,7 +350,7 @@ it('skips focus on mount and focuses the heading after Continue and Back', async
   }));
   render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
   const chooseHeading = await screen.findByRole('heading', { name: 'Choose your treats' });
-  await waitFor(() => expect((screen.getByLabelText('Add a cake') as HTMLInputElement).checked).toBe(true));
+  await waitFor(() => expect(screen.getByRole('button', { name: /Cake from our price list/ }).getAttribute('aria-pressed')).toBe('true'));
   expect(document.activeElement).not.toBe(chooseHeading);
   await user.click(screen.getByRole('button', { name: 'Continue' }));
   const detailsHeading = await screen.findByRole('heading', { name: 'Cake details' });
