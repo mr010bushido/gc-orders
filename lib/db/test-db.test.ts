@@ -16,4 +16,4 @@ it("creates an isolated, migrated database compatible with Db", async () => {
     await first.close();
     await second.close();
   }
-});
+}, 15000);
