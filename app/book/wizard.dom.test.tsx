@@ -135,6 +135,59 @@ it('offers a separate wedding details step and keeps cake choices exclusive', as
   expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false);
 });
 
+it('keeps a valid dessert basket with a wedding cake in the submitted request', async () => {
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cakeChoice: 'wedding', quoteRequest: { kind: 'wedding_cake', description: '' },
+    desserts: [{ type: 'brownies', quantity: 30, note: '' }], fulfilment: 'pickup', address: '',
+    designNotes: '', topperMessage: '', imageTokens: [],
+  }));
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(screen.getByRole('button', { name: /Wedding cake/ }).getAttribute('aria-pressed')).toBe('true'));
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(false);
+  await waitFor(() => {
+    const draft = JSON.parse(sessionStorage.getItem('gc-booking-draft-v1')!);
+    expect(draft.quoteRequest).toEqual({ kind: 'wedding_cake', description: '' });
+    expect(draft.desserts).toEqual([{ type: 'brownies', quantity: 30, note: '' }]);
+  });
+});
+
+it('shows the minimum description error and disables Continue for a short wedding description', async () => {
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await user.click(screen.getByRole('button', { name: /Wedding cake/ }));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.type(screen.getByLabelText('Wedding cake description'), '12345');
+  expect(screen.getByRole('alert').textContent).toContain('at least 10 characters');
+  expect((screen.getByRole('button', { name: 'Continue' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('clears customised cake photos when changing to a wedding cake', async () => {
+  mocks.actionMock = vi.fn(async () => ({ ok: true as const, reference: 'CAKE-2026-0044', accessToken: 'opaque', total: 0, deposit: 0, lines: [], paymentInstructions: { airtelNumber: null, mtnNumber: null, quote: 'CAKE-2026-0044' } }));
+  sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
+    cakeChoice: 'menu', cake: { flavour: 'vanilla', frosting: 'american_buttercream', tierSizes: [10], addons: [] }, desserts: [],
+    quoteRequest: { kind: 'other', description: 'A custom cake design' }, imageTokens: [{ id: 'old', token: 'custom-photo' }], fulfilment: 'pickup', address: '',
+    eventDate: earliestEventDate(true, new Date(), rules), timeWindow: 'afternoon', name: 'Mwila Banda', phone: '0977 123 456', email: 'mwila@example.com', designNotes: '', topperMessage: '',
+  }));
+  const user = userEvent.setup();
+  render(<BookingWizard catalogue={catalogue} rules={rules} today={today()} closedDates={[]} initialStep={0} />);
+  await screen.findByRole('heading', { name: 'Choose your treats' });
+  await waitFor(() => expect(screen.getByText('1 saved photos')).toBeTruthy());
+  await user.click(screen.getByRole('button', { name: /Wedding cake/ }));
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await screen.findByRole('heading', { name: 'Wedding details' });
+  expect(screen.getByText('0 saved photos')).toBeTruthy();
+  await user.type(screen.getByLabelText('Wedding cake description'), 'A three tier wedding cake');
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  await user.click(screen.getByRole('button', { name: 'Review booking' }));
+  await screen.findByRole('heading', { name: 'Review your request' });
+  await user.click(screen.getByRole('checkbox', { name: /I agree that my details/ }));
+  await user.click(screen.getByRole('button', { name: 'Submit booking' }));
+  await screen.findByText('Quote request received');
+  expect(mocks.actionMock).toHaveBeenCalledWith(expect.objectContaining({ imageTokens: [] }));
+});
+
 it('drops a legacy non-wedding quote request that has no cake', async () => {
   sessionStorage.setItem('gc-booking-draft-v1', JSON.stringify({
     desserts: [], quoteRequest: { kind: 'other', description: 'A custom request' }, fulfilment: 'pickup', address: '',

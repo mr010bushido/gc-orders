@@ -16,3 +16,11 @@
 ## 3. Verify
 
 - [x] 3.1 `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (889 passed, 1 skipped), `pnpm build`, `pnpm check:portability`, `openspec validate order-type-choice --strict` all pass — gates: lint passed; typecheck passed; test 103 files passed, 1 skipped; build passed; portability passed; strict validation passed
+
+## Review fixes (round 2)
+
+- [x] Desktop Stepper with `hideTotal` renders only the current step label and preserves `aria-current` — gate: `pnpm test components/ui/Stepper.test.tsx` → 6 passed
+- [x] Clear uploaded photo tokens on cake choice changes and when customisation is turned off; key the uploader to show cleared images — gate: `pnpm test app/book/wizard.dom.test.tsx` → 21 passed, including wedding submission with no prior custom cake images
+- [x] Wedding cake plus a valid dessert keeps Next enabled and both in the saved request — gate: `pnpm test app/book/wizard.dom.test.tsx` → 21 passed
+- [x] Wedding description of 5 characters shows an inline error and disables Next — gate: `pnpm test app/book/wizard.dom.test.tsx` → 21 passed
+- [x] Full requested gates — lint passed; typecheck passed; `pnpm test --maxWorkers=2` → 104 files passed, 1 skipped (897 passed, 1 skipped); build passed; strict OpenSpec validation passed

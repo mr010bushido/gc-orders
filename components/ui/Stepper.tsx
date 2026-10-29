@@ -4,6 +4,7 @@ type StepperProps = { steps: string[]; current: number; className?: string; hide
 
 export function Stepper({ steps, current, className, hideTotal = false }: StepperProps) {
   const state = (i: number) => (i < current ? 'done' : i === current ? 'current' : 'todo');
+  const visibleSteps = steps.slice(0, hideTotal ? 1 : undefined);
 
   return (
     <div className={className}>
@@ -26,11 +27,11 @@ export function Stepper({ steps, current, className, hideTotal = false }: Steppe
 
       {/* Tablet and up: numbered circles joined by lines */}
       <ol className="hidden items-center md:flex">
-        {steps.map((label, i) => (
+        {visibleSteps.map((label, i) => (
           <li
             key={label}
             aria-current={i === current ? 'step' : undefined}
-            className={cn('flex items-center gap-2', i < steps.length - 1 && 'flex-1')}
+            className={cn('flex items-center gap-2', i < visibleSteps.length - 1 && 'flex-1')}
           >
             <span
               className={cn(
@@ -44,7 +45,7 @@ export function Stepper({ steps, current, className, hideTotal = false }: Steppe
               {label}
               {i < current && <span className="sr-only"> (done)</span>}
             </span>
-            {i < steps.length - 1 && (
+            {i < visibleSteps.length - 1 && (
               <span aria-hidden="true" className={cn('mx-1 h-px flex-1', i < current ? 'bg-brand' : 'bg-line')} />
             )}
           </li>
